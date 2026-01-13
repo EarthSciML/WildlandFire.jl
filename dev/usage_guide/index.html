@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Usage Guide · WildlandFire.jl</title><meta name="title" content="Usage Guide · WildlandFire.jl"/><meta property="og:title" content="Usage Guide · WildlandFire.jl"/><meta property="twitter:title" content="Usage Guide · WildlandFire.jl"/><meta name="description" content="Documentation for WildlandFire.jl."/><meta property="og:description" content="Documentation for WildlandFire.jl."/><meta property="twitter:description" content="Documentation for WildlandFire.jl."/><meta property="og:url" content="https://wildlandfire.earthsci.dev/usage_guide/"/><meta property="twitter:url" content="https://wildlandfire.earthsci.dev/usage_guide/"/><link rel="canonical" href="https://wildlandfire.earthsci.dev/usage_guide/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">WildlandFire.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../getting_started/">Getting Started</a></li><li><a class="tocitem" href="../model_description/">Model Description</a></li><li class="is-active"><a class="tocitem" href>Usage Guide</a><ul class="internal"><li><a class="tocitem" href="#Creating-Models"><span>Creating Models</span></a></li><li><a class="tocitem" href="#Defining-Parameters"><span>Defining Parameters</span></a></li><li><a class="tocitem" href="#Solving-the-Model"><span>Solving the Model</span></a></li><li><a class="tocitem" href="#Unit-Conversions"><span>Unit Conversions</span></a></li><li><a class="tocitem" href="#Parametric-Studies"><span>Parametric Studies</span></a></li><li><a class="tocitem" href="#Working-with-Fuel-Models"><span>Working with Fuel Models</span></a></li><li><a class="tocitem" href="#Batch-Processing"><span>Batch Processing</span></a></li><li><a class="tocitem" href="#Error-Handling"><span>Error Handling</span></a></li><li><a class="tocitem" href="#Advanced-Topics"><span>Advanced Topics</span></a></li><li><a class="tocitem" href="#Tips-and-Best-Practices"><span>Tips and Best Practices</span></a></li></ul></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../examples/basic/">Basic Examples</a></li><li><a class="tocitem" href="../examples/sensitivity/">Sensitivity Analysis</a></li><li><a class="tocitem" href="../examples/fuel_types/">Fuel Types</a></li></ul></li><li><a class="tocitem" href="../api/">API Reference</a></li><li><a class="tocitem" href="../references/">References</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Usage Guide</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Usage Guide</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Usage-Guide"><a class="docs-heading-anchor" href="#Usage-Guide">Usage Guide</a><a id="Usage-Guide-1"></a><a class="docs-heading-anchor-permalink" href="#Usage-Guide" title="Permalink"></a></h1><p>This guide covers common usage patterns and advanced features of WildlandFire.jl.</p><h2 id="Creating-Models"><a class="docs-heading-anchor" href="#Creating-Models">Creating Models</a><a id="Creating-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-Models" title="Permalink"></a></h2><h3 id="Using-the-Factory-Function"><a class="docs-heading-anchor" href="#Using-the-Factory-Function">Using the Factory Function</a><a id="Using-the-Factory-Function-1"></a><a class="docs-heading-anchor-permalink" href="#Using-the-Factory-Function" title="Permalink"></a></h3><p>The recommended way to create a Rothermel model is using the <code>Rothermel()</code> factory function:</p><pre><code class="language-julia hljs">using WildlandFire
+
+# Create a model with default settings (this is what we&#39;ll use later)
+sys = Rothermel()
+
+# You can also create a model with custom name
+sys_custom = Rothermel(name=:my_fire)
+
+# Or create unsimplified model for further manipulation
+sys_unsimplified = Rothermel(simplify=false)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi"><span class="sgr1">Model rothermel:</span>
+<span class="sgr1">Equations (21):</span>
+  21 standard: see equations(rothermel)
+<span class="sgr1">Unknowns (21):</span> see unknowns(rothermel)
+  w_n(t)
+  ρ_b(t)
+  β(t)
+  β_opt(t)
+  ⋮
+<span class="sgr1">Parameters (14):</span> see parameters(rothermel)
+  w_o
+  S_T
+  δ
+  ρ_p
+  ⋮</code></pre><h3 id="Pre-built-Model"><a class="docs-heading-anchor" href="#Pre-built-Model">Pre-built Model</a><a id="Pre-built-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Pre-built-Model" title="Permalink"></a></h3><p>For backward compatibility, a pre-built simplified model is available:</p><pre><code class="language-julia hljs">using WildlandFire
+
+# Use the pre-built model
+sys_prebuilt = rothermel_simplified</code></pre><h2 id="Defining-Parameters"><a class="docs-heading-anchor" href="#Defining-Parameters">Defining Parameters</a><a id="Defining-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Defining-Parameters" title="Permalink"></a></h2><p>Parameters must be provided as a vector of pairs:</p><pre><code class="language-julia hljs">params = [
+    h =&gt; 8000.0,          # Heat content (Btu/lb)
+    S_T =&gt; 0.0555,        # Total mineral content
+    S_e =&gt; 0.010,         # Effective mineral content
+    ρ_p =&gt; 32.0,          # Particle density (lb/ft³)
+    σ =&gt; 3500.0,          # Surface-area-to-volume ratio (ft²/ft³)
+    w_o =&gt; 0.138,         # Fuel load (lb/ft²)
+    δ =&gt; 1.0,             # Fuel bed depth (ft)
+    M_x =&gt; 0.12,          # Moisture of extinction
+    M_f =&gt; 0.05,          # Fuel moisture
+    U =&gt; 352.0,           # Wind speed (ft/min)
+    tan_ϕ =&gt; 0.0,         # Slope
+]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">11-element Vector{Pair{Symbolics.Num, Float64}}:
+     h =&gt; 8000.0
+   S_T =&gt; 0.0555
+   S_e =&gt; 0.01
+   ρ_p =&gt; 32.0
+     σ =&gt; 3500.0
+   w_o =&gt; 0.138
+     δ =&gt; 1.0
+   M_x =&gt; 0.12
+   M_f =&gt; 0.05
+     U =&gt; 352.0
+ tan_ϕ =&gt; 0.0</code></pre><h3 id="Required-Parameters"><a class="docs-heading-anchor" href="#Required-Parameters">Required Parameters</a><a id="Required-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Required-Parameters" title="Permalink"></a></h3><p>All 11 parameters must be specified:</p><table><tr><th style="text-align: right">Parameter</th><th style="text-align: right">Symbol</th><th style="text-align: right">Description</th><th style="text-align: right">Typical Values</th></tr><tr><td style="text-align: right">Heat content</td><td style="text-align: right"><code>h</code></td><td style="text-align: right">Low heat content of fuel</td><td style="text-align: right">7000-9000 Btu/lb</td></tr><tr><td style="text-align: right">Total mineral</td><td style="text-align: right"><code>S_T</code></td><td style="text-align: right">Total mineral content</td><td style="text-align: right">0.02-0.10 fraction</td></tr><tr><td style="text-align: right">Effective mineral</td><td style="text-align: right"><code>S_e</code></td><td style="text-align: right">Effective mineral content</td><td style="text-align: right">0.005-0.02 fraction</td></tr><tr><td style="text-align: right">Particle density</td><td style="text-align: right"><code>ρ_p</code></td><td style="text-align: right">Oven-dry density</td><td style="text-align: right">28-40 lb/ft³</td></tr><tr><td style="text-align: right">SAV ratio</td><td style="text-align: right"><code>σ</code></td><td style="text-align: right">Surface-area-to-volume</td><td style="text-align: right">100-4000 ft²/ft³</td></tr><tr><td style="text-align: right">Fuel load</td><td style="text-align: right"><code>w_o</code></td><td style="text-align: right">Oven-dry fuel load</td><td style="text-align: right">0.01-1.0 lb/ft²</td></tr><tr><td style="text-align: right">Bed depth</td><td style="text-align: right"><code>δ</code></td><td style="text-align: right">Fuel bed depth</td><td style="text-align: right">0.1-10 ft</td></tr><tr><td style="text-align: right">Moist. extinct.</td><td style="text-align: right"><code>M_x</code></td><td style="text-align: right">Moisture of extinction</td><td style="text-align: right">0.12-0.40 fraction</td></tr><tr><td style="text-align: right">Fuel moisture</td><td style="text-align: right"><code>M_f</code></td><td style="text-align: right">Current moisture</td><td style="text-align: right">0.01-0.30 fraction</td></tr><tr><td style="text-align: right">Wind speed</td><td style="text-align: right"><code>U</code></td><td style="text-align: right">Wind at midflame height</td><td style="text-align: right">0-2000 ft/min</td></tr><tr><td style="text-align: right">Slope</td><td style="text-align: right"><code>tan_ϕ</code></td><td style="text-align: right">Slope steepness (rise/run)</td><td style="text-align: right">0-1.0 fraction</td></tr></table><h2 id="Solving-the-Model"><a class="docs-heading-anchor" href="#Solving-the-Model">Solving the Model</a><a id="Solving-the-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Solving-the-Model" title="Permalink"></a></h2><h3 id="Basic-Solution"><a class="docs-heading-anchor" href="#Basic-Solution">Basic Solution</a><a id="Basic-Solution-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-Solution" title="Permalink"></a></h3><pre><code class="language-julia hljs">using OrdinaryDiffEqDefault
+
+# Create the problem
+prob = ODEProblem(sys, [], (0.0, 1.0), params)
+
+# Solve
+sol = solve(prob)
+
+# Extract rate of spread
+R_value = sol[R][end]  # ft/min</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">70.68722544798835</code></pre><h3 id="Accessing-All-Variables"><a class="docs-heading-anchor" href="#Accessing-All-Variables">Accessing All Variables</a><a id="Accessing-All-Variables-1"></a><a class="docs-heading-anchor-permalink" href="#Accessing-All-Variables" title="Permalink"></a></h3><p>You can access any intermediate variable from the solution:</p><pre><code class="language-julia hljs"># Main output
+rate_of_spread = sol[R][end]                    # ft/min
+
+# Reaction characteristics
+reaction_intensity = sol[I_R][end]              # Btu/ft²·min
+reaction_velocity = sol[Γ][end]                 # min⁻¹
+
+# Fuel bed properties
+packing_ratio = sol[β][end]                     # dimensionless
+optimum_packing = sol[β_opt][end]               # dimensionless
+bulk_density = sol[ρ_b][end]                    # lb/ft³
+
+# Damping coefficients
+moisture_damping = sol[η_M][end]                # 0-1
+mineral_damping = sol[η_s][end]                 # 0-1
+
+# Wind and slope effects
+wind_factor = sol[ϕ_w][end]                     # dimensionless
+slope_factor = sol[ϕ_s][end]                    # dimensionless
+
+# Heat transfer
+propagating_flux_ratio = sol[ξ][end]            # dimensionless
+heat_of_preignition = sol[Q_ig][end]            # Btu/lb
+effective_heating = sol[ε][end]                 # dimensionless
+
+# No-wind, no-slope rate
+base_rate_of_spread = sol[R_0][end]             # ft/min</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6.340532958463418</code></pre><h2 id="Unit-Conversions"><a class="docs-heading-anchor" href="#Unit-Conversions">Unit Conversions</a><a id="Unit-Conversions-1"></a><a class="docs-heading-anchor-permalink" href="#Unit-Conversions" title="Permalink"></a></h2><h3 id="Rate-of-Spread"><a class="docs-heading-anchor" href="#Rate-of-Spread">Rate of Spread</a><a id="Rate-of-Spread-1"></a><a class="docs-heading-anchor-permalink" href="#Rate-of-Spread" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Get rate in ft/min
+R_ftmin = sol[R][end]
+
+# Convert to other units
+R_mmin = R_ftmin * 0.3048           # meters per minute
+R_mhr = R_ftmin * 18.288            # meters per hour
+R_kmhr = R_ftmin * 0.018288         # kilometers per hour
+R_chains_hr = R_ftmin * 1.829       # chains per hour (wildland fire standard)
+R_mph = R_ftmin / 88.0              # miles per hour</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.8032639255453222</code></pre><h3 id="Wind-Speed"><a class="docs-heading-anchor" href="#Wind-Speed">Wind Speed</a><a id="Wind-Speed-1"></a><a class="docs-heading-anchor-permalink" href="#Wind-Speed" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Convert from mph to ft/min
+wind_mph = 10.0
+U = wind_mph * 88.0                 # ft/min
+
+# Convert from m/s to ft/min
+wind_ms = 5.0
+U = wind_ms * 196.85                # ft/min</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">984.25</code></pre><h3 id="Slope"><a class="docs-heading-anchor" href="#Slope">Slope</a><a id="Slope-1"></a><a class="docs-heading-anchor-permalink" href="#Slope" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Convert from percent to tan(ϕ)
+slope_percent = 30.0
+tan_ϕ = slope_percent / 100.0       # 0.30
+
+# Convert from degrees to tan(ϕ)
+slope_degrees = 20.0
+tan_ϕ = tan(deg2rad(slope_degrees)) # 0.364</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.36397023426620234</code></pre><h3 id="Fuel-Load"><a class="docs-heading-anchor" href="#Fuel-Load">Fuel Load</a><a id="Fuel-Load-1"></a><a class="docs-heading-anchor-permalink" href="#Fuel-Load" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Convert from kg/m² to lb/ft²
+load_kgm2 = 1.0
+w_o = load_kgm2 / 4.88              # lb/ft²
+
+# Convert from tons/acre to lb/ft²
+load_ton_acre = 2.0
+w_o = load_ton_acre * 0.046         # lb/ft²</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.092</code></pre><h2 id="Parametric-Studies"><a class="docs-heading-anchor" href="#Parametric-Studies">Parametric Studies</a><a id="Parametric-Studies-1"></a><a class="docs-heading-anchor-permalink" href="#Parametric-Studies" title="Permalink"></a></h2><h3 id="Varying-a-Single-Parameter"><a class="docs-heading-anchor" href="#Varying-a-Single-Parameter">Varying a Single Parameter</a><a id="Varying-a-Single-Parameter-1"></a><a class="docs-heading-anchor-permalink" href="#Varying-a-Single-Parameter" title="Permalink"></a></h3><pre><code class="language-julia hljs">using WildlandFire
+using OrdinaryDiffEqDefault
+
+# Base parameters
+base_params = Dict(
+    h =&gt; 8000.0,
+    S_T =&gt; 0.0555,
+    S_e =&gt; 0.010,
+    ρ_p =&gt; 32.0,
+    σ =&gt; 3500.0,
+    w_o =&gt; 0.138,
+    δ =&gt; 1.0,
+    M_x =&gt; 0.12,
+    M_f =&gt; 0.05,
+    tan_ϕ =&gt; 0.0,
+)
+
+# Create model
+sys = Rothermel()
+
+# Vary wind speed
+wind_speeds = 0:100:1000  # ft/min
+results = Float64[]
+
+for U_val in wind_speeds
+    params = [base_params..., U =&gt; U_val]
+    prob = ODEProblem(sys, [], (0.0, 1.0), params)
+    sol = solve(prob)
+    push!(results, sol[R][end])
+end
+
+# Plot results
+using Plots
+plot(wind_speeds ./ 88.0, results,  # Convert wind to mph
+     xlabel=&quot;Wind Speed (mph)&quot;,
+     ylabel=&quot;Rate of Spread (ft/min)&quot;,
+     title=&quot;Wind Effect on Fire Spread&quot;,
+     linewidth=2,
+     legend=false)</code></pre><img src="f60c93ab.svg" alt="Example block output"/><h3 id="Varying-Multiple-Parameters"><a class="docs-heading-anchor" href="#Varying-Multiple-Parameters">Varying Multiple Parameters</a><a id="Varying-Multiple-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Varying-Multiple-Parameters" title="Permalink"></a></h3><pre><code class="language-julia hljs">using WildlandFire
+using OrdinaryDiffEqDefault
+
+# Create parameter grid
+moistures = 0.01:0.01:0.11
+wind_speeds = [0.0, 352.0, 880.0]  # 0, 4, 10 mph
+wind_labels = [&quot;No wind&quot;, &quot;4 mph&quot;, &quot;10 mph&quot;]
+
+sys = Rothermel()
+results = Dict()
+
+for (wind, label) in zip(wind_speeds, wind_labels)
+    rates = Float64[]
+    for moisture in moistures
+        params = [
+            h =&gt; 8000.0, S_T =&gt; 0.0555, S_e =&gt; 0.010, ρ_p =&gt; 32.0,
+            σ =&gt; 3500.0, w_o =&gt; 0.138, δ =&gt; 1.0, M_x =&gt; 0.12,
+            M_f =&gt; moisture, U =&gt; wind, tan_ϕ =&gt; 0.0,
+        ]
+        prob = ODEProblem(sys, [], (0.0, 1.0), params)
+        sol = solve(prob)
+        push!(rates, sol[R][end])
+    end
+    results[label] = rates
+end
+
+# Plot multiple series
+using Plots
+plot(moistures .* 100, results[&quot;No wind&quot;],
+     label=wind_labels[1],
+     xlabel=&quot;Fuel Moisture (%)&quot;,
+     ylabel=&quot;Rate of Spread (ft/min)&quot;,
+     title=&quot;Moisture and Wind Effects&quot;,
+     linewidth=2)
+plot!(moistures .* 100, results[&quot;4 mph&quot;], label=wind_labels[2], linewidth=2)
+plot!(moistures .* 100, results[&quot;10 mph&quot;], label=wind_labels[3], linewidth=2)</code></pre><img src="00c3d7bb.svg" alt="Example block output"/><h2 id="Working-with-Fuel-Models"><a class="docs-heading-anchor" href="#Working-with-Fuel-Models">Working with Fuel Models</a><a id="Working-with-Fuel-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Working-with-Fuel-Models" title="Permalink"></a></h2><h3 id="Standard-NFFL-Fuel-Models"><a class="docs-heading-anchor" href="#Standard-NFFL-Fuel-Models">Standard NFFL Fuel Models</a><a id="Standard-NFFL-Fuel-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Standard-NFFL-Fuel-Models" title="Permalink"></a></h3><p>Here are parameters for some standard Northern Forest Fire Laboratory (NFFL) fuel models:</p><pre><code class="language-julia hljs">using WildlandFire
+
+# Fuel Model 1: Short grass
+fm1_params = [
+    h =&gt; 8000.0, S_T =&gt; 0.0555, S_e =&gt; 0.010, ρ_p =&gt; 32.0,
+    σ =&gt; 3500.0, w_o =&gt; 0.138, δ =&gt; 1.0, M_x =&gt; 0.12,
+]
+
+# Fuel Model 2: Timber grass and understory
+fm2_params = [
+    h =&gt; 8000.0, S_T =&gt; 0.0555, S_e =&gt; 0.010, ρ_p =&gt; 32.0,
+    σ =&gt; 3000.0, w_o =&gt; 0.092, δ =&gt; 1.0, M_x =&gt; 0.15,
+]
+
+# Fuel Model 3: Tall grass
+fm3_params = [
+    h =&gt; 8000.0, S_T =&gt; 0.0555, S_e =&gt; 0.010, ρ_p =&gt; 32.0,
+    σ =&gt; 1500.0, w_o =&gt; 0.138, δ =&gt; 2.5, M_x =&gt; 0.25,
+]
+
+# Fuel Model 4: Chaparral
+fm4_params = [
+    h =&gt; 8000.0, S_T =&gt; 0.0555, S_e =&gt; 0.010, ρ_p =&gt; 32.0,
+    σ =&gt; 2000.0, w_o =&gt; 0.230, δ =&gt; 6.0, M_x =&gt; 0.20,
+]
+
+# Fuel Model 5: Brush
+fm5_params = [
+    h =&gt; 8000.0, S_T =&gt; 0.0555, S_e =&gt; 0.010, ρ_p =&gt; 32.0,
+    σ =&gt; 1750.0, w_o =&gt; 0.046, δ =&gt; 2.0, M_x =&gt; 0.20,
+]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">8-element Vector{Pair{Symbolics.Num, Float64}}:
+   h =&gt; 8000.0
+ S_T =&gt; 0.0555
+ S_e =&gt; 0.01
+ ρ_p =&gt; 32.0
+   σ =&gt; 1750.0
+ w_o =&gt; 0.046
+   δ =&gt; 2.0
+ M_x =&gt; 0.2</code></pre><h3 id="Creating-Custom-Fuel-Models"><a class="docs-heading-anchor" href="#Creating-Custom-Fuel-Models">Creating Custom Fuel Models</a><a id="Creating-Custom-Fuel-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-Custom-Fuel-Models" title="Permalink"></a></h3><pre><code class="language-julia hljs">using WildlandFire
+
+# Define custom fuel parameters
+my_fuel_params = [
+    # Particle properties (typically constant)
+    h =&gt; 8000.0,          # Use standard heat content
+    S_T =&gt; 0.0555,        # Standard mineral content
+    S_e =&gt; 0.010,         # Standard effective mineral
+    ρ_p =&gt; 32.0,          # Standard particle density
+
+    # Fuel bed properties (vary by fuel type)
+    σ =&gt; 2500.0,          # Medium-fine fuel
+    w_o =&gt; 0.20,          # Moderate fuel load
+    δ =&gt; 3.0,             # Medium depth fuel bed
+    M_x =&gt; 0.18,          # Medium moisture of extinction
+
+    # Environmental (vary by conditions)
+    M_f =&gt; 0.08,          # Current moisture
+    U =&gt; 440.0,           # Current wind (5 mph)
+    tan_ϕ =&gt; 0.15,        # Current slope (15%)
+]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">11-element Vector{Pair{Symbolics.Num, Float64}}:
+     h =&gt; 8000.0
+   S_T =&gt; 0.0555
+   S_e =&gt; 0.01
+   ρ_p =&gt; 32.0
+     σ =&gt; 2500.0
+   w_o =&gt; 0.2
+     δ =&gt; 3.0
+   M_x =&gt; 0.18
+   M_f =&gt; 0.08
+     U =&gt; 440.0
+ tan_ϕ =&gt; 0.15</code></pre><h2 id="Batch-Processing"><a class="docs-heading-anchor" href="#Batch-Processing">Batch Processing</a><a id="Batch-Processing-1"></a><a class="docs-heading-anchor-permalink" href="#Batch-Processing" title="Permalink"></a></h2><h3 id="Multiple-Scenarios"><a class="docs-heading-anchor" href="#Multiple-Scenarios">Multiple Scenarios</a><a id="Multiple-Scenarios-1"></a><a class="docs-heading-anchor-permalink" href="#Multiple-Scenarios" title="Permalink"></a></h3><pre><code class="language-julia hljs">using WildlandFire
+using OrdinaryDiffEqDefault
+using DataFrames
+
+# Define scenarios
+scenarios = [
+    (name=&quot;Low danger&quot;, M_f=0.12, U=176.0, tan_ϕ=0.0),   # 2 mph
+    (name=&quot;Moderate danger&quot;, M_f=0.08, U=352.0, tan_ϕ=0.0),  # 4 mph
+    (name=&quot;High danger&quot;, M_f=0.04, U=880.0, tan_ϕ=0.0),      # 10 mph
+    (name=&quot;Extreme danger&quot;, M_f=0.02, U=1320.0, tan_ϕ=0.2),  # 15 mph, 20% slope
+]
+
+# Common fuel parameters
+base_fuel = Dict(
+    h =&gt; 8000.0, S_T =&gt; 0.0555, S_e =&gt; 0.010, ρ_p =&gt; 32.0,
+    σ =&gt; 3500.0, w_o =&gt; 0.138, δ =&gt; 1.0, M_x =&gt; 0.12,
+)
+
+sys = Rothermel()
+
+# Run all scenarios
+results = DataFrame(
+    Scenario = String[],
+    Moisture = Float64[],
+    WindSpeed_mph = Float64[],
+    Slope_pct = Float64[],
+    ROS_ftmin = Float64[],
+    ROS_mhr = Float64[],
+)
+
+for scenario in scenarios
+    params = [
+        base_fuel...,
+        M_f =&gt; scenario.M_f,
+        U =&gt; scenario.U,
+        tan_ϕ =&gt; scenario.tan_ϕ,
+    ]
+
+    prob = ODEProblem(sys, [], (0.0, 1.0), params)
+    sol = solve(prob)
+
+    R_ftmin = sol[R][end]
+
+    push!(results, (
+        scenario.name,
+        scenario.M_f * 100,          # Convert to percent
+        scenario.U / 88.0,           # Convert to mph
+        scenario.tan_ϕ * 100,        # Convert to percent
+        R_ftmin,
+        R_ftmin * 18.288,            # Convert to m/hr
+    ))
+end
+
+println(results)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+4×6 DataFrame
+ Row │ Scenario         Moisture  WindSpeed_mph  Slope_pct  ROS_ftmin  ROS_mhr
+     │ String           Float64   Float64        Float64    Float64    Float64
+─────┼──────────────────────────────────────────────────────────────────────────
+   1 │ Low danger           12.0            2.0        0.0     0.0         0.0
+   2 │ Moderate danger       8.0            4.0        0.0    57.7391   1055.93
+   3 │ High danger           4.0           10.0        0.0   469.063    8578.22
+   4 │ Extreme danger        2.0           15.0       20.0  1418.76    25946.3</code></pre><h2 id="Error-Handling"><a class="docs-heading-anchor" href="#Error-Handling">Error Handling</a><a id="Error-Handling-1"></a><a class="docs-heading-anchor-permalink" href="#Error-Handling" title="Permalink"></a></h2><h3 id="Checking-for-Valid-Solutions"><a class="docs-heading-anchor" href="#Checking-for-Valid-Solutions">Checking for Valid Solutions</a><a id="Checking-for-Valid-Solutions-1"></a><a class="docs-heading-anchor-permalink" href="#Checking-for-Valid-Solutions" title="Permalink"></a></h3><pre><code class="language-julia hljs">using WildlandFire
+using OrdinaryDiffEqDefault
+using SciMLBase
+
+params = [...]  # your parameters here
+
+prob = ODEProblem(sys, [], (0.0, 1.0), params)
+sol = solve(prob)
+
+# Check if solution succeeded
+if SciMLBase.successful_retcode(sol)
+    R_value = sol[R][end]
+    println(&quot;Rate of spread: $R_value ft/min&quot;)
+else
+    println(&quot;Warning: Solution did not converge&quot;)
+    println(&quot;Retcode: $(sol.retcode)&quot;)
+end</code></pre><h3 id="Validating-Parameters"><a class="docs-heading-anchor" href="#Validating-Parameters">Validating Parameters</a><a id="Validating-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Validating-Parameters" title="Permalink"></a></h3><pre><code class="language-julia hljs">function validate_params(params_dict)
+    # Check that moisture is less than extinction
+    if params_dict[M_f] &gt;= params_dict[M_x]
+        @warn &quot;Fuel moisture ($(params_dict[M_f])) exceeds extinction moisture ($(params_dict[M_x]))&quot;
+        return false
+    end
+
+    # Check for negative values
+    for (key, val) in params_dict
+        if val &lt; 0
+            @warn &quot;Negative value for $key: $val&quot;
+            return false
+        end
+    end
+
+    # Check reasonable ranges
+    if params_dict[σ] &gt; 10000
+        @warn &quot;Very high SAV ratio: $(params_dict[σ]) ft²/ft³&quot;
+    end
+
+    return true
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">validate_params (generic function with 1 method)</code></pre><h2 id="Advanced-Topics"><a class="docs-heading-anchor" href="#Advanced-Topics">Advanced Topics</a><a id="Advanced-Topics-1"></a><a class="docs-heading-anchor-permalink" href="#Advanced-Topics" title="Permalink"></a></h2><h3 id="Accessing-the-Equation-System"><a class="docs-heading-anchor" href="#Accessing-the-Equation-System">Accessing the Equation System</a><a id="Accessing-the-Equation-System-1"></a><a class="docs-heading-anchor-permalink" href="#Accessing-the-Equation-System" title="Permalink"></a></h3><p>For advanced users who want to inspect the underlying ModelingToolkit system:</p><pre><code class="language-julia hljs">using WildlandFire
+using ModelingToolkit
+
+# Get the unsimplified system
+sys = Rothermel(simplify=false)
+
+# Access equations
+eqs = equations(sys)
+println(&quot;Number of equations: $(length(eqs))&quot;)
+
+# Access variables
+vars = unknowns(sys)
+println(&quot;Number of variables: $(length(vars))&quot;)
+
+# Access parameters
+params_sys = parameters(sys)
+println(&quot;Number of parameters: $(length(params_sys))&quot;)</code></pre><h3 id="Custom-Solver-Options"><a class="docs-heading-anchor" href="#Custom-Solver-Options">Custom Solver Options</a><a id="Custom-Solver-Options-1"></a><a class="docs-heading-anchor-permalink" href="#Custom-Solver-Options" title="Permalink"></a></h3><pre><code class="language-julia hljs">using WildlandFire
+using OrdinaryDiffEqDefault
+
+# Create model and define parameters
+sys = Rothermel()
+params = [
+    h =&gt; 8000.0, σ =&gt; 3500.0, w_o =&gt; 0.138, δ =&gt; 1.0,
+    M_f =&gt; 0.05, U =&gt; 352.0, tan_ϕ =&gt; 0.0,
+    S_T =&gt; 0.0555, S_e =&gt; 0.010, ρ_p =&gt; 32.0, M_x =&gt; 0.12
+]
+
+# Use default solver
+prob = ODEProblem(sys, [], (0.0, 1.0), params)
+sol = solve(prob)
+
+# With solver options
+sol = solve(prob, abstol=1e-8, reltol=1e-6)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">retcode: Success
+Interpolation: 1st order linear
+t: 2-element Vector{Float64}:
+ 0.0
+ 1.0
+u: 2-element Vector{Vector{Float64}}:
+ []
+ []</code></pre><h2 id="Tips-and-Best-Practices"><a class="docs-heading-anchor" href="#Tips-and-Best-Practices">Tips and Best Practices</a><a id="Tips-and-Best-Practices-1"></a><a class="docs-heading-anchor-permalink" href="#Tips-and-Best-Practices" title="Permalink"></a></h2><ol><li><strong>Always check moisture &lt; extinction</strong>: Set M<em>f &lt; M</em>x or fire won&#39;t spread</li><li><strong>Use consistent units</strong>: Wind in ft/min, slope as tan(ϕ), not degrees/percent</li><li><strong>Validate results</strong>: Check that rate of spread is reasonable for the fuel type</li><li><strong>Start simple</strong>: Begin with no wind/slope, then add complexity</li><li><strong>Document assumptions</strong>: Keep notes on parameter sources and assumptions</li><li><strong>Compare scenarios</strong>: Use relative comparisons more than absolute values</li><li><strong>Validate locally</strong>: If possible, validate against local fire behavior observations</li></ol></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../model_description/">« Model Description</a><a class="docs-footer-nextpage" href="../examples/basic/">Basic Examples »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Tuesday 13 January 2026 15:43">Tuesday 13 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

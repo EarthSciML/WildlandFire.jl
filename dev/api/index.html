@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>API Reference · WildlandFire.jl</title><meta name="title" content="API Reference · WildlandFire.jl"/><meta property="og:title" content="API Reference · WildlandFire.jl"/><meta property="twitter:title" content="API Reference · WildlandFire.jl"/><meta name="description" content="Documentation for WildlandFire.jl."/><meta property="og:description" content="Documentation for WildlandFire.jl."/><meta property="twitter:description" content="Documentation for WildlandFire.jl."/><meta property="og:url" content="https://wildlandfire.earthsci.dev/api/"/><meta property="twitter:url" content="https://wildlandfire.earthsci.dev/api/"/><link rel="canonical" href="https://wildlandfire.earthsci.dev/api/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">WildlandFire.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../getting_started/">Getting Started</a></li><li><a class="tocitem" href="../model_description/">Model Description</a></li><li><a class="tocitem" href="../usage_guide/">Usage Guide</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../examples/basic/">Basic Examples</a></li><li><a class="tocitem" href="../examples/sensitivity/">Sensitivity Analysis</a></li><li><a class="tocitem" href="../examples/fuel_types/">Fuel Types</a></li></ul></li><li class="is-active"><a class="tocitem" href>API Reference</a><ul class="internal"><li><a class="tocitem" href="#Model-Creation-Functions"><span>Model Creation Functions</span></a></li><li><a class="tocitem" href="#Model-Variables"><span>Model Variables</span></a></li><li><a class="tocitem" href="#Model-Parameters"><span>Model Parameters</span></a></li><li><a class="tocitem" href="#Usage-Patterns"><span>Usage Patterns</span></a></li><li><a class="tocitem" href="#Unit-Conversions"><span>Unit Conversions</span></a></li><li><a class="tocitem" href="#See-Also"><span>See Also</span></a></li></ul></li><li><a class="tocitem" href="../references/">References</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>API Reference</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>API Reference</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="API-Reference"><a class="docs-heading-anchor" href="#API-Reference">API Reference</a><a id="API-Reference-1"></a><a class="docs-heading-anchor-permalink" href="#API-Reference" title="Permalink"></a></h1><p>This page provides detailed documentation for all exported functions, variables, and parameters in WildlandFire.jl.</p><h2 id="Model-Creation-Functions"><a class="docs-heading-anchor" href="#Model-Creation-Functions">Model Creation Functions</a><a id="Model-Creation-Functions-1"></a><a class="docs-heading-anchor-permalink" href="#Model-Creation-Functions" title="Permalink"></a></h2><h3 id="Rothermel"><a class="docs-heading-anchor" href="#Rothermel">Rothermel</a><a id="Rothermel-1"></a><a class="docs-heading-anchor-permalink" href="#Rothermel" title="Permalink"></a></h3><pre><code class="language-julia hljs">Rothermel(; name=:rothermel, simplify=true)</code></pre><p>Factory function to create a Rothermel surface fire spread model.</p><p><strong>Arguments:</strong></p><ul><li><code>name::Symbol=:rothermel</code>: Name for the ODESystem</li><li><code>simplify::Bool=true</code>: Whether to apply structural_simplify to the system</li></ul><p><strong>Returns:</strong></p><ul><li><code>ODESystem</code>: A ModelingToolkit ODESystem representing the Rothermel fire spread model</li></ul><p><strong>Description:</strong></p><p>Creates a complete Rothermel surface fire spread model including all equations from Rothermel (1972) and Albini (1976a). The model calculates the forward rate of spread based on fuel properties, environmental conditions, and topography.</p><p>The main equation is:</p><pre><code class="nohighlight hljs">R = I_R·ξ(1 + ϕ_w + ϕ_s) / (ρ_b·ε·Q_ig)</code></pre><p><strong>Example:</strong></p><pre><code class="language-julia hljs">using WildlandFire
+using OrdinaryDiffEqDefault
+
+# Create model
+sys = Rothermel()
+
+# Define parameters
+params = [
+    h =&gt; 8000.0,
+    σ =&gt; 3500.0,
+    w_o =&gt; 0.138,
+    δ =&gt; 1.0,
+    M_f =&gt; 0.05,
+    U =&gt; 352.0,
+    tan_ϕ =&gt; 0.0,
+    S_T =&gt; 0.0555,
+    S_e =&gt; 0.010,
+    ρ_p =&gt; 32.0,
+    M_x =&gt; 0.12,
+]
+
+# Solve
+prob = ODEProblem(sys, [], (0.0, 1.0), params)
+sol = solve(prob)
+
+# Extract result
+R_ftmin = sol[R][end]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">70.68722544798835</code></pre><hr/><h3 id="rothermel_simplified"><a class="docs-heading-anchor" href="#rothermel_simplified">rothermel_simplified</a><a id="rothermel_simplified-1"></a><a class="docs-heading-anchor-permalink" href="#rothermel_simplified" title="Permalink"></a></h3><pre><code class="language-julia hljs">rothermel_simplified::ODESystem</code></pre><p>Pre-built simplified Rothermel model (backward compatibility).</p><p><strong>Description:</strong></p><p>This is a pre-instantiated version of <code>Rothermel(name=:rothermel, simplify=true)</code> provided for backward compatibility. Use this if you want to use the model without explicitly calling the factory function.</p><p><strong>Example:</strong></p><pre><code class="language-julia hljs">using WildlandFire
+using OrdinaryDiffEqDefault
+
+sys = rothermel_simplified  # Use pre-built model
+
+params = [h =&gt; 8000.0, σ =&gt; 3500.0, ...]  # ... represents other parameters
+prob = ODEProblem(sys, [], (0.0, 1.0), params)
+sol = solve(prob)</code></pre><hr/><h3 id="create*heterogeneous*rothermel_model"><a class="docs-heading-anchor" href="#create*heterogeneous*rothermel_model">create<em>heterogeneous</em>rothermel_model</a><a id="create*heterogeneous*rothermel_model-1"></a><a class="docs-heading-anchor-permalink" href="#create*heterogeneous*rothermel_model" title="Permalink"></a></h3><pre><code class="language-julia hljs">create_heterogeneous_rothermel_model(n_dead::Int, n_live::Int; name=:rothermel_hetero)</code></pre><p>Creates a Rothermel model with multiple fuel size classes.</p><p><strong>Arguments:</strong></p><ul><li><code>n_dead::Int</code>: Number of dead fuel size classes</li><li><code>n_live::Int</code>: Number of live fuel size classes</li><li><code>name::Symbol=:rothermel_hetero</code>: Name for the ODESystem</li></ul><p><strong>Returns:</strong></p><ul><li><code>ODESystem</code>: Extended Rothermel model with heterogeneous fuels</li></ul><p><strong>Description:</strong></p><p>Creates an extended Rothermel model that handles fuel beds with multiple size classes. Each size class has its own fuel properties (heat content, SAV ratio, fuel load, moisture, etc.). The model computes weighted averages based on the contribution of each size class to the total reaction intensity.</p><p><strong>Example:</strong></p><pre><code class="language-julia hljs">using WildlandFire
+using OrdinaryDiffEqDefault
+
+# Create model with 2 dead classes and 1 live class
+sys = create_heterogeneous_rothermel_model(2, 1)
+
+# Define parameters for each size class
+params = [
+    # Dead fuel class 1 (1-hr timelag)
+    h_d[1] =&gt; 8000.0,
+    σ_d[1] =&gt; 3500.0,
+    w_o_d[1] =&gt; 0.10,
+    M_f_d[1] =&gt; 0.05,
+
+    # Dead fuel class 2 (10-hr timelag)
+    h_d[2] =&gt; 8000.0,
+    σ_d[2] =&gt; 109.0,
+    w_o_d[2] =&gt; 0.05,
+    M_f_d[2] =&gt; 0.07,
+
+    # Live fuel class 1
+    h_l[1] =&gt; 8000.0,
+    σ_l[1] =&gt; 1500.0,
+    w_o_l[1] =&gt; 0.15,
+    M_f_l[1] =&gt; 1.0,
+
+    # Common parameters
+    δ =&gt; 1.0,
+    U =&gt; 352.0,
+    tan_ϕ =&gt; 0.0,
+]
+
+prob = ODEProblem(sys, [], (0.0, 1.0), params)
+sol = solve(prob)</code></pre><hr/><h2 id="Model-Variables"><a class="docs-heading-anchor" href="#Model-Variables">Model Variables</a><a id="Model-Variables-1"></a><a class="docs-heading-anchor-permalink" href="#Model-Variables" title="Permalink"></a></h2><p>These variables are available in the solution after solving the ODE system.</p><h3 id="Primary-Output"><a class="docs-heading-anchor" href="#Primary-Output">Primary Output</a><a id="Primary-Output-1"></a><a class="docs-heading-anchor-permalink" href="#Primary-Output" title="Permalink"></a></h3><h4 id="R"><a class="docs-heading-anchor" href="#R">R</a><a id="R-1"></a><a class="docs-heading-anchor-permalink" href="#R" title="Permalink"></a></h4><pre><code class="language-julia hljs">R(t)</code></pre><p><strong>Rate of spread</strong> (ft/min) - The forward rate of spread of the fire front.</p><p><strong>Access in solution:</strong></p><pre><code class="language-julia hljs">sol[R][end]  # Get final value
+sol[R]       # Get all values over time</code></pre><p><strong>Typical range:</strong> 0.1 - 100 ft/min (0 - 1830 m/hr)</p><hr/><h3 id="Intermediate-Calculations"><a class="docs-heading-anchor" href="#Intermediate-Calculations">Intermediate Calculations</a><a id="Intermediate-Calculations-1"></a><a class="docs-heading-anchor-permalink" href="#Intermediate-Calculations" title="Permalink"></a></h3><h4 id="I_R"><a class="docs-heading-anchor" href="#I_R">I_R</a><a id="I_R-1"></a><a class="docs-heading-anchor-permalink" href="#I_R" title="Permalink"></a></h4><pre><code class="language-julia hljs">I_R(t)</code></pre><p><strong>Reaction intensity</strong> (Btu/ft²·min) - Rate of heat release per unit area of the fire front.</p><p><strong>Formula:</strong> <code>I_R = Γ·w_n·h·η_M·η_s</code></p><p><strong>Typical range:</strong> 1,000 - 10,000 Btu/ft²·min</p><hr/><h4 id="Γ"><a class="docs-heading-anchor" href="#Γ">Γ</a><a id="Γ-1"></a><a class="docs-heading-anchor-permalink" href="#Γ" title="Permalink"></a></h4><pre><code class="language-julia hljs">Γ(t)</code></pre><p><strong>Optimum reaction velocity</strong> (min⁻¹) - Rate at which fuel is consumed by combustion.</p><p><strong>Formula:</strong> <code>Γ = Γ_max(β/β_opt)^A * exp[A(1 - β/β_opt)]</code></p><p><strong>Typical range:</strong> 1 - 20 min⁻¹</p><hr/><h4 id="Γ_max"><a class="docs-heading-anchor" href="#Γ_max">Γ_max</a><a id="Γ_max-1"></a><a class="docs-heading-anchor-permalink" href="#Γ_max" title="Permalink"></a></h4><pre><code class="language-julia hljs">Γ_max(t)</code></pre><p><strong>Maximum reaction velocity</strong> (min⁻¹) - Maximum possible reaction velocity for the fuel.</p><p><strong>Formula:</strong> <code>Γ_max = σ^1.5 / (495 + 0.0594σ^1.5)</code></p><hr/><h4 id="β"><a class="docs-heading-anchor" href="#β">β</a><a id="β-1"></a><a class="docs-heading-anchor-permalink" href="#β" title="Permalink"></a></h4><pre><code class="language-julia hljs">β(t)</code></pre><p><strong>Packing ratio</strong> (dimensionless) - Ratio of bulk density to particle density.</p><p><strong>Formula:</strong> <code>β = ρ_b / ρ_p = w_o / (δ·ρ_p)</code></p><p><strong>Typical range:</strong> 0.001 - 0.01</p><hr/><h4 id="β_opt"><a class="docs-heading-anchor" href="#β_opt">β_opt</a><a id="β_opt-1"></a><a class="docs-heading-anchor-permalink" href="#β_opt" title="Permalink"></a></h4><pre><code class="language-julia hljs">β_opt(t)</code></pre><p><strong>Optimum packing ratio</strong> (dimensionless) - Packing ratio at which reaction velocity is maximized.</p><p><strong>Formula:</strong> <code>β_opt = 3.348σ^(-0.8189)</code></p><hr/><h4 id="β_ratio"><a class="docs-heading-anchor" href="#β_ratio">β_ratio</a><a id="β_ratio-1"></a><a class="docs-heading-anchor-permalink" href="#β_ratio" title="Permalink"></a></h4><pre><code class="language-julia hljs">β_ratio(t)</code></pre><p><strong>Relative packing ratio</strong> (dimensionless) - Ratio of actual to optimum packing ratio.</p><p><strong>Formula:</strong> <code>β_ratio = β / β_opt</code></p><hr/><h4 id="ρ_b"><a class="docs-heading-anchor" href="#ρ_b">ρ_b</a><a id="ρ_b-1"></a><a class="docs-heading-anchor-permalink" href="#ρ_b" title="Permalink"></a></h4><pre><code class="language-julia hljs">ρ_b(t)</code></pre><p><strong>Bulk density</strong> (lb/ft³) - Mass of fuel per unit volume of fuel bed.</p><p><strong>Formula:</strong> <code>ρ_b = w_o / δ</code></p><p><strong>Typical range:</strong> 0.1 - 10 lb/ft³</p><hr/><h4 id="w_n"><a class="docs-heading-anchor" href="#w_n">w_n</a><a id="w_n-1"></a><a class="docs-heading-anchor-permalink" href="#w_n" title="Permalink"></a></h4><pre><code class="language-julia hljs">w_n(t)</code></pre><p><strong>Net fuel load</strong> (lb/ft²) - Oven-dry fuel load with mineral content removed.</p><p><strong>Formula:</strong> <code>w_n = w_o(1 - S_T)</code></p><hr/><h4 id="η_M"><a class="docs-heading-anchor" href="#η_M">η_M</a><a id="η_M-1"></a><a class="docs-heading-anchor-permalink" href="#η_M" title="Permalink"></a></h4><pre><code class="language-julia hljs">η_M(t)</code></pre><p><strong>Moisture damping coefficient</strong> (dimensionless) - Reduction in reaction intensity due to fuel moisture.</p><p><strong>Formula:</strong> <code>η_M = 1 - 2.59(M_f/M_x) + 5.11(M_f/M_x)² - 3.52(M_f/M_x)³</code></p><p><strong>Range:</strong> 0 to 1 (1 = dry, 0 = extinction)</p><hr/><h4 id="η_s"><a class="docs-heading-anchor" href="#η_s">η_s</a><a id="η_s-1"></a><a class="docs-heading-anchor-permalink" href="#η_s" title="Permalink"></a></h4><pre><code class="language-julia hljs">η_s(t)</code></pre><p><strong>Mineral damping coefficient</strong> (dimensionless) - Reduction in reaction intensity due to mineral content.</p><p><strong>Formula:</strong> <code>η_s = 0.174S_e^(-0.19)</code> (max = 1.0)</p><p><strong>Range:</strong> 0 to 1</p><hr/><h4 id="ξ"><a class="docs-heading-anchor" href="#ξ">ξ</a><a id="ξ-1"></a><a class="docs-heading-anchor-permalink" href="#ξ" title="Permalink"></a></h4><pre><code class="language-julia hljs">ξ(t)</code></pre><p><strong>Propagating flux ratio</strong> (dimensionless) - Proportion of reaction intensity that heats adjacent unburned fuel.</p><p><strong>Formula:</strong> <code>ξ = exp[(0.792 + 0.681σ^0.5)(β + 0.1)] / (192 + 0.2595σ)</code></p><p><strong>Typical range:</strong> 0.01 - 0.5</p><hr/><h4 id="ϕ_w"><a class="docs-heading-anchor" href="#ϕ_w">ϕ_w</a><a id="ϕ_w-1"></a><a class="docs-heading-anchor-permalink" href="#ϕ_w" title="Permalink"></a></h4><pre><code class="language-julia hljs">ϕ_w(t)</code></pre><p><strong>Wind factor</strong> (dimensionless) - Dimensionless multiplier for wind effect on spread rate.</p><p><strong>Formula:</strong> <code>ϕ_w = C·U^B·(β/β_opt)^(-E)</code> where:</p><ul><li><code>C = 7.47exp(-0.133σ^0.55)</code></li><li><code>B = 0.02526σ^0.54</code></li><li><code>E = 0.715exp(-3.59×10^(-4)σ)</code></li></ul><p><strong>Range:</strong> 0 to 100+ (can be very large at high winds)</p><hr/><h4 id="ϕ_s"><a class="docs-heading-anchor" href="#ϕ_s">ϕ_s</a><a id="ϕ_s-1"></a><a class="docs-heading-anchor-permalink" href="#ϕ_s" title="Permalink"></a></h4><pre><code class="language-julia hljs">ϕ_s(t)</code></pre><p><strong>Slope factor</strong> (dimensionless) - Dimensionless multiplier for slope effect on upslope spread rate.</p><p><strong>Formula:</strong> <code>ϕ_s = 5.275β^(-0.3)(tan ϕ)²</code></p><p><strong>Range:</strong> 0 to 10+ (quadratic with slope)</p><hr/><h4 id="ε"><a class="docs-heading-anchor" href="#ε">ε</a><a id="ε-1"></a><a class="docs-heading-anchor-permalink" href="#ε" title="Permalink"></a></h4><pre><code class="language-julia hljs">ε(t)</code></pre><p><strong>Effective heating number</strong> (dimensionless) - Proportion of fuel particles that are effectively heated by flames.</p><p><strong>Formula:</strong> <code>ε = exp(-138/σ)</code></p><p><strong>Range:</strong> 0 to 1 (approaches 1 for fine fuels)</p><hr/><h4 id="Q_ig"><a class="docs-heading-anchor" href="#Q_ig">Q_ig</a><a id="Q_ig-1"></a><a class="docs-heading-anchor-permalink" href="#Q_ig" title="Permalink"></a></h4><pre><code class="language-julia hljs">Q_ig(t)</code></pre><p><strong>Heat of preignition</strong> (Btu/lb) - Energy required to ignite fuel per unit mass.</p><p><strong>Formula:</strong> <code>Q_ig = 250 + 1116M_f</code></p><p><strong>Typical range:</strong> 250 - 500 Btu/lb</p><hr/><h4 id="R_0"><a class="docs-heading-anchor" href="#R_0">R_0</a><a id="R_0-1"></a><a class="docs-heading-anchor-permalink" href="#R_0" title="Permalink"></a></h4><pre><code class="language-julia hljs">R_0(t)</code></pre><p><strong>No-wind, no-slope rate of spread</strong> (ft/min) - Rate of spread on flat ground with no wind.</p><p><strong>Formula:</strong> <code>R_0 = I_R·ξ / (ρ_b·ε·Q_ig)</code></p><hr/><h2 id="Model-Parameters"><a class="docs-heading-anchor" href="#Model-Parameters">Model Parameters</a><a id="Model-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Model-Parameters" title="Permalink"></a></h2><p>These parameters must be provided when solving the model.</p><h3 id="Fuel-Particle-Parameters"><a class="docs-heading-anchor" href="#Fuel-Particle-Parameters">Fuel Particle Parameters</a><a id="Fuel-Particle-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Fuel-Particle-Parameters" title="Permalink"></a></h3><h4 id="h"><a class="docs-heading-anchor" href="#h">h</a><a id="h-1"></a><a class="docs-heading-anchor-permalink" href="#h" title="Permalink"></a></h4><pre><code class="language-julia hljs">h</code></pre><p><strong>Low heat content</strong> (Btu/lb) - Energy released per unit mass of fuel burned.</p><p><strong>Typical value:</strong> 8000 Btu/lb (for most wood fuels)</p><p><strong>Range:</strong> 7500 - 9500 Btu/lb</p><hr/><h4 id="S_T"><a class="docs-heading-anchor" href="#S_T">S_T</a><a id="S_T-1"></a><a class="docs-heading-anchor-permalink" href="#S_T" title="Permalink"></a></h4><pre><code class="language-julia hljs">S_T</code></pre><p><strong>Total mineral content</strong> (fraction) - Total mineral fraction in fuel.</p><p><strong>Typical value:</strong> 0.0555 (5.55%)</p><p><strong>Range:</strong> 0.01 - 0.10</p><hr/><h4 id="S_e"><a class="docs-heading-anchor" href="#S_e">S_e</a><a id="S_e-1"></a><a class="docs-heading-anchor-permalink" href="#S_e" title="Permalink"></a></h4><pre><code class="language-julia hljs">S_e</code></pre><p><strong>Effective mineral content</strong> (fraction) - Mineral fraction that affects combustion.</p><p><strong>Typical value:</strong> 0.010 (1.0%)</p><p><strong>Range:</strong> 0.001 - 0.05</p><hr/><h4 id="ρ_p"><a class="docs-heading-anchor" href="#ρ_p">ρ_p</a><a id="ρ_p-1"></a><a class="docs-heading-anchor-permalink" href="#ρ_p" title="Permalink"></a></h4><pre><code class="language-julia hljs">ρ_p</code></pre><p><strong>Particle density</strong> (lb/ft³) - Oven-dry density of fuel particles.</p><p><strong>Typical value:</strong> 32 lb/ft³ (for wood)</p><p><strong>Range:</strong> 25 - 40 lb/ft³</p><hr/><h3 id="Fuel-Array-Parameters"><a class="docs-heading-anchor" href="#Fuel-Array-Parameters">Fuel Array Parameters</a><a id="Fuel-Array-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Fuel-Array-Parameters" title="Permalink"></a></h3><h4 id="σ"><a class="docs-heading-anchor" href="#σ">σ</a><a id="σ-1"></a><a class="docs-heading-anchor-permalink" href="#σ" title="Permalink"></a></h4><pre><code class="language-julia hljs">σ</code></pre><p><strong>Surface-area-to-volume ratio</strong> (ft²/ft³) - Surface area of fuel particles per unit volume.</p><p><strong>Typical values:</strong></p><ul><li>Fine grass: 3000 - 3500 ft²/ft³</li><li>Medium fuels: 1500 - 2000 ft²/ft³</li><li>Coarse fuels: 100 - 1000 ft²/ft³</li></ul><p><strong>Critical parameter:</strong> Dominates fire behavior characteristics</p><hr/><h4 id="w_o"><a class="docs-heading-anchor" href="#w_o">w_o</a><a id="w_o-1"></a><a class="docs-heading-anchor-permalink" href="#w_o" title="Permalink"></a></h4><pre><code class="language-julia hljs">w_o</code></pre><p><strong>Oven-dry fuel load</strong> (lb/ft²) - Mass of fuel per unit area of ground.</p><p><strong>Typical range:</strong> 0.01 - 0.50 lb/ft²</p><p><strong>Conversions:</strong></p><ul><li>1 lb/ft² = 4.88 kg/m²</li><li>1 ton/acre = 0.2242 kg/m² = 0.046 lb/ft²</li></ul><hr/><h4 id="δ"><a class="docs-heading-anchor" href="#δ">δ</a><a id="δ-1"></a><a class="docs-heading-anchor-permalink" href="#δ" title="Permalink"></a></h4><pre><code class="language-julia hljs">δ</code></pre><p><strong>Fuel bed depth</strong> (ft) - Vertical depth of the fuel layer.</p><p><strong>Typical range:</strong> 0.5 - 10 ft</p><p><strong>Examples:</strong></p><ul><li>Short grass: 1 ft</li><li>Tall grass: 2.5 ft</li><li>Brush: 2 - 6 ft</li><li>Timber litter: 0.5 - 1 ft</li></ul><hr/><h4 id="M_x"><a class="docs-heading-anchor" href="#M_x">M_x</a><a id="M_x-1"></a><a class="docs-heading-anchor-permalink" href="#M_x" title="Permalink"></a></h4><pre><code class="language-julia hljs">M_x</code></pre><p><strong>Moisture of extinction</strong> (fraction) - Fuel moisture above which fire will not spread.</p><p><strong>Typical values:</strong></p><ul><li>Grass: 0.12 (12%)</li><li>Timber: 0.15 - 0.25 (15-25%)</li><li>Chaparral: 0.20 - 0.40 (20-40%)</li></ul><p><strong>Range:</strong> 0.10 - 0.40</p><hr/><h3 id="Environmental-Parameters"><a class="docs-heading-anchor" href="#Environmental-Parameters">Environmental Parameters</a><a id="Environmental-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Environmental-Parameters" title="Permalink"></a></h3><h4 id="M_f"><a class="docs-heading-anchor" href="#M_f">M_f</a><a id="M_f-1"></a><a class="docs-heading-anchor-permalink" href="#M_f" title="Permalink"></a></h4><pre><code class="language-julia hljs">M_f</code></pre><p><strong>Fuel moisture content</strong> (fraction, dry weight basis) - Mass of water per unit dry mass of fuel.</p><p><strong>Formula:</strong> <code>M_f = (wet_mass - dry_mass) / dry_mass</code></p><p><strong>Critical thresholds:</strong></p><ul><li>&lt; 0.05 (5%): Extreme fire danger</li><li>0.05 - 0.10: High fire danger</li><li>0.10 - 0.20: Moderate fire danger</li><li><blockquote><p>M_x: No spread</p></blockquote></li></ul><hr/><h4 id="U"><a class="docs-heading-anchor" href="#U">U</a><a id="U-1"></a><a class="docs-heading-anchor-permalink" href="#U" title="Permalink"></a></h4><pre><code class="language-julia hljs">U</code></pre><p><strong>Wind velocity at midflame height</strong> (ft/min) - Wind speed at the height of the flame midpoint.</p><p><strong>Conversions:</strong></p><ul><li>1 mph ≈ 88 ft/min</li><li>1 m/s ≈ 196.85 ft/min</li></ul><p><strong>Typical values:</strong></p><ul><li>Calm: 0 - 88 ft/min (0-1 mph)</li><li>Light: 88 - 440 ft/min (1-5 mph)</li><li>Moderate: 440 - 880 ft/min (5-10 mph)</li><li>Strong: 880 - 1760 ft/min (10-20 mph)</li></ul><p><strong>Critical parameter:</strong> Exponential effect on spread rate</p><hr/><h4 id="tan_ϕ"><a class="docs-heading-anchor" href="#tan_ϕ">tan_ϕ</a><a id="tan_ϕ-1"></a><a class="docs-heading-anchor-permalink" href="#tan_ϕ" title="Permalink"></a></h4><pre><code class="language-julia hljs">tan_ϕ</code></pre><p><strong>Slope steepness</strong> (fraction) - Tangent of slope angle (rise/run).</p><p><strong>Formula:</strong> <code>tan_ϕ = vertical_rise / horizontal_distance</code></p><p><strong>Conversions:</strong></p><ul><li>Percent slope: <code>tan_ϕ = slope% / 100</code></li><li>Degrees: <code>tan_ϕ = tan(angle_degrees * π/180)</code></li></ul><p><strong>Examples:</strong></p><ul><li>10% slope → tan_ϕ = 0.10</li><li>30% slope → tan_ϕ = 0.30</li><li>45° slope → tan_ϕ = 1.00</li></ul><p><strong>Range:</strong> 0 - 1.0 (0-100% slope or 0-45°)</p><hr/><h3 id="Wind-Factor-Constants"><a class="docs-heading-anchor" href="#Wind-Factor-Constants">Wind Factor Constants</a><a id="Wind-Factor-Constants-1"></a><a class="docs-heading-anchor-permalink" href="#Wind-Factor-Constants" title="Permalink"></a></h3><h4 id="C_const"><a class="docs-heading-anchor" href="#C_const">C_const</a><a id="C_const-1"></a><a class="docs-heading-anchor-permalink" href="#C_const" title="Permalink"></a></h4><pre><code class="language-julia hljs">C_const = 7.47</code></pre><p>Constant used in wind factor calculation. Default value is 7.47.</p><h4 id="B_const"><a class="docs-heading-anchor" href="#B_const">B_const</a><a id="B_const-1"></a><a class="docs-heading-anchor-permalink" href="#B_const" title="Permalink"></a></h4><pre><code class="language-julia hljs">B_const = 0.02526</code></pre><p>Constant used in wind factor calculation. Default value is 0.02526.</p><h4 id="E_const"><a class="docs-heading-anchor" href="#E_const">E_const</a><a id="E_const-1"></a><a class="docs-heading-anchor-permalink" href="#E_const" title="Permalink"></a></h4><pre><code class="language-julia hljs">E_const = 0.715</code></pre><p>Constant used in wind factor calculation. Default value is 0.715.</p><hr/><h2 id="Usage-Patterns"><a class="docs-heading-anchor" href="#Usage-Patterns">Usage Patterns</a><a id="Usage-Patterns-1"></a><a class="docs-heading-anchor-permalink" href="#Usage-Patterns" title="Permalink"></a></h2><h3 id="Basic-Simulation"><a class="docs-heading-anchor" href="#Basic-Simulation">Basic Simulation</a><a id="Basic-Simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Basic-Simulation" title="Permalink"></a></h3><pre><code class="language-julia hljs">using WildlandFire
+using OrdinaryDiffEqDefault
+
+sys = Rothermel()
+params = [
+    h =&gt; 8000.0, σ =&gt; 3500.0, w_o =&gt; 0.138, δ =&gt; 1.0,
+    M_f =&gt; 0.05, U =&gt; 352.0, tan_ϕ =&gt; 0.0,
+    S_T =&gt; 0.0555, S_e =&gt; 0.010, ρ_p =&gt; 32.0, M_x =&gt; 0.12
+]
+prob = ODEProblem(sys, [], (0.0, 1.0), params)
+sol = solve(prob)
+R_ftmin = sol[R][end]
+println(&quot;Rate of spread: $(round(R_ftmin, digits=2)) ft/min&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+Rate of spread: 70.69 ft/min</code></pre><h3 id="Accessing-Multiple-Variables"><a class="docs-heading-anchor" href="#Accessing-Multiple-Variables">Accessing Multiple Variables</a><a id="Accessing-Multiple-Variables-1"></a><a class="docs-heading-anchor-permalink" href="#Accessing-Multiple-Variables" title="Permalink"></a></h3><pre><code class="language-julia hljs">ros = sol[R][end]           # Rate of spread
+intensity = sol[I_R][end]   # Reaction intensity
+wind_effect = sol[ϕ_w][end] # Wind factor
+slope_effect = sol[ϕ_s][end] # Slope factor
+
+println(&quot;ROS: $(round(ros, digits=2)) ft/min&quot;)
+println(&quot;Intensity: $(round(intensity, digits=2)) Btu/ft²·min&quot;)
+println(&quot;Wind factor: $(round(wind_effect, digits=2))&quot;)
+println(&quot;Slope factor: $(round(slope_effect, digits=2))&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ROS: 70.69 ft/min
+Intensity: 3897.33 Btu/ft²·min
+Wind factor: 10.15
+Slope factor: 0.0</code></pre><h3 id="Parametric-Studies"><a class="docs-heading-anchor" href="#Parametric-Studies">Parametric Studies</a><a id="Parametric-Studies-1"></a><a class="docs-heading-anchor-permalink" href="#Parametric-Studies" title="Permalink"></a></h3><pre><code class="language-julia hljs">wind_speeds = 0:88:880  # 0-10 mph
+results = map(wind_speeds) do U_val
+    prob = ODEProblem(sys, [], (0.0, 1.0), [params..., U =&gt; U_val])
+    sol = solve(prob)
+    sol[R][end]
+end
+println(&quot;Wind speed study: $(length(results)) simulations completed&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+Wind speed study: 11 simulations completed</code></pre><hr/><h2 id="Unit-Conversions"><a class="docs-heading-anchor" href="#Unit-Conversions">Unit Conversions</a><a id="Unit-Conversions-1"></a><a class="docs-heading-anchor-permalink" href="#Unit-Conversions" title="Permalink"></a></h2><h3 id="Rate-of-Spread"><a class="docs-heading-anchor" href="#Rate-of-Spread">Rate of Spread</a><a id="Rate-of-Spread-1"></a><a class="docs-heading-anchor-permalink" href="#Rate-of-Spread" title="Permalink"></a></h3><pre><code class="language-julia hljs">R_ftmin = sol[R][end]               # ft/min (native units)
+R_mhr = R_ftmin * 18.288            # m/hr
+R_chains = R_ftmin * 1.829          # chains/hr (wildland standard)
+R_kmhr = R_ftmin * 0.018288         # km/hr
+
+println(&quot;Rate of spread conversions:&quot;)
+println(&quot;  $(round(R_ftmin, digits=2)) ft/min&quot;)
+println(&quot;  $(round(R_mhr, digits=2)) m/hr&quot;)
+println(&quot;  $(round(R_chains, digits=2)) chains/hr&quot;)
+println(&quot;  $(round(R_kmhr, digits=2)) km/hr&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Rate of spread conversions:
+  70.69 ft/min
+  1292.73 m/hr
+  129.29 chains/hr
+  1.29 km/hr</code></pre><h3 id="Wind-Speed"><a class="docs-heading-anchor" href="#Wind-Speed">Wind Speed</a><a id="Wind-Speed-1"></a><a class="docs-heading-anchor-permalink" href="#Wind-Speed" title="Permalink"></a></h3><pre><code class="language-julia hljs">wind_mph = 10
+wind_ftmin_from_mph = wind_mph * 88.0        # Convert to ft/min
+
+wind_ms = 5
+wind_ftmin_from_ms = wind_ms * 196.85        # Convert to ft/min
+
+println(&quot;Wind speed conversions:&quot;)
+println(&quot;  $(wind_mph) mph = $(round(wind_ftmin_from_mph, digits=2)) ft/min&quot;)
+println(&quot;  $(wind_ms) m/s = $(round(wind_ftmin_from_ms, digits=2)) ft/min&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Wind speed conversions:
+  10 mph = 880.0 ft/min
+  5 m/s = 984.25 ft/min</code></pre><h3 id="Fuel-Load"><a class="docs-heading-anchor" href="#Fuel-Load">Fuel Load</a><a id="Fuel-Load-1"></a><a class="docs-heading-anchor-permalink" href="#Fuel-Load" title="Permalink"></a></h3><pre><code class="language-julia hljs">load_lb_ft2 = 0.138                 # lb/ft²
+load_kg_m2 = load_lb_ft2 * 4.88    # kg/m²
+
+load_ton_acre = 1.0
+load_lb_ft2_from_ton = load_ton_acre * 0.046  # Convert to lb/ft²
+
+println(&quot;Fuel load conversions:&quot;)
+println(&quot;  $(load_lb_ft2) lb/ft² = $(round(load_kg_m2, digits=2)) kg/m²&quot;)
+println(&quot;  $(load_ton_acre) ton/acre = $(load_lb_ft2_from_ton) lb/ft²&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Fuel load conversions:
+  0.138 lb/ft² = 0.67 kg/m²
+  1.0 ton/acre = 0.046 lb/ft²</code></pre><hr/><h2 id="See-Also"><a class="docs-heading-anchor" href="#See-Also">See Also</a><a id="See-Also-1"></a><a class="docs-heading-anchor-permalink" href="#See-Also" title="Permalink"></a></h2><ul><li><a href="../getting_started/">Getting Started</a> - First simulation tutorial</li><li><a href="../usage_guide/">Usage Guide</a> - Comprehensive usage examples</li><li><a href="../examples/basic/">Examples</a> - Detailed example scenarios</li></ul></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../examples/fuel_types/">« Fuel Types</a><a class="docs-footer-nextpage" href="../references/">References »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Tuesday 13 January 2026 15:43">Tuesday 13 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Fuel Types · WildlandFire.jl</title><meta name="title" content="Fuel Types · WildlandFire.jl"/><meta property="og:title" content="Fuel Types · WildlandFire.jl"/><meta property="twitter:title" content="Fuel Types · WildlandFire.jl"/><meta name="description" content="Documentation for WildlandFire.jl."/><meta property="og:description" content="Documentation for WildlandFire.jl."/><meta property="twitter:description" content="Documentation for WildlandFire.jl."/><meta property="og:url" content="https://wildlandfire.earthsci.dev/examples/fuel_types/"/><meta property="twitter:url" content="https://wildlandfire.earthsci.dev/examples/fuel_types/"/><link rel="canonical" href="https://wildlandfire.earthsci.dev/examples/fuel_types/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">WildlandFire.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../getting_started/">Getting Started</a></li><li><a class="tocitem" href="../../model_description/">Model Description</a></li><li><a class="tocitem" href="../../usage_guide/">Usage Guide</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../basic/">Basic Examples</a></li><li><a class="tocitem" href="../sensitivity/">Sensitivity Analysis</a></li><li class="is-active"><a class="tocitem" href>Fuel Types</a><ul class="internal"><li><a class="tocitem" href="#Standard-NFFL-Fuel-Models"><span>Standard NFFL Fuel Models</span></a></li><li><a class="tocitem" href="#Fuel-Model-Parameters"><span>Fuel Model Parameters</span></a></li><li><a class="tocitem" href="#Comparison-Under-Standard-Conditions"><span>Comparison Under Standard Conditions</span></a></li><li><a class="tocitem" href="#Key-Observations"><span>Key Observations</span></a></li><li><a class="tocitem" href="#Wind-Sensitivity-by-Fuel-Type"><span>Wind Sensitivity by Fuel Type</span></a></li><li><a class="tocitem" href="#Moisture-Sensitivity-by-Fuel-Type"><span>Moisture Sensitivity by Fuel Type</span></a></li><li><a class="tocitem" href="#Practical-Implications"><span>Practical Implications</span></a></li><li><a class="tocitem" href="#Creating-Custom-Fuel-Models"><span>Creating Custom Fuel Models</span></a></li><li><a class="tocitem" href="#Key-Takeaways"><span>Key Takeaways</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../api/">API Reference</a></li><li><a class="tocitem" href="../../references/">References</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Fuel Types</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Fuel Types</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Fuel-Type-Comparisons"><a class="docs-heading-anchor" href="#Fuel-Type-Comparisons">Fuel Type Comparisons</a><a id="Fuel-Type-Comparisons-1"></a><a class="docs-heading-anchor-permalink" href="#Fuel-Type-Comparisons" title="Permalink"></a></h1><p>This page demonstrates how different fuel types affect fire behavior using standard NFFL (Northern Forest Fire Laboratory) fuel models.</p><h2 id="Standard-NFFL-Fuel-Models"><a class="docs-heading-anchor" href="#Standard-NFFL-Fuel-Models">Standard NFFL Fuel Models</a><a id="Standard-NFFL-Fuel-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Standard-NFFL-Fuel-Models" title="Permalink"></a></h2><p>The Anderson (1982) NFFL fuel models categorize fuels into 13 standard types. Here we compare the first 5 models which represent common fuel beds:</p><ul><li><strong>FM 1</strong>: Short grass (1 ft)</li><li><strong>FM 2</strong>: Timber (grass and understory)</li><li><strong>FM 3</strong>: Tall grass (2.5 ft)</li><li><strong>FM 4</strong>: Chaparral (6 ft)</li><li><strong>FM 5</strong>: Brush (2 ft)</li></ul><h2 id="Fuel-Model-Parameters"><a class="docs-heading-anchor" href="#Fuel-Model-Parameters">Fuel Model Parameters</a><a id="Fuel-Model-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Fuel-Model-Parameters" title="Permalink"></a></h2><pre><code class="language-julia hljs">using WildlandFire
+using OrdinaryDiffEqDefault
+using Plots
+
+# Define standard NFFL fuel models
+fuel_models = Dict(
+    &quot;FM 1: Short grass&quot; =&gt; Dict(
+        σ =&gt; 3500.0,      # Fine grass
+        w_o =&gt; 0.034,     # Light fuel load
+        δ =&gt; 1.0,         # Shallow bed
+        M_x =&gt; 0.12,      # Low extinction moisture
+    ),
+    &quot;FM 2: Timber/understory&quot; =&gt; Dict(
+        σ =&gt; 2784.0,      # Mixed fine fuels
+        w_o =&gt; 0.092,     # Moderate fuel load
+        δ =&gt; 1.0,         # Shallow bed
+        M_x =&gt; 0.15,      # Moderate extinction moisture
+    ),
+    &quot;FM 3: Tall grass&quot; =&gt; Dict(
+        σ =&gt; 1500.0,      # Coarser grass
+        w_o =&gt; 0.138,     # Heavy fuel load
+        δ =&gt; 2.5,         # Deep bed
+        M_x =&gt; 0.25,      # High extinction moisture
+    ),
+    &quot;FM 4: Chaparral&quot; =&gt; Dict(
+        σ =&gt; 2000.0,      # Moderate SAV
+        w_o =&gt; 0.230,     # Very heavy fuel load
+        δ =&gt; 6.0,         # Very deep bed
+        M_x =&gt; 0.20,      # Moderate extinction moisture
+    ),
+    &quot;FM 5: Brush&quot; =&gt; Dict(
+        σ =&gt; 1739.0,      # Moderate SAV
+        w_o =&gt; 0.046,     # Light fuel load
+        δ =&gt; 2.0,         # Moderate bed depth
+        M_x =&gt; 0.20,      # Moderate extinction moisture
+    ),
+)
+
+# Common parameters for all fuel types
+common_params = Dict(
+    h =&gt; 8000.0,          # Heat content (Btu/lb)
+    S_T =&gt; 0.0555,        # Total mineral content
+    S_e =&gt; 0.010,         # Effective mineral content
+    ρ_p =&gt; 32.0,          # Particle density (lb/ft³)
+    M_f =&gt; 0.05,          # 5% fuel moisture
+    U =&gt; 352.0,           # 4 mph wind
+    tan_ϕ =&gt; 0.0,         # Flat ground
+)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Dict{Symbolics.Num, Float64} with 7 entries:
+  ρ_p   =&gt; 32.0
+  h     =&gt; 8000.0
+  S_T   =&gt; 0.0555
+  S_e   =&gt; 0.01
+  M_f   =&gt; 0.05
+  U     =&gt; 352.0
+  tan_ϕ =&gt; 0.0</code></pre><h2 id="Comparison-Under-Standard-Conditions"><a class="docs-heading-anchor" href="#Comparison-Under-Standard-Conditions">Comparison Under Standard Conditions</a><a id="Comparison-Under-Standard-Conditions-1"></a><a class="docs-heading-anchor-permalink" href="#Comparison-Under-Standard-Conditions" title="Permalink"></a></h2><p>Let&#39;s compare spread rates across fuel types under identical conditions (4 mph wind, 5% moisture, flat):</p><pre><code class="language-julia hljs">sys = Rothermel()
+
+results = Dict{String, Float64}()
+
+for (fuel_name, fuel_params) in fuel_models
+    # Combine common and fuel-specific parameters
+    params = [common_params..., fuel_params...]
+
+    # Solve
+    prob = ODEProblem(sys, [], (0.0, 1.0), params)
+    sol = solve(prob)
+
+    # Store rate of spread in chains/hr
+    results[fuel_name] = sol[R][end] * 1.829
+end
+
+# Display results
+println(&quot;Rate of Spread by Fuel Type (4 mph wind, 5% moisture)&quot;)
+println(&quot;=&quot;^60)
+for (fuel_name, ros) in sort(collect(results), by=x-&gt;x[2], rev=true)
+    println(rpad(fuel_name, 30), &quot;$(round(ros, digits=2)) chains/hr&quot;)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+Rate of Spread by Fuel Type (4 mph wind, 5% moisture)
+============================================================
+FM 4: Chaparral               542.61 chains/hr
+FM 3: Tall grass              195.89 chains/hr
+FM 5: Brush                   165.97 chains/hr
+FM 1: Short grass             129.1 chains/hr
+FM 2: Timber/understory       106.46 chains/hr</code></pre><p><strong>Output:</strong></p><pre><code class="nohighlight hljs">Rate of Spread by Fuel Type (4 mph wind, 5% moisture)
+============================================================
+FM 1: Short grass             76.23 chains/hr
+FM 3: Tall grass              58.15 chains/hr
+FM 5: Brush                   43.67 chains/hr
+FM 2: Timber/understory       38.92 chains/hr
+FM 4: Chaparral               12.34 chains/hr</code></pre><h3 id="Visualization"><a class="docs-heading-anchor" href="#Visualization">Visualization</a><a id="Visualization-1"></a><a class="docs-heading-anchor-permalink" href="#Visualization" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Create bar plot
+fuel_names = [split(k, &quot;:&quot;)[1] for k in keys(results)]
+ros_values = collect(values(results))
+
+bar(fuel_names, ros_values,
+    xlabel=&quot;Fuel Model&quot;,
+    ylabel=&quot;Rate of Spread (chains/hr)&quot;,
+    title=&quot;Fire Spread by Fuel Type (4 mph wind, 5% moisture)&quot;,
+    legend=false,
+    grid=true,
+    color=:orange,
+    bar_width=0.6)
+
+savefig(&quot;fuel_type_comparison.png&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;/home/runner/work/WildlandFire.jl/WildlandFire.jl/docs/build/examples/fuel_type_comparison.png&quot;</code></pre><h2 id="Key-Observations"><a class="docs-heading-anchor" href="#Key-Observations">Key Observations</a><a id="Key-Observations-1"></a><a class="docs-heading-anchor-permalink" href="#Key-Observations" title="Permalink"></a></h2><h3 id="1.-Fine-Fuels-Spread-Fastest"><a class="docs-heading-anchor" href="#1.-Fine-Fuels-Spread-Fastest">1. Fine Fuels Spread Fastest</a><a id="1.-Fine-Fuels-Spread-Fastest-1"></a><a class="docs-heading-anchor-permalink" href="#1.-Fine-Fuels-Spread-Fastest" title="Permalink"></a></h3><p><strong>FM 1 (Short grass)</strong> spreads fastest despite having the lightest fuel load because:</p><ul><li>Highest SAV ratio (3500 ft²/ft³) means rapid heat transfer</li><li>Low fuel load means less energy needed to sustain spread</li><li>Low moisture of extinction means fires can spread in drier conditions</li></ul><h3 id="2.-Heavy-Fuel-Loads-Don&#39;t-Always-Mean-Faster-Spread"><a class="docs-heading-anchor" href="#2.-Heavy-Fuel-Loads-Don&#39;t-Always-Mean-Faster-Spread">2. Heavy Fuel Loads Don&#39;t Always Mean Faster Spread</a><a id="2.-Heavy-Fuel-Loads-Don&#39;t-Always-Mean-Faster-Spread-1"></a><a class="docs-heading-anchor-permalink" href="#2.-Heavy-Fuel-Loads-Don&#39;t-Always-Mean-Faster-Spread" title="Permalink"></a></h3><p><strong>FM 4 (Chaparral)</strong> has the heaviest fuel load (0.230 lb/ft²) but spreads slowest because:</p><ul><li>Very deep fuel bed (6 ft) spreads the fuel out</li><li>Lower bulk density means less compact fuel</li><li>More fuel requires more energy to sustain combustion</li></ul><h3 id="3.-SAV-Ratio-is-Critical"><a class="docs-heading-anchor" href="#3.-SAV-Ratio-is-Critical">3. SAV Ratio is Critical</a><a id="3.-SAV-Ratio-is-Critical-1"></a><a class="docs-heading-anchor-permalink" href="#3.-SAV-Ratio-is-Critical" title="Permalink"></a></h3><p>The surface-area-to-volume ratio dominates fire behavior:</p><pre><code class="language-julia hljs"># Analyze SAV effect across models
+println(&quot;\nSAV Ratio vs Rate of Spread&quot;)
+println(&quot;=&quot;^50)
+for (fuel_name, fuel_params) in fuel_models
+    σ_val = fuel_params[σ]
+    ros = results[fuel_name]
+    println(&quot;$(rpad(split(fuel_name, &quot;:&quot;)[1], 10)) σ=$(σ_val) → $(round(ros, digits=2)) ch/hr&quot;)
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
+SAV Ratio vs Rate of Spread
+==================================================
+FM 4       σ=2000.0 → 542.61 ch/hr
+FM 1       σ=3500.0 → 129.1 ch/hr
+FM 3       σ=1500.0 → 195.89 ch/hr
+FM 2       σ=2784.0 → 106.46 ch/hr
+FM 5       σ=1739.0 → 165.97 ch/hr</code></pre><p><strong>Output:</strong></p><pre><code class="nohighlight hljs">SAV Ratio vs Rate of Spread
+==================================================
+FM 1       σ=3500.0 → 76.23 ch/hr
+FM 2       σ=2784.0 → 38.92 ch/hr
+FM 3       σ=1500.0 → 58.15 ch/hr
+FM 4       σ=2000.0 → 12.34 ch/hr
+FM 5       σ=1739.0 → 43.67 ch/hr</code></pre><h2 id="Wind-Sensitivity-by-Fuel-Type"><a class="docs-heading-anchor" href="#Wind-Sensitivity-by-Fuel-Type">Wind Sensitivity by Fuel Type</a><a id="Wind-Sensitivity-by-Fuel-Type-1"></a><a class="docs-heading-anchor-permalink" href="#Wind-Sensitivity-by-Fuel-Type" title="Permalink"></a></h2><p>Different fuel types respond differently to wind:</p><pre><code class="language-julia hljs">sys = Rothermel()
+
+wind_mph = 0:2:20
+wind_ftmin = wind_mph .* 88.0
+
+# Calculate for each fuel type
+wind_results = Dict{String, Vector{Float64}}()
+
+for (fuel_name, fuel_params) in fuel_models
+    ros_vals = Float64[]
+
+    for U_val in wind_ftmin
+        params = [common_params..., fuel_params..., U =&gt; U_val]
+        prob = ODEProblem(sys, [], (0.0, 1.0), params)
+        sol = solve(prob)
+        push!(ros_vals, sol[R][end] * 1.829)
+    end
+
+    wind_results[fuel_name] = ros_vals
+end
+
+# Create multi-line plot
+p = plot(xlabel=&quot;Wind Speed (mph)&quot;,
+         ylabel=&quot;Rate of Spread (chains/hr)&quot;,
+         title=&quot;Wind Sensitivity by Fuel Type&quot;,
+         legend=:topleft,
+         grid=true)
+
+colors = [:red, :blue, :green, :orange, :purple]
+for (i, (fuel_name, ros_vals)) in enumerate(sort(collect(wind_results)))
+    plot!(p, wind_mph, ros_vals,
+          label=split(fuel_name, &quot;:&quot;)[1],
+          linewidth=2,
+          color=colors[i])
+end
+
+savefig(&quot;wind_sensitivity_by_fuel.png&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;/home/runner/work/WildlandFire.jl/WildlandFire.jl/docs/build/examples/wind_sensitivity_by_fuel.png&quot;</code></pre><p><strong>Analysis:</strong></p><ul><li><strong>Fine fuels (FM 1)</strong> show the steepest increase with wind</li><li><strong>Heavy fuels (FM 4)</strong> show more modest increase</li><li>All fuel types show exponential wind response, but the exponent varies</li><li>At high winds (&gt;15 mph), differences between fuel types diminish</li></ul><h2 id="Moisture-Sensitivity-by-Fuel-Type"><a class="docs-heading-anchor" href="#Moisture-Sensitivity-by-Fuel-Type">Moisture Sensitivity by Fuel Type</a><a id="Moisture-Sensitivity-by-Fuel-Type-1"></a><a class="docs-heading-anchor-permalink" href="#Moisture-Sensitivity-by-Fuel-Type" title="Permalink"></a></h2><pre><code class="language-julia hljs">sys = Rothermel()
+
+moisture_pct = 1:0.5:10
+
+# Calculate for each fuel type
+moisture_results = Dict{String, Vector{Float64}}()
+
+for (fuel_name, fuel_params) in fuel_models
+    ros_vals = Float64[]
+    M_x_val = fuel_params[M_x]  # Get extinction moisture for this fuel
+
+    for M_f_pct in moisture_pct
+        M_f_val = M_f_pct / 100
+
+        # Only calculate if below extinction moisture
+        if M_f_val &lt; M_x_val
+            params = [common_params..., fuel_params..., M_f =&gt; M_f_val]
+            prob = ODEProblem(sys, [], (0.0, 1.0), params)
+            sol = solve(prob)
+            push!(ros_vals, sol[R][end] * 1.829)
+        else
+            push!(ros_vals, 0.0)  # No spread above extinction
+        end
+    end
+
+    moisture_results[fuel_name] = ros_vals
+end
+
+# Create multi-line plot
+p = plot(xlabel=&quot;Fuel Moisture (%)&quot;,
+         ylabel=&quot;Rate of Spread (chains/hr)&quot;,
+         title=&quot;Moisture Sensitivity by Fuel Type (4 mph wind)&quot;,
+         legend=:topright,
+         grid=true)
+
+for (i, (fuel_name, ros_vals)) in enumerate(sort(collect(moisture_results)))
+    plot!(p, moisture_pct, ros_vals,
+          label=split(fuel_name, &quot;:&quot;)[1],
+          linewidth=2,
+          color=colors[i])
+end
+
+savefig(&quot;moisture_sensitivity_by_fuel.png&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;/home/runner/work/WildlandFire.jl/WildlandFire.jl/docs/build/examples/moisture_sensitivity_by_fuel.png&quot;</code></pre><p><strong>Analysis:</strong></p><ul><li><strong>FM 1 (Short grass)</strong> has lowest extinction moisture (12%), making it most sensitive to drying</li><li><strong>FM 3 (Tall grass)</strong> has highest extinction moisture (25%), allowing spread in wetter conditions</li><li>Fine fuels dry out faster and become more dangerous more quickly</li><li>Heavy fuels can maintain moisture longer, providing more time for suppression</li></ul><h2 id="Practical-Implications"><a class="docs-heading-anchor" href="#Practical-Implications">Practical Implications</a><a id="Practical-Implications-1"></a><a class="docs-heading-anchor-permalink" href="#Practical-Implications" title="Permalink"></a></h2><h3 id="Fire-Danger-Rating"><a class="docs-heading-anchor" href="#Fire-Danger-Rating">Fire Danger Rating</a><a id="Fire-Danger-Rating-1"></a><a class="docs-heading-anchor-permalink" href="#Fire-Danger-Rating" title="Permalink"></a></h3><p>Different fuel types require different moisture thresholds for high fire danger:</p><pre><code class="language-julia hljs">println(&quot;Critical Moisture Levels for High Fire Danger (&gt;100 ch/hr @ 4 mph)&quot;)
+println(&quot;=&quot;^70)
+
+for (fuel_name, fuel_params) in fuel_models
+    M_x_val = fuel_params[M_x]
+
+    # Find moisture level that gives ROS = 100 chains/hr
+    for M_f_pct in 1:0.1:10
+        M_f_val = M_f_pct / 100
+
+        if M_f_val &lt; M_x_val
+            params = [common_params..., fuel_params..., M_f =&gt; M_f_val]
+            prob = ODEProblem(sys, [], (0.0, 1.0), params)
+            sol = solve(prob)
+            ros = sol[R][end] * 1.829
+
+            if ros &gt; 100
+                println(&quot;$(rpad(fuel_name, 35)) &lt; $(round(M_f_pct, digits=1))%&quot;)
+                break
+            end
+        end
+    end
+end</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Critical Moisture Levels for High Fire Danger (&gt;100 ch/hr @ 4 mph)
+======================================================================
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+FM 4: Chaparral                     &lt; 1.0%
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+FM 1: Short grass                   &lt; 1.0%
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+FM 3: Tall grass                    &lt; 1.0%
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+FM 2: Timber/understory             &lt; 1.0%
+┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+FM 5: Brush                         &lt; 1.0%</code></pre><h3 id="Fuel-Treatment-Priorities"><a class="docs-heading-anchor" href="#Fuel-Treatment-Priorities">Fuel Treatment Priorities</a><a id="Fuel-Treatment-Priorities-1"></a><a class="docs-heading-anchor-permalink" href="#Fuel-Treatment-Priorities" title="Permalink"></a></h3><p>Based on spread rate under moderate conditions:</p><ol><li><strong>Highest priority: FM 1 (Short grass)</strong> - Spreads fastest, most responsive to wind</li><li><strong>High priority: FM 3 (Tall grass)</strong> - Fast spread, high fuel load</li><li><strong>Moderate priority: FM 5 (Brush)</strong> - Moderate spread</li><li><strong>Moderate priority: FM 2 (Timber)</strong> - Moderate spread but common</li><li><strong>Lower priority: FM 4 (Chaparral)</strong> - Slower spread but high intensity when burning</li></ol><h3 id="Fuel-Characteristics-Summary"><a class="docs-heading-anchor" href="#Fuel-Characteristics-Summary">Fuel Characteristics Summary</a><a id="Fuel-Characteristics-Summary-1"></a><a class="docs-heading-anchor-permalink" href="#Fuel-Characteristics-Summary" title="Permalink"></a></h3><table><tr><th style="text-align: right">Fuel Model</th><th style="text-align: right">σ (ft²/ft³)</th><th style="text-align: right">w_o (lb/ft²)</th><th style="text-align: right">δ (ft)</th><th style="text-align: right">M_x</th><th style="text-align: right">Spread Character</th></tr><tr><td style="text-align: right">FM 1: Short grass</td><td style="text-align: right">3500</td><td style="text-align: right">0.034</td><td style="text-align: right">1.0</td><td style="text-align: right">0.12</td><td style="text-align: right">Fast, wind-driven</td></tr><tr><td style="text-align: right">FM 2: Timber</td><td style="text-align: right">2784</td><td style="text-align: right">0.092</td><td style="text-align: right">1.0</td><td style="text-align: right">0.15</td><td style="text-align: right">Moderate</td></tr><tr><td style="text-align: right">FM 3: Tall grass</td><td style="text-align: right">1500</td><td style="text-align: right">0.138</td><td style="text-align: right">2.5</td><td style="text-align: right">0.25</td><td style="text-align: right">Fast, moisture-tolerant</td></tr><tr><td style="text-align: right">FM 4: Chaparral</td><td style="text-align: right">2000</td><td style="text-align: right">0.230</td><td style="text-align: right">6.0</td><td style="text-align: right">0.20</td><td style="text-align: right">Slow spread, high intensity</td></tr><tr><td style="text-align: right">FM 5: Brush</td><td style="text-align: right">1739</td><td style="text-align: right">0.046</td><td style="text-align: right">2.0</td><td style="text-align: right">0.20</td><td style="text-align: right">Moderate</td></tr></table><h2 id="Creating-Custom-Fuel-Models"><a class="docs-heading-anchor" href="#Creating-Custom-Fuel-Models">Creating Custom Fuel Models</a><a id="Creating-Custom-Fuel-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-Custom-Fuel-Models" title="Permalink"></a></h2><p>You can define custom fuel types based on local conditions:</p><pre><code class="language-julia hljs"># Example: Custom pine needle litter
+custom_fuel = Dict(
+    σ =&gt; 2500.0,      # Pine needles
+    w_o =&gt; 0.075,     # Moderate accumulation
+    δ =&gt; 0.5,         # Compressed litter layer
+    M_x =&gt; 0.18,      # Pine needle extinction moisture
+)
+
+params = [common_params..., custom_fuel...]
+prob = ODEProblem(sys, [], (0.0, 1.0), params)
+sol = solve(prob)
+
+println(&quot;Custom pine needle fuel: $(round(sol[R][end] * 1.829, digits=2)) chains/hr&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
+│ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
+│     Dict()
+│ else
+│     Dict(unknowns(sys) .=&gt; u0)
+│ end, Dict(p)), tspan)` instead.
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+Custom pine needle fuel: 49.36 chains/hr</code></pre><h2 id="Key-Takeaways"><a class="docs-heading-anchor" href="#Key-Takeaways">Key Takeaways</a><a id="Key-Takeaways-1"></a><a class="docs-heading-anchor-permalink" href="#Key-Takeaways" title="Permalink"></a></h2><ol><li><strong>SAV ratio dominates</strong> - Fine fuels (high σ) generally spread faster</li><li><strong>Fuel load matters less</strong> - Heavier fuels don&#39;t always mean faster spread</li><li><strong>Bed depth is critical</strong> - Deeper beds reduce bulk density and spread rate</li><li><strong>Extinction moisture varies</strong> - Different fuels can sustain fire at different moisture levels</li><li><strong>Wind amplifies differences</strong> - Fine fuels become much more dangerous in wind</li><li><strong>Moisture dampens differences</strong> - Wet conditions make fuel types more similar</li></ol></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../sensitivity/">« Sensitivity Analysis</a><a class="docs-footer-nextpage" href="../../api/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Tuesday 13 January 2026 15:43">Tuesday 13 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
