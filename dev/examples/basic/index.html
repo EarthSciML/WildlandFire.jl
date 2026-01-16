@@ -47,7 +47,7 @@ println(&quot;  Propagating flux ratio: $(round(sol[ξ][end], digits=3))&quot;)<
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 Grass Fire - No Wind, Flat Ground
 ==================================================
 Rate of spread: 6.34 ft/min
@@ -117,7 +117,7 @@ Condition                     ROS (ft/min)   ROS (m/hr)
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 No wind                       6.34           115.96  (φ_w = 0.0)
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -125,7 +125,7 @@ No wind                       6.34           115.96  (φ_w = 0.0)
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 2 mph (light breeze)          21.65          395.97  (φ_w = 2.41)
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -133,7 +133,7 @@ No wind                       6.34           115.96  (φ_w = 0.0)
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 5 mph (gentle breeze)         108.49         1984.12  (φ_w = 16.11)
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -141,7 +141,7 @@ No wind                       6.34           115.96  (φ_w = 0.0)
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 10 mph (fresh breeze)         435.63         7966.89  (φ_w = 67.71)
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -149,7 +149,7 @@ No wind                       6.34           115.96  (φ_w = 0.0)
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 15 mph (strong breeze)        1000.56        18298.22  (φ_w = 156.8)</code></pre><p><strong>Output:</strong></p><pre><code class="nohighlight hljs">Wind Speed Effect on Grass Fire
 ============================================================
 Condition                     ROS (ft/min)   ROS (m/hr)
@@ -222,14 +222,14 @@ Slope               ROS (ft/min)   ROS (m/hr)     Increase
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 Flat (0%)           6.34           115.96         baseline
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -237,7 +237,7 @@ Flat (0%)           6.34           115.96         baseline
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 10% slope           8.05           147.3          1.27x
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -245,7 +245,7 @@ Flat (0%)           6.34           115.96         baseline
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 20% slope           13.2           241.31         2.08x
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -253,7 +253,7 @@ Flat (0%)           6.34           115.96         baseline
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 30% slope           21.76          398.01         3.43x
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -261,7 +261,7 @@ Flat (0%)           6.34           115.96         baseline
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 40% slope           33.76          617.39         5.32x
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -269,7 +269,7 @@ Flat (0%)           6.34           115.96         baseline
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 50% slope           49.18          899.45         7.76x</code></pre><p><strong>Output:</strong></p><pre><code class="nohighlight hljs">Slope Effect on Grass Fire (No Wind)
 ============================================================
 Slope               ROS (ft/min)   ROS (m/hr)     Increase
@@ -324,7 +324,7 @@ Scenario                           ROS (ft/min)        ROS (mph)
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 Flat, no wind                      6.34                0.07
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -332,7 +332,7 @@ Flat, no wind                      6.34                0.07
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 Flat, 10 mph wind                  435.63              4.95
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -340,7 +340,7 @@ Flat, 10 mph wind                  435.63              4.95
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 30% slope, no wind                 21.76               0.25
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -348,7 +348,7 @@ Flat, 10 mph wind                  435.63              4.95
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 30% slope, 10 mph wind             451.06              5.13</code></pre><p><strong>Output:</strong></p><pre><code class="nohighlight hljs">Combined Wind and Slope Effects
 ======================================================================
 Scenario                           ROS (ft/min)        ROS (mph)
@@ -396,7 +396,7 @@ Moisture       ROS (ft/min)        Damping Coeff
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 1.0%           122.3               0.818
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -404,7 +404,7 @@ Moisture       ROS (ft/min)        Damping Coeff
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 3.0%           85.01               0.617
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -412,7 +412,7 @@ Moisture       ROS (ft/min)        Damping Coeff
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 5.0%           70.69               0.553
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -420,7 +420,7 @@ Moisture       ROS (ft/min)        Damping Coeff
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 7.0%           63.01               0.529
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -428,7 +428,7 @@ Moisture       ROS (ft/min)        Damping Coeff
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 9.0%           49.81               0.447
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
@@ -436,7 +436,7 @@ Moisture       ROS (ft/min)        Damping Coeff
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 11.0%          21.83               0.208</code></pre><p><strong>Output:</strong></p><pre><code class="nohighlight hljs">Fuel Moisture Effect (4 mph wind, flat)
 ============================================================
 Moisture       ROS (ft/min)        Damping Coeff
@@ -446,4 +446,4 @@ Moisture       ROS (ft/min)        Damping Coeff
 5.0%           120.72              0.753
 7.0%           105.62              0.609
 9.0%           79.32               0.43
-11.0%          33.31               0.185</code></pre><p><strong>Interpretation:</strong></p><p>As fuel moisture approaches the extinction moisture (12%), fire spread decreases dramatically:</p><ul><li>At 1% moisture: fire spreads at 227 ft/min (very fast)</li><li>At 5% moisture: fire spreads at 121 ft/min (moderate)</li><li>At 11% moisture: fire spreads at only 33 ft/min (very slow)</li><li>At 12% or higher: fire will not spread</li></ul><p>The moisture damping coefficient shows how moisture reduces the effective reaction intensity.</p><h2 id="Key-Takeaways"><a class="docs-heading-anchor" href="#Key-Takeaways">Key Takeaways</a><a id="Key-Takeaways-1"></a><a class="docs-heading-anchor-permalink" href="#Key-Takeaways" title="Permalink"></a></h2><p>From these basic examples, we can see:</p><ol><li><strong>Wind is the dominant factor</strong> for horizontal spread</li><li><strong>Slope is the dominant factor</strong> for upslope spread</li><li><strong>Wind and slope effects combine multiplicatively</strong>, creating extreme behavior</li><li><strong>Fuel moisture</strong> is critical - small changes near extinction have large effects</li><li><strong>Fine fuels</strong> (high σ) spread faster but are more sensitive to conditions</li></ol><p>These patterns form the foundation for understanding wildland fire behavior and inform fire management decisions.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../usage_guide/">« Usage Guide</a><a class="docs-footer-nextpage" href="../sensitivity/">Sensitivity Analysis »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Tuesday 13 January 2026 15:43">Tuesday 13 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+11.0%          33.31               0.185</code></pre><p><strong>Interpretation:</strong></p><p>As fuel moisture approaches the extinction moisture (12%), fire spread decreases dramatically:</p><ul><li>At 1% moisture: fire spreads at 227 ft/min (very fast)</li><li>At 5% moisture: fire spreads at 121 ft/min (moderate)</li><li>At 11% moisture: fire spreads at only 33 ft/min (very slow)</li><li>At 12% or higher: fire will not spread</li></ul><p>The moisture damping coefficient shows how moisture reduces the effective reaction intensity.</p><h2 id="Key-Takeaways"><a class="docs-heading-anchor" href="#Key-Takeaways">Key Takeaways</a><a id="Key-Takeaways-1"></a><a class="docs-heading-anchor-permalink" href="#Key-Takeaways" title="Permalink"></a></h2><p>From these basic examples, we can see:</p><ol><li><strong>Wind is the dominant factor</strong> for horizontal spread</li><li><strong>Slope is the dominant factor</strong> for upslope spread</li><li><strong>Wind and slope effects combine multiplicatively</strong>, creating extreme behavior</li><li><strong>Fuel moisture</strong> is critical - small changes near extinction have large effects</li><li><strong>Fine fuels</strong> (high σ) spread faster but are more sensitive to conditions</li></ol><p>These patterns form the foundation for understanding wildland fire behavior and inform fire management decisions.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../usage_guide/">« Usage Guide</a><a class="docs-footer-nextpage" href="../sensitivity/">Sensitivity Analysis »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Friday 16 January 2026 03:13">Friday 16 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -84,7 +84,7 @@ println(&quot;Rate of spread: $(round(R_ftmin, digits=2)) ft/min&quot;)</code></
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 Rate of spread: 70.69 ft/min</code></pre><h3 id="Accessing-Multiple-Variables"><a class="docs-heading-anchor" href="#Accessing-Multiple-Variables">Accessing Multiple Variables</a><a id="Accessing-Multiple-Variables-1"></a><a class="docs-heading-anchor-permalink" href="#Accessing-Multiple-Variables" title="Permalink"></a></h3><pre><code class="language-julia hljs">ros = sol[R][end]           # Rate of spread
 intensity = sol[I_R][end]   # Reaction intensity
 wind_effect = sol[ϕ_w][end] # Wind factor
@@ -108,77 +108,77 @@ println(&quot;Wind speed study: $(length(results)) simulations completed&quot;)<
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/xN04L/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
 Wind speed study: 11 simulations completed</code></pre><hr/><h2 id="Unit-Conversions"><a class="docs-heading-anchor" href="#Unit-Conversions">Unit Conversions</a><a id="Unit-Conversions-1"></a><a class="docs-heading-anchor-permalink" href="#Unit-Conversions" title="Permalink"></a></h2><h3 id="Rate-of-Spread"><a class="docs-heading-anchor" href="#Rate-of-Spread">Rate of Spread</a><a id="Rate-of-Spread-1"></a><a class="docs-heading-anchor-permalink" href="#Rate-of-Spread" title="Permalink"></a></h3><pre><code class="language-julia hljs">R_ftmin = sol[R][end]               # ft/min (native units)
 R_mhr = R_ftmin * 18.288            # m/hr
 R_chains = R_ftmin * 1.829          # chains/hr (wildland standard)
@@ -212,4 +212,4 @@ println(&quot;Fuel load conversions:&quot;)
 println(&quot;  $(load_lb_ft2) lb/ft² = $(round(load_kg_m2, digits=2)) kg/m²&quot;)
 println(&quot;  $(load_ton_acre) ton/acre = $(load_lb_ft2_from_ton) lb/ft²&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Fuel load conversions:
   0.138 lb/ft² = 0.67 kg/m²
-  1.0 ton/acre = 0.046 lb/ft²</code></pre><hr/><h2 id="See-Also"><a class="docs-heading-anchor" href="#See-Also">See Also</a><a id="See-Also-1"></a><a class="docs-heading-anchor-permalink" href="#See-Also" title="Permalink"></a></h2><ul><li><a href="../getting_started/">Getting Started</a> - First simulation tutorial</li><li><a href="../usage_guide/">Usage Guide</a> - Comprehensive usage examples</li><li><a href="../examples/basic/">Examples</a> - Detailed example scenarios</li></ul></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../examples/fuel_types/">« Fuel Types</a><a class="docs-footer-nextpage" href="../references/">References »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Tuesday 13 January 2026 15:43">Tuesday 13 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  1.0 ton/acre = 0.046 lb/ft²</code></pre><hr/><h2 id="See-Also"><a class="docs-heading-anchor" href="#See-Also">See Also</a><a id="See-Also-1"></a><a class="docs-heading-anchor-permalink" href="#See-Also" title="Permalink"></a></h2><ul><li><a href="../getting_started/">Getting Started</a> - First simulation tutorial</li><li><a href="../usage_guide/">Usage Guide</a> - Comprehensive usage examples</li><li><a href="../examples/basic/">Examples</a> - Detailed example scenarios</li></ul></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../examples/fuel_types/">« Fuel Types</a><a class="docs-footer-nextpage" href="../references/">References »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Friday 16 January 2026 03:13">Friday 16 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
