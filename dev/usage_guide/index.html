@@ -147,7 +147,7 @@ plot(wind_speeds ./ 88.0, results,  # Convert wind to mph
      ylabel=&quot;Rate of Spread (ft/min)&quot;,
      title=&quot;Wind Effect on Fire Spread&quot;,
      linewidth=2,
-     legend=false)</code></pre><img src="ce06c73e.svg" alt="Example block output"/><h3 id="Varying-Multiple-Parameters"><a class="docs-heading-anchor" href="#Varying-Multiple-Parameters">Varying Multiple Parameters</a><a id="Varying-Multiple-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Varying-Multiple-Parameters" title="Permalink"></a></h3><pre><code class="language-julia hljs">using WildlandFire
+     legend=false)</code></pre><img src="4c8a0378.svg" alt="Example block output"/><h3 id="Varying-Multiple-Parameters"><a class="docs-heading-anchor" href="#Varying-Multiple-Parameters">Varying Multiple Parameters</a><a id="Varying-Multiple-Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Varying-Multiple-Parameters" title="Permalink"></a></h3><pre><code class="language-julia hljs">using WildlandFire
 using OrdinaryDiffEqDefault
 
 # Create parameter grid
@@ -182,7 +182,7 @@ plot(moistures .* 100, results[&quot;No wind&quot;],
      title=&quot;Moisture and Wind Effects&quot;,
      linewidth=2)
 plot!(moistures .* 100, results[&quot;4 mph&quot;], label=wind_labels[2], linewidth=2)
-plot!(moistures .* 100, results[&quot;10 mph&quot;], label=wind_labels[3], linewidth=2)</code></pre><img src="2c9b7a5e.svg" alt="Example block output"/><h2 id="Working-with-Fuel-Models"><a class="docs-heading-anchor" href="#Working-with-Fuel-Models">Working with Fuel Models</a><a id="Working-with-Fuel-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Working-with-Fuel-Models" title="Permalink"></a></h2><h3 id="Standard-NFFL-Fuel-Models"><a class="docs-heading-anchor" href="#Standard-NFFL-Fuel-Models">Standard NFFL Fuel Models</a><a id="Standard-NFFL-Fuel-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Standard-NFFL-Fuel-Models" title="Permalink"></a></h3><p>Here are parameters for some standard Northern Forest Fire Laboratory (NFFL) fuel models:</p><pre><code class="language-julia hljs">using WildlandFire
+plot!(moistures .* 100, results[&quot;10 mph&quot;], label=wind_labels[3], linewidth=2)</code></pre><img src="057888c2.svg" alt="Example block output"/><h2 id="Working-with-Fuel-Models"><a class="docs-heading-anchor" href="#Working-with-Fuel-Models">Working with Fuel Models</a><a id="Working-with-Fuel-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Working-with-Fuel-Models" title="Permalink"></a></h2><h3 id="Standard-NFFL-Fuel-Models"><a class="docs-heading-anchor" href="#Standard-NFFL-Fuel-Models">Standard NFFL Fuel Models</a><a id="Standard-NFFL-Fuel-Models-1"></a><a class="docs-heading-anchor-permalink" href="#Standard-NFFL-Fuel-Models" title="Permalink"></a></h3><p>Here are parameters for some standard Northern Forest Fire Laboratory (NFFL) fuel models:</p><pre><code class="language-julia hljs">using WildlandFire
 
 # Fuel Model 1: Short grass
 fm1_params = [
@@ -310,28 +310,28 @@ println(results)</code></pre><pre class="documenter-example-output"><code class=
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 4×6 DataFrame
  Row │ Scenario         Moisture  WindSpeed_mph  Slope_pct  ROS_ftmin  ROS_mhr
      │ String           Float64   Float64        Float64    Float64    Float64
@@ -415,4 +415,4 @@ t: 2-element Vector{Float64}:
  1.0
 u: 2-element Vector{Vector{Float64}}:
  []
- []</code></pre><h2 id="Tips-and-Best-Practices"><a class="docs-heading-anchor" href="#Tips-and-Best-Practices">Tips and Best Practices</a><a id="Tips-and-Best-Practices-1"></a><a class="docs-heading-anchor-permalink" href="#Tips-and-Best-Practices" title="Permalink"></a></h2><ol><li><strong>Always check moisture &lt; extinction</strong>: Set M<em>f &lt; M</em>x or fire won&#39;t spread</li><li><strong>Use consistent units</strong>: Wind in ft/min, slope as tan(ϕ), not degrees/percent</li><li><strong>Validate results</strong>: Check that rate of spread is reasonable for the fuel type</li><li><strong>Start simple</strong>: Begin with no wind/slope, then add complexity</li><li><strong>Document assumptions</strong>: Keep notes on parameter sources and assumptions</li><li><strong>Compare scenarios</strong>: Use relative comparisons more than absolute values</li><li><strong>Validate locally</strong>: If possible, validate against local fire behavior observations</li></ol></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../model_description/">« Model Description</a><a class="docs-footer-nextpage" href="../examples/basic/">Basic Examples »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Friday 16 January 2026 03:13">Friday 16 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ []</code></pre><h2 id="Tips-and-Best-Practices"><a class="docs-heading-anchor" href="#Tips-and-Best-Practices">Tips and Best Practices</a><a id="Tips-and-Best-Practices-1"></a><a class="docs-heading-anchor-permalink" href="#Tips-and-Best-Practices" title="Permalink"></a></h2><ol><li><strong>Always check moisture &lt; extinction</strong>: Set M<em>f &lt; M</em>x or fire won&#39;t spread</li><li><strong>Use consistent units</strong>: Wind in ft/min, slope as tan(ϕ), not degrees/percent</li><li><strong>Validate results</strong>: Check that rate of spread is reasonable for the fuel type</li><li><strong>Start simple</strong>: Begin with no wind/slope, then add complexity</li><li><strong>Document assumptions</strong>: Keep notes on parameter sources and assumptions</li><li><strong>Compare scenarios</strong>: Use relative comparisons more than absolute values</li><li><strong>Validate locally</strong>: If possible, validate against local fire behavior observations</li></ol></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../model_description/">« Model Description</a><a class="docs-footer-nextpage" href="../examples/basic/">Basic Examples »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Friday 23 January 2026 03:14">Friday 23 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

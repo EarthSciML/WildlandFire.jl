@@ -287,7 +287,7 @@ end</code></pre><pre class="documenter-example-output"><code class="nohighlight 
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 Parameter Sensitivity Analysis
 ======================================================================
 Parameter           Base Value     % Change in ROS     Ranking
@@ -298,42 +298,42 @@ Parameter           Base Value     % Change in ROS     Ranking
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 ┌ Warning: `SciMLBase.ODEProblem(sys, u0, tspan, p; kw...)` is deprecated. Use
 │ `SciMLBase.ODEProblem(sys, merge(if isempty(u0)
 │     Dict()
 │ else
 │     Dict(unknowns(sys) .=&gt; u0)
 │ end, Dict(p)), tspan)` instead.
-└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/GkVHE/src/deprecations.jl:53
+└ @ ModelingToolkitBase ~/.julia/packages/ModelingToolkitBase/lC2g8/src/deprecations.jl:53
 Wind speed                         +19.87%             #1
 SAV ratio                          +12.57%             #2
 Bed depth                          +10.13%             #3
@@ -386,4 +386,4 @@ plot(sav_values, ros_results,
      grid=true,
      xscale=:log10)
 
-savefig(&quot;sav_sensitivity_plot.png&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;/home/runner/work/WildlandFire.jl/WildlandFire.jl/docs/build/examples/sav_sensitivity_plot.png&quot;</code></pre><p><strong>Analysis:</strong></p><p>Finer fuels (higher SAV) generally spread faster because:</p><ol><li>They heat more quickly</li><li>They have more surface area for heat transfer</li><li>They ignite more easily</li></ol><p>However, the relationship is complex because:</p><ul><li>Higher σ decreases ξ (more heat loss)</li><li>Higher σ increases Γ_max (faster reaction)</li><li>Optimum packing ratio changes with σ</li></ul><h2 id="Key-Insights-from-Sensitivity-Analysis"><a class="docs-heading-anchor" href="#Key-Insights-from-Sensitivity-Analysis">Key Insights from Sensitivity Analysis</a><a id="Key-Insights-from-Sensitivity-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Key-Insights-from-Sensitivity-Analysis" title="Permalink"></a></h2><ol><li><strong>Wind and slope are most impactful</strong> for controlling spread rate</li><li><strong>Fuel moisture is critical</strong> near extinction - small changes have large effects</li><li><strong>SAV ratio determines fuel responsiveness</strong> - fine fuels react quickly to conditions</li><li><strong>Interactions matter</strong> - wind amplifies other effects</li><li><strong>Non-linear responses</strong> - most relationships are exponential or quadratic</li></ol><p>These insights help prioritize:</p><ul><li><strong>Monitoring</strong>: Focus on wind, slope, and moisture</li><li><strong>Fuel treatment</strong>: Reducing fine fuels has outsized impact</li><li><strong>Fire prediction</strong>: Small errors in wind/moisture can cause large prediction errors</li><li><strong>Safety</strong>: Be most cautious when multiple risk factors align</li></ul></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../basic/">« Basic Examples</a><a class="docs-footer-nextpage" href="../fuel_types/">Fuel Types »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Friday 16 January 2026 03:13">Friday 16 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+savefig(&quot;sav_sensitivity_plot.png&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">&quot;/home/runner/work/WildlandFire.jl/WildlandFire.jl/docs/build/examples/sav_sensitivity_plot.png&quot;</code></pre><p><strong>Analysis:</strong></p><p>Finer fuels (higher SAV) generally spread faster because:</p><ol><li>They heat more quickly</li><li>They have more surface area for heat transfer</li><li>They ignite more easily</li></ol><p>However, the relationship is complex because:</p><ul><li>Higher σ decreases ξ (more heat loss)</li><li>Higher σ increases Γ_max (faster reaction)</li><li>Optimum packing ratio changes with σ</li></ul><h2 id="Key-Insights-from-Sensitivity-Analysis"><a class="docs-heading-anchor" href="#Key-Insights-from-Sensitivity-Analysis">Key Insights from Sensitivity Analysis</a><a id="Key-Insights-from-Sensitivity-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Key-Insights-from-Sensitivity-Analysis" title="Permalink"></a></h2><ol><li><strong>Wind and slope are most impactful</strong> for controlling spread rate</li><li><strong>Fuel moisture is critical</strong> near extinction - small changes have large effects</li><li><strong>SAV ratio determines fuel responsiveness</strong> - fine fuels react quickly to conditions</li><li><strong>Interactions matter</strong> - wind amplifies other effects</li><li><strong>Non-linear responses</strong> - most relationships are exponential or quadratic</li></ol><p>These insights help prioritize:</p><ul><li><strong>Monitoring</strong>: Focus on wind, slope, and moisture</li><li><strong>Fuel treatment</strong>: Reducing fine fuels has outsized impact</li><li><strong>Fire prediction</strong>: Small errors in wind/moisture can cause large prediction errors</li><li><strong>Safety</strong>: Be most cautious when multiple risk factors align</li></ul></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../basic/">« Basic Examples</a><a class="docs-footer-nextpage" href="../fuel_types/">Fuel Types »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Friday 23 January 2026 03:14">Friday 23 January 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
