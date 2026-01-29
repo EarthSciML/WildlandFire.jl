@@ -14,17 +14,6 @@ makedocs(;
         assets=String[],
     ),
     pages=[
-        "Home" => "index.md",
-        "Getting Started" => "getting_started.md",
-        "Model Description" => "model_description.md",
-        "Usage Guide" => "usage_guide.md",
-        "Examples" => [
-            "Basic Examples" => "examples/basic.md",
-            "Sensitivity Analysis" => "examples/sensitivity.md",
-            "Fuel Types" => "examples/fuel_types.md",
-        ],
-        "API Reference" => "api.md",
-        "References" => "references.md",
     ],
 )
 
