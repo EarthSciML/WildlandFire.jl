@@ -1,2 +1,32 @@
-using WildlandFire
+"""
+    WildlandFire
+
+Wildland fire modeling components for EarthSciML, including:
+- National Fire Danger Rating System (NFDRS) fuel moisture and fire behavior models
+"""
+module WildlandFire
+
+using DynamicQuantities
+using ModelingToolkit
+using ModelingToolkit: t, D
 using OrdinaryDiffEqDefault
+
+# Include NFDRS implementation
+include("nfdrs.jl")
+
+# Export NFDRS components
+export EquilibriumMoistureContent
+export OneHourFuelMoisture, TenHourFuelMoisture
+export HundredHourFuelMoisture, ThousandHourFuelMoisture
+export HerbaceousFuelMoisture, WoodyFuelMoisture
+export FuelLoadingTransfer
+export SpreadComponent, EnergyReleaseComponent
+export BurningIndex, IgnitionComponent
+export HumanFireOccurrenceIndex
+export FireLoadIndex
+
+# Export fuel model utilities
+export NFDRSFuelModel, NFDRS_FUEL_MODELS, get_fuel_model
+export fuel_loading_to_si
+
+end # module
