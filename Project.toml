@@ -4,18 +4,24 @@ authors = ["EarthSciML authors and contributors"]
 version = "0.1.0"
 
 [deps]
+DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
 
 [compat]
+DynamicQuantities = "1"
 julia = "1.10"
 ModelingToolkit = "11"
 OrdinaryDiffEqDefault = "1"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
+TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 
 [targets]
-test = ["Test", "Plots", "SciMLBase"]
+test = ["NonlinearSolve", "Plots", "SciMLBase", "Symbolics", "Test", "TestItemRunner", "TestItems"]

@@ -1,3 +1,3 @@
-using WildlandFire
-using Test
-using OrdinaryDiffEqDefault
+using TestItems
+
+@run_package_tests
