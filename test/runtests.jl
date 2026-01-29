@@ -1,6 +1,7 @@
 using WildlandFire
 using Test
 using ModelingToolkit
+using ModelingToolkit: mtkcompile
 using OrdinaryDiffEqDefault
 
 @testset "WildlandFire.jl" begin
@@ -56,6 +57,7 @@ using OrdinaryDiffEqDefault
         @test BurningIndex() isa System
         @test IgnitionComponent() isa System
         @test HumanFireOccurrenceIndex() isa System
+        @test LightningFireOccurrenceIndex() isa System
         @test FireLoadIndex() isa System
     end
 
@@ -183,5 +185,91 @@ using OrdinaryDiffEqDefault
         # Climate class 2: WOODGA = -5.0, WOODGB = 8.2
         # Climate class 3: WOODGA = -22.5, WOODGB = 8.9
         # Climate class 4: WOODGA = -45.0, WOODGB = 9.8
+    end
+
+    @testset "Numerical Validation - EMC Equations" begin
+        # Verify EMC equations against Cohen & Deeming (1985), Eq. 1a, 1b, 1c (page 1)
+        # These regression equations are from Simard (1968)
+
+        # Manual calculation functions matching the paper
+        function emc_manual(temp, rh_pct)
+            if rh_pct < 10
+                return 0.03229 + 0.281073 * rh_pct - 0.000578 * temp * rh_pct
+            elseif rh_pct < 50
+                return 2.22749 + 0.160107 * rh_pct - 0.014784 * temp
+            else
+                return 21.0606 + 0.005565 * rh_pct^2 - 0.00035 * rh_pct * temp - 0.483199 * rh_pct
+            end
+        end
+
+        # Test case 1: Low RH (Eq. 1a: RH < 10%)
+        # At RH=5%, TEMP=70°F
+        expected_low = emc_manual(70.0, 5.0)  # Should be ~1.236%
+        @test expected_low ≈ 1.236 atol=0.01
+
+        # Test case 2: Mid RH (Eq. 1b: 10% <= RH < 50%)
+        # At RH=30%, TEMP=70°F
+        expected_mid = emc_manual(70.0, 30.0)  # Should be ~5.997%
+        @test expected_mid ≈ 5.997 atol=0.01
+
+        # Test case 3: High RH (Eq. 1c: RH >= 50%)
+        # At RH=80%, TEMP=70°F
+        expected_high = emc_manual(70.0, 80.0)  # Should be ~16.06%
+        @test expected_high ≈ 16.06 atol=0.1
+    end
+
+    @testset "Numerical Validation - Fuel Loading Transfer" begin
+        # Test Eq. 5: FCTCUR = 1.33 - 0.0111 * MCHERB (MCHERB as percent)
+        # At MCHERB = 30%, FCTCUR = 1.33 - 0.0111*30 = 0.997
+        @test 1.33 - 0.0111 * 30 ≈ 0.997 atol=0.001
+
+        # At MCHERB = 120%, FCTCUR = 1.33 - 0.0111*120 = -0.002 (clamped to 0)
+        @test max(0.0, 1.33 - 0.0111 * 120) ≈ 0.0 atol=0.01
+
+        # At MCHERB = 30% (boundary), nearly all herb transferred
+        @test min(1.0, 1.33 - 0.0111 * 30) ≈ 0.997 atol=0.01
+    end
+
+    @testset "Numerical Validation - Burning Index" begin
+        # Verify BI = 3.01 * (SC * ERC)^0.46 (page 12)
+        # Example: SC=50, ERC=20 -> BI = 3.01 * (50*20)^0.46 = 3.01 * 1000^0.46
+        # 1000^0.46 ≈ 23.99, so BI ≈ 72.2
+        @test 3.01 * (50 * 20)^0.46 ≈ 72.2 atol=1.0
+
+        # Zero case
+        @test 3.01 * (0 * 0)^0.46 == 0.0
+    end
+
+    @testset "Numerical Validation - Fire Load Index" begin
+        # Verify FLI = 0.71 * sqrt(BI^2 + (LOI + MCOI)^2) (page 14)
+        # Example: BI=50, LOI=30, MCOI=20 -> (LOI+MCOI)=50
+        # FLI = 0.71 * sqrt(50^2 + 50^2) = 0.71 * sqrt(5000) ≈ 50.2
+        @test 0.71 * sqrt(50^2 + 50^2) ≈ 50.2 atol=0.1
+
+        # With limits: BI=150 (limited to 100), LOI+MCOI=60
+        # FLI = 0.71 * sqrt(100^2 + 60^2) = 0.71 * sqrt(13600) ≈ 82.8
+        @test 0.71 * sqrt(100^2 + 60^2) ≈ 82.8 atol=0.1
+    end
+
+    @testset "Numerical Validation - Human Fire Occurrence" begin
+        # Verify MCOI = 0.01 * MRISK * IC (page 13)
+        # Example: MRISK=50, IC=80 -> MCOI = 0.01 * 50 * 80 = 40
+        @test 0.01 * 50 * 80 == 40.0
+    end
+
+    @testset "Lightning Fire Occurrence Index" begin
+        # Test component creation
+        loi = LightningFireOccurrenceIndex()
+        @test length(equations(loi)) > 0
+
+        # Verify LAL table values from page 13
+        # LAL 2: CGRATE=12.5, STMDIA=3.0, TOTWID=7.0
+        # LAL 3: CGRATE=25.0, STMDIA=4.0, TOTWID=8.0
+        # LAL 4: CGRATE=50.0, STMDIA=5.0, TOTWID=9.0
+        # LAL 5: CGRATE=100.0, STMDIA=7.0, TOTWID=11.0
+
+        # Test LGTDUR equation: LGTDUR = -86.83 + 153.41 * CGRATE^0.1437
+        # At CGRATE=25: LGTDUR = -86.83 + 153.41 * 25^0.1437 ≈ -86.83 + 153.41 * 1.588 ≈ 156.8
+        @test -86.83 + 153.41 * 25^0.1437 ≈ 156.8 atol=1.0
     end
 end

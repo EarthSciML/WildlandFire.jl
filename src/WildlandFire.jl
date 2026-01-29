@@ -22,7 +22,7 @@ export HerbaceousFuelMoisture, WoodyFuelMoisture
 export FuelLoadingTransfer
 export SpreadComponent, EnergyReleaseComponent
 export BurningIndex, IgnitionComponent
-export HumanFireOccurrenceIndex
+export HumanFireOccurrenceIndex, LightningFireOccurrenceIndex
 export FireLoadIndex
 
 # Export fuel model utilities

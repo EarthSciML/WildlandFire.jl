@@ -565,7 +565,7 @@ Other parameters:
         MCWOOD, [description = "Woody fuel moisture (fraction)"]
 
         # Other fuel model parameters
-        MXD, [description = "Dead fuel moisture of extinction (fraction)"]
+        MXD, [description = "Dead fuel moisture of extinction (percent, e.g., 15 for 15%)"]
         HD = 8000.0, [description = "Dead fuel heat of combustion (Btu/lb)"]
         HL = 8000.0, [description = "Live fuel heat of combustion (Btu/lb)"]
         DEPTH, [description = "Fuel bed depth (ft)"]
@@ -665,23 +665,23 @@ Other parameters:
     HNDEAD = HN1 + HN10 + HN100
     HNLIVE = HNHERB + HNWOOD
 
-    # Weighted dead fuel moisture for MXL
-    MCLFE = ifelse(HNDEAD > 1e-10,
-        (MC1 * HN1 + MC10 * HN10 + MC100 * HN100) / HNDEAD,
-        MC1)
+    # Weighted dead fuel moisture for MXL (convert to percent for MXD comparison)
+    MCLFE_pct = ifelse(HNDEAD > 1e-10,
+        (MC1 * 100 * HN1 + MC10 * 100 * HN10 + MC100 * 100 * HN100) / HNDEAD,
+        MC1 * 100)
 
-    # Live fuel moisture of extinction
+    # Live fuel moisture of extinction (MXL in percent, matching MXD)
     WRAT = ifelse(HNLIVE > 1e-10, HNDEAD / HNLIVE, 0.0)
-    MXL_calc = (2.9 * WRAT * (1.0 - MCLFE / MXD) - 0.226)
+    MXL_calc = (2.9 * WRAT * (1.0 - MCLFE_pct / MXD) - 0.226) * 100.0
     MXL = max(MXD, MXL_calc)
 
-    # Weighted moisture contents
+    # Weighted moisture contents (as fractions)
     WTMCD = F1 * MC1 + F10 * MC10 + F100 * MC100
     WTMCL = FHERB * MCHERB + FWOOD * MCWOOD
 
-    # Moisture damping coefficients
-    DEDRT = WTMCD / MXD
-    LIVRT = WTMCL / max(0.01, MXL)
+    # Moisture damping coefficients (convert WTMCD/WTMCL to percent for ratio)
+    DEDRT = (WTMCD * 100) / MXD
+    LIVRT = (WTMCL * 100) / max(0.01, MXL)
 
     ETAMD = max(0.0, min(1.0, 1.0 - 2.59 * DEDRT + 5.11 * DEDRT^2 - 3.52 * DEDRT^3))
     ETAML = max(0.0, min(1.0, 1.0 - 2.59 * LIVRT + 5.11 * LIVRT^2 - 3.52 * LIVRT^3))
@@ -784,8 +784,8 @@ Same as SpreadComponent, plus:
         MCWOOD, [description = "Woody fuel moisture (fraction)"]
 
         # Other fuel model parameters
-        MXD, [description = "Dead fuel moisture of extinction (fraction)"]
-        MXL, [description = "Live fuel moisture of extinction (fraction)"]
+        MXD, [description = "Dead fuel moisture of extinction (percent, e.g., 15 for 15%)"]
+        MXL, [description = "Live fuel moisture of extinction (percent, e.g., 15 for 15%)"]
         HD = 8000.0, [description = "Dead fuel heat of combustion (Btu/lb)"]
         HL = 8000.0, [description = "Live fuel heat of combustion (Btu/lb)"]
         DEPTH, [description = "Fuel bed depth (ft)"]
@@ -871,13 +871,13 @@ Same as SpreadComponent, plus:
     ratio = BETBAR / max(1e-10, BETOPE)
     GMAOPE = GMAMXE * ratio^ADE * exp(ADE * (1.0 - ratio))
 
-    # Weighted moisture contents (loading weighted)
+    # Weighted moisture contents (loading weighted, as fractions)
     WTMCDE = F1E * MC1 + F10E * MC10 + F100E * MC100 + F1000E * MC1000
     WTMCLE = FWOODE * MCWOOD + FHERBE * MCHERB
 
-    # Moisture damping coefficients (different formula for ERC)
-    DEDRTE = WTMCDE / MXD
-    LIVRTE = WTMCLE / max(0.01, MXL)
+    # Moisture damping coefficients (convert fractions to percent for ratio with MXD/MXL)
+    DEDRTE = (WTMCDE * 100) / MXD
+    LIVRTE = (WTMCLE * 100) / max(0.01, MXL)
 
     ETAMDE = max(0.0, min(1.0, 1.0 - 2.0 * DEDRTE + 1.5 * DEDRTE^2 - 0.5 * DEDRTE^3))
     ETAMLE = max(0.0, min(1.0, 1.0 - 2.0 * LIVRTE + 1.5 * LIVRTE^2 - 0.5 * LIVRTE^3))
@@ -1042,6 +1042,144 @@ Calculate the Human-Caused Fire Occurrence Index (MCOI).
 
     eqs = [
         MCOI ~ 0.01 * MRISK * IC
+    ]
+
+    return System(eqs, t; name)
+end
+
+# =============================================================================
+# Lightning-Caused Fire Occurrence Index (LOI)
+# =============================================================================
+
+"""
+    LightningFireOccurrenceIndex(; name=:LightningFireOccurrenceIndex)
+
+Calculate the Lightning-Caused Fire Occurrence Index (LOI).
+
+The model assumes a thunderstorm traversing an area forms a corridor aligned with
+the storm's track that receives both rain and lightning. Flanking the rain-lightning
+corridor on both sides are areas subjected to lightning only.
+
+Implements equations from pages 13-14 of Cohen & Deeming (1985).
+
+# Parameters
+- `LAL`: NFDRS Lightning Activity Level (1-6)
+- `IC`: Ignition component (0-100)
+- `MC1`: 1-hour fuel moisture content (fraction)
+- `LRSF`: Lightning risk scaling factor (site-specific)
+- `YLOI`: Previous day's LOI (for carry-over fires)
+- `STMSPD`: Storm translational speed (mph), default 30
+- `is_raining`: Flag (1 if raining at observation time, 0 otherwise)
+- `is_lightning`: Flag (1 if lightning occurring, 0 otherwise)
+
+# Variables
+- `LOI`: Lightning-caused fire occurrence index (0-100)
+- `LRISK`: Lightning risk
+"""
+@component function LightningFireOccurrenceIndex(; name=:LightningFireOccurrenceIndex)
+    @parameters begin
+        LAL = 1.0, [description = "NFDRS Lightning Activity Level (1-6)"]
+        IC, [description = "Ignition component (0-100)"]
+        MC1, [description = "1-hour fuel moisture content (fraction)"]
+        LRSF = 1.0, [description = "Lightning risk scaling factor"]
+        YLOI = 0.0, [description = "Previous day's LOI"]
+        STMSPD = 30.0, [description = "Storm translational speed (mph)"]
+        is_raining = 0.0, [description = "Flag: 1 if raining at observation time"]
+        is_lightning = 0.0, [description = "Flag: 1 if lightning occurring"]
+    end
+
+    @variables begin
+        CGRATE(t), [description = "Cloud-to-ground lightning discharge rate (strikes/min)"]
+        STMDIA(t), [description = "Width of rain-lightning corridor (miles)"]
+        TOTWID(t), [description = "Total width of affected corridor (miles)"]
+        LGTDUR(t), [description = "Duration of lightning at a point (min)"]
+        FINSID(t), [description = "Fraction of corridor with rain"]
+        FOTSID(t), [description = "Fraction of corridor without rain"]
+        RAIDUR(t), [description = "Rain duration at a point (hours)"]
+        FMF(t), [description = "1-hour fuel moisture inside rain area (fraction)"]
+        ICR(t), [description = "Ignition component inside rain area"]
+        ICBAR(t), [description = "Area-weighted average ignition component"]
+        LRISK(t), [description = "Lightning risk (0-100)"]
+        LOI(t), [description = "Lightning-caused fire occurrence index (0-100)"]
+    end
+
+    # LAL 6 is a special case (extreme lightning)
+    # For LAL 1-5, use lookup tables from page 13
+    # CGRATE: 0, 12.5, 25.0, 50.0, 100.0 strikes/min
+    # STMDIA: 0, 3.0, 4.0, 5.0, 7.0 miles
+    # TOTWID: 0, 7.0, 8.0, 9.0, 11.0 miles
+
+    eqs = [
+        # Cloud-to-ground lightning discharge rate by LAL
+        CGRATE ~ ifelse(LAL < 1.5, 0.0,
+                 ifelse(LAL < 2.5, 12.5,
+                 ifelse(LAL < 3.5, 25.0,
+                 ifelse(LAL < 4.5, 50.0,
+                 ifelse(LAL < 5.5, 100.0, 100.0))))),
+
+        # Storm corridor dimensions by LAL
+        STMDIA ~ ifelse(LAL < 1.5, 0.0,
+                 ifelse(LAL < 2.5, 3.0,
+                 ifelse(LAL < 3.5, 4.0,
+                 ifelse(LAL < 4.5, 5.0,
+                 ifelse(LAL < 5.5, 7.0, 7.0))))),
+
+        TOTWID ~ ifelse(LAL < 1.5, 0.0,
+                 ifelse(LAL < 2.5, 7.0,
+                 ifelse(LAL < 3.5, 8.0,
+                 ifelse(LAL < 4.5, 9.0,
+                 ifelse(LAL < 5.5, 11.0, 11.0))))),
+
+        # Duration of lightning at a point (Eq. from page 13)
+        LGTDUR ~ ifelse(CGRATE > 0.0,
+            -86.83 + 153.41 * CGRATE^0.1437,
+            0.0),
+
+        # Fraction of corridor occupied by rain-lightning vs lightning-only
+        # FINSID = ((STMDIA * STMSPD * LGTDUR) + (0.7854 * STMDIA^2)) /
+        #          ((STMDIA * STMSPD * TOTWID) + (0.7854 * TOTWID^2))
+        FINSID ~ ifelse(TOTWID > 0.0,
+            ((STMDIA * STMSPD * LGTDUR) + (0.7854 * STMDIA^2)) /
+            max(1e-10, (STMDIA * STMSPD * TOTWID) + (0.7854 * TOTWID^2)),
+            0.0),
+
+        FOTSID ~ 1.0 - FINSID,
+
+        # Rain duration at a point within rain corridor (hours)
+        RAIDUR ~ ifelse(STMSPD > 0.0, STMDIA / STMSPD, 0.0),
+
+        # Moisture content of 1-hour fuels inside rain area
+        # FMF = MC1 + ((76.0 + 2.7 * RAIDUR) - MC1) * (1.0 - exp(-RAIDUR))
+        # Note: 76.0 and 2.7 are in percent, but we use fractions
+        FMF ~ MC1 + (((76.0 + 2.7 * RAIDUR) / 100.0) - MC1) * (1.0 - exp(-RAIDUR)),
+
+        # Ignition component inside rain area (simplified - uses higher moisture)
+        # ICR is calculated like IC but with FMF instead of MC1
+        # For simplicity, we reduce IC proportionally to increased moisture
+        ICR ~ IC * max(0.0, 1.0 - (FMF - MC1) * 10.0),
+
+        # Area-weighted ignition component
+        ICBAR ~ (FINSID * ICR + FOTSID * IC) / 100.0,
+
+        # Lightning risk (limited to 0-100)
+        LRISK ~ min(100.0, CGRATE * LRSF),
+
+        # Lightning-caused fire occurrence index
+        # If not lightning or raining, use 25% of previous day's LOI for carry-over
+        LOI ~ ifelse(LAL >= 6.0 - 0.5,
+            # LAL 6: extreme lightning
+            100.0,
+            ifelse(is_lightning < 0.5,
+                # Not lightning
+                min(100.0, 0.25 * YLOI),
+                ifelse(is_raining > 0.5,
+                    # Raining at observation time
+                    min(100.0, 0.25 * YLOI),
+                    # Lightning, not raining
+                    min(100.0, 10.0 * LRISK * ICBAR + 0.25 * YLOI)
+                )
+            )
+        )
     ]
 
     return System(eqs, t; name)
