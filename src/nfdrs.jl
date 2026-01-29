@@ -7,14 +7,28 @@ Gen. Tech. Rep. PSW-82. Berkeley, CA: Pacific Southwest Forest and Range Experim
 Forest Service, U.S. Department of Agriculture; 1985. 16 p.
 
 This module implements:
-- Equilibrium Moisture Content (EMC) calculations
+- Equilibrium Moisture Content (EMC) calculations (Eq. 1a, 1b, 1c)
 - Dead fuel moisture models (1-hr, 10-hr, 100-hr, 1000-hr timelag)
 - Live fuel moisture models (herbaceous and woody)
+- Fuel loading transfer (Eq. 5-8)
 - Fire characteristics (Spread Component, Energy Release Component, Burning Index)
 - Fire occurrence indexes (Ignition Component, Human-Caused and Lightning-Caused Fire Occurrence)
+- Fuel model database (Appendix, 20 models A-U excluding M)
 
-Note: The NFDRS equations use imperial units (°F, lb, ft, Btu, etc.) as originally published.
-All inputs and outputs are in these original units unless otherwise noted in variable descriptions.
+## Unit Convention
+
+IMPORTANT: The NFDRS equations use imperial units as originally published:
+- Temperature: °F (Fahrenheit)
+- Fuel loading: tons/acre (converted to lb/ft² internally using factor 0.0459137)
+- Fuel bed depth: ft (feet)
+- Surface-area-to-volume ratio: ft⁻¹
+- Heat of combustion: Btu/lb
+- Wind speed: mph (miles per hour)
+- Moisture content: fraction (0-1) or percent where noted
+
+ModelingToolkit unit annotations are not applied because the NFDRS equations contain
+empirical coefficients calibrated specifically for these imperial units. Converting to SI
+would require recalibrating all coefficients, which is beyond the scope of this implementation.
 """
 
 # t and D are imported in the main WildlandFire module
@@ -43,11 +57,11 @@ Implements Equations 1a, 1b, 1c from Cohen & Deeming (1985).
 @component function EquilibriumMoistureContent(; name=:EquilibriumMoistureContent)
     @parameters begin
         TEMP, [description = "Dry bulb temperature (°F)"]
-        RH, [description = "Relative humidity (fraction, 0-1)"]
+        RH, [description = "Relative humidity (dimensionless)"]
     end
 
     @variables begin
-        EMC(t), [description = "Equilibrium moisture content (fraction)"]
+        EMC(t), [description = "Equilibrium moisture content (dimensionless)"]
     end
 
     # RH as percentage for equations
@@ -702,28 +716,37 @@ Other parameters:
              ifelse(slope_class < 3.5, 1.068,
              ifelse(slope_class < 4.5, 2.134, 4.273))))
 
+    # Calculate reaction intensity for wind limit check
+    IR_calc = GMAOP * (WDEADN * HD * ETASD * ETAMD + WLIVEN * HL * ETASL * ETAML)
+
+    # Wind speed effect with limit: if (WS * 88 * WNDFC) > (0.9 * IR), use (0.9 * IR) instead
+    # This is the wind effect limit from page 11 of Cohen & Deeming (1985)
+    wind_term = WS * 88.0 * WNDFC
+    wind_term_limited = min(wind_term, 0.9 * IR_calc)
+
+    # Wind effect multiplier with limit applied
+    PHIWND = UFACT * wind_term_limited^B
+
+    # Slope effect multiplier
+    PHISLP = SLPFCT * max(0.01, BETBAR)^(-0.3)
+
+    # Heat sink calculation (Eq. from page 11)
+    HTSINK = RHOBED * (
+        FDEAD * (F1 * exp(-138.0/max(1.0,SG1)) * (250.0 + 11.16 * MC1 * 100) +
+                 F10 * exp(-138.0/max(1.0,SG10)) * (250.0 + 11.16 * MC10 * 100) +
+                 F100 * exp(-138.0/max(1.0,SG100)) * (250.0 + 11.16 * MC100 * 100)) +
+        FLIVE * (FHERB * exp(-138.0/max(1.0,SGHERB)) * (250.0 + 11.16 * MCHERB * 100) +
+                 FWOOD * exp(-138.0/max(1.0,SGWOOD)) * (250.0 + 11.16 * MCWOOD * 100))
+    )
+
     eqs = [
         # Reaction intensity
-        IR ~ GMAOP * (WDEADN * HD * ETASD * ETAMD + WLIVEN * HL * ETASL * ETAML),
+        IR ~ IR_calc,
 
-        # Wind effect (limited by 0.9 * IR)
-        # PHIWND = UFACT * (min(WS * 88 * WNDFC, 0.9 * IR))^B
-        # Slope effect
-        # PHISLP = SLPFCT * BETBAR^(-0.3)
-
-        # Heat sink
-        # HTSINK calculation (simplified)
-
-        # Rate of spread (ft/min)
+        # Rate of spread (ft/min) - Eq. from page 11
+        # ROS = IR * ZETA * (1 + PHISLP + PHIWND) / HTSINK
         ROS ~ ifelse(fuels_wet > 0.5, 0.0,
-            IR * ZETA * (1.0 + SLPFCT * max(0.01, BETBAR)^(-0.3) + UFACT * (WS * 88.0 * WNDFC)^B) /
-            max(0.01, RHOBED * (
-                FDEAD * (F1 * exp(-138.0/max(1.0,SG1)) * (250.0 + 11.16 * MC1 * 100) +
-                         F10 * exp(-138.0/max(1.0,SG10)) * (250.0 + 11.16 * MC10 * 100) +
-                         F100 * exp(-138.0/max(1.0,SG100)) * (250.0 + 11.16 * MC100 * 100)) +
-                FLIVE * (FHERB * exp(-138.0/max(1.0,SGHERB)) * (250.0 + 11.16 * MCHERB * 100) +
-                         FWOOD * exp(-138.0/max(1.0,SGWOOD)) * (250.0 + 11.16 * MCWOOD * 100))
-            ))
+            IR_calc * ZETA * (1.0 + PHISLP + PHIWND) / max(0.01, HTSINK)
         ),
 
         # Spread component (rounded ROS)

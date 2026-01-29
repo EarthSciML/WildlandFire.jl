@@ -121,6 +121,41 @@ for (code, model) in sort(collect(NFDRS_FUEL_MODELS), by=x->x[1])
 end
 ```
 
+### Fuel Model Parameters Table
+
+The following table reproduces the fuel model parameters from the Appendix of Cohen & Deeming (1985), page 15.
+
+| Model | Description | SG1 (ft⁻¹) | W1 (t/ac) | SG10 | W10 | Depth (ft) | MXD (%) | HD (Btu/lb) | SCM | WNDFC |
+|-------|-------------|------------|-----------|------|-----|------------|---------|-------------|-----|-------|
+| A | Western grasses (annual) | 3000 | 0.20 | 109 | 0.0 | 0.80 | 15 | 8000 | 300 | 0.6 |
+| B | California chaparral | 700 | 3.50 | 109 | 4.0 | 4.50 | 15 | 9500 | 58 | 0.5 |
+| C | Pine-grass savanna | 2000 | 0.40 | 109 | 1.0 | 0.75 | 20 | 8000 | 32 | 0.4 |
+| D | Southern rough | 1250 | 2.00 | 109 | 1.0 | 2.00 | 30 | 9000 | 25 | 0.4 |
+| E | Hardwood litter (winter) | 2000 | 1.50 | 109 | 0.5 | 0.40 | 25 | 8000 | 25 | 0.4 |
+| F | Intermediate brush | 700 | 2.50 | 109 | 2.0 | 4.50 | 15 | 9500 | 24 | 0.5 |
+| G | Short needle (heavy dead) | 2000 | 2.50 | 109 | 2.0 | 1.00 | 25 | 8000 | 30 | 0.4 |
+| H | Short needle (normal dead) | 2000 | 1.50 | 109 | 1.0 | 0.30 | 20 | 8000 | 8 | 0.4 |
+| I | Heavy slash | 1500 | 12.0 | 109 | 12.0 | 2.00 | 25 | 8000 | 65 | 0.5 |
+| J | Intermediate slash | 1500 | 7.00 | 109 | 7.0 | 1.30 | 25 | 8000 | 44 | 0.5 |
+| K | Light slash | 1500 | 2.50 | 109 | 2.5 | 0.60 | 25 | 8000 | 23 | 0.5 |
+| L | Western grasses (perennial) | 2000 | 0.25 | 109 | 1.5 | 1.00 | 15 | 8000 | 178 | 0.6 |
+| N | Sawgrass | 1600 | 1.50 | 109 | 3.0 | 3.00 | 25 | 8700 | 167 | 0.6 |
+| O | High pocosin | 1500 | 2.00 | 109 | 1.0 | 4.00 | 30 | 9000 | 99 | 0.5 |
+| P | Southern pine plantation | 1750 | 1.00 | 109 | 2.5 | 0.40 | 30 | 8000 | 14 | 0.4 |
+| Q | Alaskan black spruce | 1500 | 2.00 | 109 | 0.5 | 3.00 | 25 | 8000 | 59 | 0.4 |
+| R | Hardwood litter (summer) | 1500 | 0.50 | 109 | 0.5 | 0.25 | 25 | 8000 | 6 | 0.4 |
+| S | Tundra | 1500 | 0.50 | 109 | 0.5 | 0.40 | 25 | 8000 | 17 | 0.6 |
+| T | Sagebrush-grass | 2500 | 1.00 | 109 | 1.5 | 1.25 | 15 | 8000 | 73 | 0.6 |
+| U | Western pines | 1750 | 1.50 | 109 | 1.0 | 0.50 | 20 | 8000 | 16 | 0.4 |
+
+Notes:
+- SG1, SG10: Surface-area-to-volume ratio (ft⁻¹)
+- W1, W10: Fuel loading (tons/acre)
+- MXD: Dead fuel moisture of extinction (percent)
+- HD: Heat of combustion (Btu/lb)
+- SCM: Spread component when all ignitions become reportable fires
+- WNDFC: Wind reduction factor (20-ft to midflame height)
+
 ## Analysis
 
 ### Fuel Model Comparison

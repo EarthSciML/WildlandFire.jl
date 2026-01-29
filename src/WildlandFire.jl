@@ -27,6 +27,6 @@ export FireLoadIndex
 
 # Export fuel model utilities
 export NFDRSFuelModel, NFDRS_FUEL_MODELS, get_fuel_model
-export fuel_loading_to_si
+export fuel_loading_to_lb_per_sqft
 
 end # module
