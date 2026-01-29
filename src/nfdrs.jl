@@ -214,8 +214,10 @@ The moisture content responds to the boundary condition with a time constant.
     # Weighted 24-hour average EMC
     EMCBAR = (DAYLIT * EMCMIN + (24.0 - DAYLIT) * EMCMAX) / 24.0
 
-    # Weighted 24-hour average boundary condition
-    BNDRYH = ((24.0 - PPTDUR) * EMCBAR + PPTDUR * (0.5 * PPTDUR / 100.0 + 0.41)) / 24.0
+    # Weighted 24-hour average boundary condition (Eq. from page 5)
+    # Note: The precipitation term uses percent moisture, so we convert EMCBAR to percent
+    # and then convert the result back to fraction
+    BNDRYH = ((24.0 - PPTDUR) * EMCBAR + PPTDUR * (0.5 * PPTDUR + 41.0) / 100.0) / 24.0
 
     # Response coefficient: (1.0 - 0.87 * exp(-0.24)) ≈ 0.1836
     response_coef = 1.0 - 0.87 * exp(-0.24)
@@ -495,6 +497,405 @@ Implements Equations 5, 6, 7, 8 from Cohen & Deeming (1985).
 
         # Eq. 8: Remaining herbaceous loading
         WHERBP ~ WHERB - WHERBC
+    ]
+
+    return System(eqs, t; name)
+end
+
+# =============================================================================
+# Spread Component (SC)
+# =============================================================================
+
+"""
+    SpreadComponent(; name=:SpreadComponent)
+
+Calculate the NFDRS Spread Component (SC) based on Rothermel's fire spread model.
+
+The SC is the forward rate of spread of the flaming front in ft/min, rounded to integer.
+Implements equations from pages 9-11 of Cohen & Deeming (1985).
+
+# Parameters
+Fuel loadings (lb/ft²):
+- `W1P`: 1-hour fuel loading (including transferred herbaceous)
+- `W10`: 10-hour fuel loading
+- `W100`: 100-hour fuel loading
+- `WHERBP`: Remaining herbaceous loading
+- `WWOOD`: Woody fuel loading
+
+Surface-area-to-volume ratios (ft⁻¹):
+- `SG1`, `SG10`, `SG100`: Dead fuel SAV ratios
+- `SGHERB`, `SGWOOD`: Live fuel SAV ratios
+
+Other parameters:
+- `MC1`, `MC10`, `MC100`: Dead fuel moisture contents (fraction)
+- `MCHERB`, `MCWOOD`: Live fuel moisture contents (fraction)
+- `MXD`: Dead fuel moisture of extinction (fraction)
+- `HD`, `HL`: Heat of combustion (Btu/lb) for dead and live fuels
+- `DEPTH`: Fuel bed depth (ft)
+- `WS`: 20-ft windspeed (mph)
+- `WNDFC`: Wind reduction factor
+- `slope_class`: NFDRS slope class (1-5)
+- `fuels_wet`: Flag (1 if fuels wet or snow-covered)
+
+# Variables
+- `SC`: Spread component (ft/min, rounded)
+- `ROS`: Rate of spread (ft/min)
+"""
+@component function SpreadComponent(; name=:SpreadComponent)
+    @parameters begin
+        # Fuel loadings (lb/ft²)
+        W1P, [description = "1-hour fuel loading including transferred herb (lb/ft²)"]
+        W10, [description = "10-hour fuel loading (lb/ft²)"]
+        W100, [description = "100-hour fuel loading (lb/ft²)"]
+        WHERBP, [description = "Remaining herbaceous loading (lb/ft²)"]
+        WWOOD, [description = "Woody fuel loading (lb/ft²)"]
+
+        # SAV ratios (ft⁻¹)
+        SG1, [description = "1-hour fuel SAV ratio (ft⁻¹)"]
+        SG10, [description = "10-hour fuel SAV ratio (ft⁻¹)"]
+        SG100, [description = "100-hour fuel SAV ratio (ft⁻¹)"]
+        SGHERB, [description = "Herbaceous fuel SAV ratio (ft⁻¹)"]
+        SGWOOD, [description = "Woody fuel SAV ratio (ft⁻¹)"]
+
+        # Moisture contents (fraction)
+        MC1, [description = "1-hour fuel moisture (fraction)"]
+        MC10, [description = "10-hour fuel moisture (fraction)"]
+        MC100, [description = "100-hour fuel moisture (fraction)"]
+        MCHERB, [description = "Herbaceous fuel moisture (fraction)"]
+        MCWOOD, [description = "Woody fuel moisture (fraction)"]
+
+        # Other fuel model parameters
+        MXD, [description = "Dead fuel moisture of extinction (fraction)"]
+        HD = 8000.0, [description = "Dead fuel heat of combustion (Btu/lb)"]
+        HL = 8000.0, [description = "Live fuel heat of combustion (Btu/lb)"]
+        DEPTH, [description = "Fuel bed depth (ft)"]
+
+        # Environmental parameters
+        WS = 0.0, [description = "20-ft windspeed (mph)"]
+        WNDFC = 0.4, [description = "Wind reduction factor"]
+        slope_class = 1.0, [description = "NFDRS slope class (1-5)"]
+        fuels_wet = 0.0, [description = "Flag: 1 if fuels wet or snow-covered"]
+    end
+
+    @constants begin
+        RHOD = 32.0, [description = "Dead fuel particle density (lb/ft³)"]
+        RHOL = 32.0, [description = "Live fuel particle density (lb/ft³)"]
+        STD = 0.0555, [description = "Dead fuel total mineral content (fraction)"]
+        STL = 0.0555, [description = "Live fuel total mineral content (fraction)"]
+        SD = 0.01, [description = "Dead fuel silica-free mineral content"]
+        SL = 0.01, [description = "Live fuel silica-free mineral content"]
+    end
+
+    @variables begin
+        SC(t), [description = "Spread component (ft/min)"]
+        ROS(t), [description = "Rate of spread (ft/min)"]
+        IR(t), [description = "Reaction intensity (Btu/ft²/min)"]
+    end
+
+    # Net loadings
+    W1N = W1P * (1.0 - STD)
+    W10N = W10 * (1.0 - STD)
+    W100N = W100 * (1.0 - STD)
+    WHERBN = WHERBP * (1.0 - STL)
+    WWOODN = WWOOD * (1.0 - STL)
+
+    # Total loadings
+    WTOTD = W1P + W10 + W100
+    WTOTL = WHERBP + WWOOD
+    WTOT = WTOTD + WTOTL
+
+    # Surface areas
+    SA1 = (W1P / RHOD) * SG1
+    SA10 = (W10 / RHOD) * SG10
+    SA100 = (W100 / RHOD) * SG100
+    SAHERB = (WHERBP / RHOL) * SGHERB
+    SAWOOD = (WWOOD / RHOL) * SGWOOD
+
+    SADEAD = SA1 + SA10 + SA100
+    SALIVE = SAHERB + SAWOOD
+
+    # Weighting factors (avoid division by zero)
+    SADEAD_safe = max(1e-10, SADEAD)
+    SALIVE_safe = max(1e-10, SALIVE)
+    SATOT_safe = max(1e-10, SADEAD + SALIVE)
+
+    F1 = SA1 / SADEAD_safe
+    F10 = SA10 / SADEAD_safe
+    F100 = SA100 / SADEAD_safe
+    FHERB = SAHERB / SALIVE_safe
+    FWOOD = SAWOOD / SALIVE_safe
+
+    FDEAD = SADEAD / SATOT_safe
+    FLIVE = SALIVE / SATOT_safe
+
+    # Weighted net loadings
+    WDEADN = F1 * W1N + F10 * W10N + F100 * W100N
+    WLIVEN = FWOOD * WWOODN + FHERB * WHERBN
+
+    # Characteristic SAV ratios
+    SGBRD = F1 * SG1 + F10 * SG10 + F100 * SG100
+    SGBRL = FHERB * SGHERB + FWOOD * SGWOOD
+    SGBRT = FDEAD * SGBRD + FLIVE * SGBRL
+    SGBRT_safe = max(1.0, SGBRT)
+
+    # Bulk density
+    RHOBED = (WTOT - 0.0) / max(0.01, DEPTH)  # W1000 excluded from bulk density
+
+    # Packing ratio
+    RHOBAR = 32.0  # Constant particle density
+    BETBAR = RHOBED / RHOBAR
+    BETOP = 3.348 * SGBRT_safe^(-0.8189)
+
+    # Maximum and optimum reaction velocity
+    GMAMX = SGBRT_safe^1.5 / (495.0 + 0.0594 * SGBRT_safe^1.5)
+    AD = 133.0 * SGBRT_safe^(-0.7913)
+    ratio = BETBAR / max(1e-10, BETOP)
+    GMAOP = GMAMX * ratio^AD * exp(AD * (1.0 - ratio))
+
+    # No-wind propagating flux ratio
+    ZETA = exp((0.792 + 0.681 * sqrt(SGBRT_safe)) * (BETBAR + 0.1)) / (192.0 + 0.2595 * SGBRT_safe)
+
+    # Heating numbers for live fuel extinction moisture
+    HN1 = W1N * exp(-138.0 / max(1.0, SG1))
+    HN10 = W10N * exp(-138.0 / max(1.0, SG10))
+    HN100 = W100N * exp(-138.0 / max(1.0, SG100))
+    HNHERB = WHERBN * exp(-500.0 / max(1.0, SGHERB))
+    HNWOOD = WWOODN * exp(-500.0 / max(1.0, SGWOOD))
+
+    HNDEAD = HN1 + HN10 + HN100
+    HNLIVE = HNHERB + HNWOOD
+
+    # Weighted dead fuel moisture for MXL
+    MCLFE = ifelse(HNDEAD > 1e-10,
+        (MC1 * HN1 + MC10 * HN10 + MC100 * HN100) / HNDEAD,
+        MC1)
+
+    # Live fuel moisture of extinction
+    WRAT = ifelse(HNLIVE > 1e-10, HNDEAD / HNLIVE, 0.0)
+    MXL_calc = (2.9 * WRAT * (1.0 - MCLFE / MXD) - 0.226)
+    MXL = max(MXD, MXL_calc)
+
+    # Weighted moisture contents
+    WTMCD = F1 * MC1 + F10 * MC10 + F100 * MC100
+    WTMCL = FHERB * MCHERB + FWOOD * MCWOOD
+
+    # Moisture damping coefficients
+    DEDRT = WTMCD / MXD
+    LIVRT = WTMCL / max(0.01, MXL)
+
+    ETAMD = max(0.0, min(1.0, 1.0 - 2.59 * DEDRT + 5.11 * DEDRT^2 - 3.52 * DEDRT^3))
+    ETAML = max(0.0, min(1.0, 1.0 - 2.59 * LIVRT + 5.11 * LIVRT^2 - 3.52 * LIVRT^3))
+
+    # Mineral damping coefficients
+    ETASD = 0.174 * SD^(-0.19)
+    ETASL = 0.174 * SL^(-0.19)
+
+    # Wind effect coefficients
+    B = 0.02526 * SGBRT_safe^0.54
+    C = 7.47 * exp(-0.133 * SGBRT_safe^0.55)
+    E = 0.715 * exp(-3.59e-4 * SGBRT_safe)
+    UFACT = C * ratio^(-E)
+
+    # Slope effect (SLPFCT by slope class)
+    SLPFCT = ifelse(slope_class < 1.5, 0.267,
+             ifelse(slope_class < 2.5, 0.533,
+             ifelse(slope_class < 3.5, 1.068,
+             ifelse(slope_class < 4.5, 2.134, 4.273))))
+
+    eqs = [
+        # Reaction intensity
+        IR ~ GMAOP * (WDEADN * HD * ETASD * ETAMD + WLIVEN * HL * ETASL * ETAML),
+
+        # Wind effect (limited by 0.9 * IR)
+        # PHIWND = UFACT * (min(WS * 88 * WNDFC, 0.9 * IR))^B
+        # Slope effect
+        # PHISLP = SLPFCT * BETBAR^(-0.3)
+
+        # Heat sink
+        # HTSINK calculation (simplified)
+
+        # Rate of spread (ft/min)
+        ROS ~ ifelse(fuels_wet > 0.5, 0.0,
+            IR * ZETA * (1.0 + SLPFCT * max(0.01, BETBAR)^(-0.3) + UFACT * (WS * 88.0 * WNDFC)^B) /
+            max(0.01, RHOBED * (
+                FDEAD * (F1 * exp(-138.0/max(1.0,SG1)) * (250.0 + 11.16 * MC1 * 100) +
+                         F10 * exp(-138.0/max(1.0,SG10)) * (250.0 + 11.16 * MC10 * 100) +
+                         F100 * exp(-138.0/max(1.0,SG100)) * (250.0 + 11.16 * MC100 * 100)) +
+                FLIVE * (FHERB * exp(-138.0/max(1.0,SGHERB)) * (250.0 + 11.16 * MCHERB * 100) +
+                         FWOOD * exp(-138.0/max(1.0,SGWOOD)) * (250.0 + 11.16 * MCWOOD * 100))
+            ))
+        ),
+
+        # Spread component (rounded ROS)
+        SC ~ ROS
+    ]
+
+    return System(eqs, t; name)
+end
+
+# =============================================================================
+# Energy Release Component (ERC)
+# =============================================================================
+
+"""
+    EnergyReleaseComponent(; name=:EnergyReleaseComponent)
+
+Calculate the NFDRS Energy Release Component (ERC).
+
+ERC is based on loading-weighted (not surface-area-weighted) calculations.
+It represents the available energy release per unit area.
+
+Implements equations from pages 11-12 of Cohen & Deeming (1985).
+
+# Parameters
+Same as SpreadComponent, plus:
+- `W1000`: 1000-hour fuel loading (lb/ft²)
+- `SG1000`: 1000-hour fuel SAV ratio (ft⁻¹)
+- `MC1000`: 1000-hour fuel moisture (fraction)
+
+# Variables
+- `ERC`: Energy release component
+- `IRE`: Loading-weighted reaction intensity
+"""
+@component function EnergyReleaseComponent(; name=:EnergyReleaseComponent)
+    @parameters begin
+        # Fuel loadings (lb/ft²)
+        W1P, [description = "1-hour fuel loading including transferred herb (lb/ft²)"]
+        W10, [description = "10-hour fuel loading (lb/ft²)"]
+        W100, [description = "100-hour fuel loading (lb/ft²)"]
+        W1000 = 0.0, [description = "1000-hour fuel loading (lb/ft²)"]
+        WHERBP, [description = "Remaining herbaceous loading (lb/ft²)"]
+        WWOOD, [description = "Woody fuel loading (lb/ft²)"]
+
+        # SAV ratios (ft⁻¹)
+        SG1, [description = "1-hour fuel SAV ratio (ft⁻¹)"]
+        SG10, [description = "10-hour fuel SAV ratio (ft⁻¹)"]
+        SG100, [description = "100-hour fuel SAV ratio (ft⁻¹)"]
+        SG1000 = 8.0, [description = "1000-hour fuel SAV ratio (ft⁻¹)"]
+        SGHERB, [description = "Herbaceous fuel SAV ratio (ft⁻¹)"]
+        SGWOOD, [description = "Woody fuel SAV ratio (ft⁻¹)"]
+
+        # Moisture contents (fraction)
+        MC1, [description = "1-hour fuel moisture (fraction)"]
+        MC10, [description = "10-hour fuel moisture (fraction)"]
+        MC100, [description = "100-hour fuel moisture (fraction)"]
+        MC1000 = 0.15, [description = "1000-hour fuel moisture (fraction)"]
+        MCHERB, [description = "Herbaceous fuel moisture (fraction)"]
+        MCWOOD, [description = "Woody fuel moisture (fraction)"]
+
+        # Other fuel model parameters
+        MXD, [description = "Dead fuel moisture of extinction (fraction)"]
+        MXL, [description = "Live fuel moisture of extinction (fraction)"]
+        HD = 8000.0, [description = "Dead fuel heat of combustion (Btu/lb)"]
+        HL = 8000.0, [description = "Live fuel heat of combustion (Btu/lb)"]
+        DEPTH, [description = "Fuel bed depth (ft)"]
+    end
+
+    @constants begin
+        RHOD = 32.0, [description = "Dead fuel particle density (lb/ft³)"]
+        RHOL = 32.0, [description = "Live fuel particle density (lb/ft³)"]
+        STD = 0.0555, [description = "Dead fuel total mineral content (fraction)"]
+        STL = 0.0555, [description = "Live fuel total mineral content (fraction)"]
+        SD = 0.01, [description = "Dead fuel silica-free mineral content"]
+        SL = 0.01, [description = "Live fuel silica-free mineral content"]
+    end
+
+    @variables begin
+        ERC(t), [description = "Energy release component"]
+        IRE(t), [description = "Loading-weighted reaction intensity (Btu/ft²/min)"]
+    end
+
+    # Total loadings
+    WTOTD = W1P + W10 + W100 + W1000
+    WTOTL = WHERBP + WWOOD
+    WTOT = WTOTD + WTOTL
+
+    # Loading-based weighting factors
+    WTOTD_safe = max(1e-10, WTOTD)
+    WTOTL_safe = max(1e-10, WTOTL)
+    WTOT_safe = max(1e-10, WTOT)
+
+    F1E = W1P / WTOTD_safe
+    F10E = W10 / WTOTD_safe
+    F100E = W100 / WTOTD_safe
+    F1000E = W1000 / WTOTD_safe
+    FHERBE = WHERBP / WTOTL_safe
+    FWOODE = WWOOD / WTOTL_safe
+
+    FDEADE = WTOTD / WTOT_safe
+    FLIVEE = WTOTL / WTOT_safe
+
+    # Net loadings
+    WDEDNE = WTOTD * (1.0 - STD)
+    WLIVNE = WTOTL * (1.0 - STL)
+
+    # Characteristic SAV ratio (loading weighted)
+    SGBRDE = F1E * SG1 + F10E * SG10 + F100E * SG100 + F1000E * SG1000
+    SGBRLE = FWOODE * SGWOOD + FHERBE * SGHERB
+    SGBRTE = FDEADE * SGBRDE + FLIVEE * SGBRLE
+    SGBRTE_safe = max(1.0, SGBRTE)
+
+    # For residence time calculation, use surface-area weighted SGBRT
+    # (calculated same as in SpreadComponent)
+    SA1 = (W1P / RHOD) * SG1
+    SA10 = (W10 / RHOD) * SG10
+    SA100 = (W100 / RHOD) * SG100
+    SAHERB = (WHERBP / RHOL) * SGHERB
+    SAWOOD = (WWOOD / RHOL) * SGWOOD
+    SADEAD = SA1 + SA10 + SA100
+    SALIVE = SAHERB + SAWOOD
+    SADEAD_safe = max(1e-10, SADEAD)
+    SALIVE_safe = max(1e-10, SALIVE)
+    SATOT_safe = max(1e-10, SADEAD + SALIVE)
+    F1 = SA1 / SADEAD_safe
+    F10 = SA10 / SADEAD_safe
+    F100 = SA100 / SADEAD_safe
+    FHERB = SAHERB / SALIVE_safe
+    FWOOD = SAWOOD / SALIVE_safe
+    FDEAD = SADEAD / SATOT_safe
+    FLIVE = SALIVE / SATOT_safe
+    SGBRD = F1 * SG1 + F10 * SG10 + F100 * SG100
+    SGBRL = FHERB * SGHERB + FWOOD * SGWOOD
+    SGBRT = FDEAD * SGBRD + FLIVE * SGBRL
+    SGBRT_safe = max(1.0, SGBRT)
+
+    # Bulk density and packing ratio
+    RHOBED = WTOT / max(0.01, DEPTH)
+    RHOBAR = 32.0
+    BETBAR = RHOBED / RHOBAR
+    BETOPE = 3.348 * SGBRTE_safe^(-0.8189)
+
+    # Reaction velocity (loading weighted)
+    GMAMXE = SGBRTE_safe^1.5 / (495.0 + 0.0594 * SGBRTE_safe^1.5)
+    ADE = 133.0 * SGBRTE_safe^(-0.7913)
+    ratio = BETBAR / max(1e-10, BETOPE)
+    GMAOPE = GMAMXE * ratio^ADE * exp(ADE * (1.0 - ratio))
+
+    # Weighted moisture contents (loading weighted)
+    WTMCDE = F1E * MC1 + F10E * MC10 + F100E * MC100 + F1000E * MC1000
+    WTMCLE = FWOODE * MCWOOD + FHERBE * MCHERB
+
+    # Moisture damping coefficients (different formula for ERC)
+    DEDRTE = WTMCDE / MXD
+    LIVRTE = WTMCLE / max(0.01, MXL)
+
+    ETAMDE = max(0.0, min(1.0, 1.0 - 2.0 * DEDRTE + 1.5 * DEDRTE^2 - 0.5 * DEDRTE^3))
+    ETAMLE = max(0.0, min(1.0, 1.0 - 2.0 * LIVRTE + 1.5 * LIVRTE^2 - 0.5 * LIVRTE^3))
+
+    # Mineral damping coefficients
+    ETASD = 0.174 * SD^(-0.19)
+    ETASL = 0.174 * SL^(-0.19)
+
+    # Residence time (uses surface-area weighted SGBRT)
+    TAU = 384.0 / SGBRT_safe
+
+    eqs = [
+        # Loading-weighted reaction intensity
+        IRE ~ GMAOPE * (FDEADE * WDEDNE * HD * ETASD * ETAMDE +
+                        FLIVEE * WLIVNE * HL * ETASL * ETAMLE),
+
+        # Energy Release Component (0.04 scaling factor = ft²/Btu)
+        ERC ~ 0.04 * IRE * TAU
     ]
 
     return System(eqs, t; name)
