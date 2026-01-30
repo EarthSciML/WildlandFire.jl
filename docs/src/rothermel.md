@@ -48,33 +48,35 @@ Key conversions from the original formulation:
 
 ### State Variables
 
-The model computes the following output variables:
+```@example rothermel_impl
+using DataFrames, ModelingToolkit, Symbolics, DynamicQuantities
+using WildlandFire
 
-| Variable | Description | Units |
-|----------|-------------|-------|
-| `R` | Rate of spread | m/s |
-| `R0` | No-wind no-slope rate of spread | m/s |
-| `IR` | Reaction intensity | W/m² |
-| `t_r` | Flame residence time | s |
-| `HA` | Heat per unit area | J/m² |
-| `IB` | Fireline intensity (Byram) | W/m |
-| `F_L` | Flame length (Byram) | m |
+sys = RothermelFireSpread()
+vars = unknowns(sys)
+DataFrame(
+    :Name => [string(Symbolics.tosymbol(v, escape = false)) for v in vars],
+    :Units => [string(ModelingToolkit.get_unit(v)) for v in vars],
+    :Description => [ModelingToolkit.getdescription(v) for v in vars]
+)
+```
 
 ### Parameters
 
-| Parameter | Description | Units |
-|-----------|-------------|-------|
-| `σ` | Surface-area-to-volume ratio | 1/m |
-| `w0` | Oven-dry fuel load | kg/m² |
-| `δ` | Fuel bed depth | m |
-| `Mx` | Dead fuel moisture of extinction | fraction |
-| `Mf` | Fuel moisture content | fraction |
-| `U` | Wind velocity at midflame height | m/s |
-| `tanϕ` | Slope steepness (rise/run) | dimensionless |
-| `h` | Low heat content | J/kg |
-| `S_T` | Total mineral content | fraction |
-| `S_e` | Effective mineral content | fraction |
-| `ρ_p` | Oven-dry particle density | kg/m³ |
+```@example rothermel_impl
+params = parameters(sys)
+DataFrame(
+    :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params],
+    :Units => [string(ModelingToolkit.get_unit(p)) for p in params],
+    :Description => [ModelingToolkit.getdescription(p) for p in params]
+)
+```
+
+### Equations
+
+```@example rothermel_impl
+equations(sys)
+```
 
 ### Main Equations
 

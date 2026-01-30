@@ -68,180 +68,193 @@ sol = solve(prob)
 ```
 """
 @component function RothermelFireSpread(; name=:RothermelFireSpread)
-    # Physical constants for fuel particles (Table 3) - converted to SI
+    # Physical constants for fuel particles (Table 3, Andrews 2018) - converted to SI
     # Note: The Rothermel model is a semi-empirical model with coefficients calibrated
     # in US customary units. All coefficients have been converted to SI.
     @constants begin
-        h_default = 18608000.0, [description = "Low heat content (8000 Btu/lb converted to J/kg)"]
-        S_T_default = 0.0555, [description = "Total mineral content (dimensionless)"]
-        S_e_default = 0.010, [description = "Effective mineral content (dimensionless)"]
-        ρ_p_default = 512.6, [description = "Oven-dry particle density (32 lb/ft³ converted to kg/m³)"]
+        h_default = 18608000.0, [description = "Low heat content (8000 Btu/lb converted to J/kg)", unit = u"J/kg"]
+        S_T_default = 0.0555, [description = "Total mineral content (dimensionless)", unit = u"1"]
+        S_e_default = 0.010, [description = "Effective mineral content (dimensionless)", unit = u"1"]
+        ρ_p_default = 512.6, [description = "Oven-dry particle density (32 lb/ft³ converted to kg/m³)", unit = u"kg/m^3"]
     end
 
-    # Empirical coefficients converted to SI units
+    # Empirical coefficients converted to SI units (Table 3, Andrews 2018)
+    # Note: Many of these coefficients arise from empirical calibration and have
+    # complex dimensional relationships. We use dimensionless unit annotations
+    # where appropriate since these are empirical calibration constants.
     @constants begin
-        # β_op = 9.189 * σ^(-0.8189) (SI, original: 3.348 * σ^(-0.8189) in 1/ft)
-        c_beta_op = 9.189, [description = "Optimum packing ratio coefficient (SI)"]
+        # β_op = 3.348 * σ^(-0.8189) (US), converted to SI: 9.189 * σ^(-0.8189)
+        # Note: This is an empirical relationship; coefficient absorbs units
+        c_beta_op = 9.189, [description = "Optimum packing ratio coefficient (SI, empirical)", unit = u"1"]
 
-        # Γ_max = σ^1.5 / (176502 + 3.564*σ^1.5) (SI, units: 1/s)
-        c_Gamma_denom1 = 176502.0, [description = "Γ_max denominator constant 1 (SI)"]
-        c_Gamma_denom2 = 3.564, [description = "Γ_max denominator constant 2 (SI)"]
+        # Γ_max = σ^1.5 / (495 + 0.0594*σ^1.5) (US), converted to SI: σ^1.5 / (176502 + 3.564*σ^1.5)
+        # Note: These coefficients are empirical and unit-absorbing
+        c_Gamma_denom1 = 176502.0, [description = "Γ_max denominator constant 1 (SI, empirical)", unit = u"1"]
+        c_Gamma_denom2 = 3.564, [description = "Γ_max denominator constant 2 (SI, empirical)", unit = u"1"]
 
-        # A_coeff = 343.2 * σ^(-0.7913) (SI, original: 133 * σ^(-0.7913) in 1/ft)
-        c_A = 343.2, [description = "Coefficient A constant (SI)"]
+        # A = 133 * σ^(-0.7913) (US), converted to SI: 343.2 * σ^(-0.7913)
+        c_A = 343.2, [description = "Coefficient A constant (SI, empirical)", unit = u"1"]
 
-        # Moisture damping polynomial coefficients (dimensionless)
-        c_etaM_1 = 2.59, [description = "Moisture damping coefficient 1"]
-        c_etaM_2 = 5.11, [description = "Moisture damping coefficient 2"]
-        c_etaM_3 = 3.52, [description = "Moisture damping coefficient 3"]
+        # Moisture damping polynomial coefficients (dimensionless) - Table 3
+        c_etaM_1 = 2.59, [description = "Moisture damping coefficient 1 (dimensionless)", unit = u"1"]
+        c_etaM_2 = 5.11, [description = "Moisture damping coefficient 2 (dimensionless)", unit = u"1"]
+        c_etaM_3 = 3.52, [description = "Moisture damping coefficient 3 (dimensionless)", unit = u"1"]
 
-        # Mineral damping: η_s = 0.174 * S_e^(-0.19)
-        c_etas = 0.174, [description = "Mineral damping coefficient"]
+        # Mineral damping: η_s = 0.174 * S_e^(-0.19) - Table 3
+        c_etas = 0.174, [description = "Mineral damping coefficient (empirical)", unit = u"1"]
 
-        # ξ coefficients (SI)
-        c_xi_1 = 192.0, [description = "ξ coefficient 1"]
-        c_xi_2 = 0.07908, [description = "ξ coefficient 2 (SI)"]
-        c_xi_3 = 0.792, [description = "ξ coefficient 3"]
-        c_xi_4 = 0.376, [description = "ξ coefficient 4 (SI)"]
+        # ξ coefficients (SI) - Table 3
+        # ξ = (192 + 0.2595σ)^(-1) * exp[(0.792 + 0.681σ^0.5)(β + 0.1)]
+        # SI: (192 + 0.07908σ)^(-1) * exp[(0.792 + 0.376σ^0.5)(β + 0.1)]
+        c_xi_1 = 192.0, [description = "ξ coefficient 1 (empirical)", unit = u"1"]
+        c_xi_2 = 0.07908, [description = "ξ coefficient 2 (SI, empirical)", unit = u"1"]
+        c_xi_3 = 0.792, [description = "ξ coefficient 3 (empirical)", unit = u"1"]
+        c_xi_4 = 0.376, [description = "ξ coefficient 4 (SI, empirical)", unit = u"1"]
 
-        # Wind coefficients (SI)
-        c_C_1 = 7.47, [description = "Wind coefficient C constant 1"]
-        c_C_2 = 0.0717, [description = "Wind coefficient C constant 2 (SI)"]
-        c_B = 0.01317, [description = "Wind coefficient B constant (SI)"]
-        c_E_1 = 0.715, [description = "Wind coefficient E constant 1"]
-        c_E_2 = 1.094e-4, [description = "Wind coefficient E constant 2 (SI)"]
+        # Wind coefficients (SI) - Table 3
+        # C = 7.47 * exp(-0.133 * σ^0.55) (US), SI: 7.47 * exp(-0.0717 * σ^0.55)
+        c_C_1 = 7.47, [description = "Wind coefficient C constant 1 (empirical)", unit = u"1"]
+        c_C_2 = 0.0717, [description = "Wind coefficient C constant 2 (SI, empirical)", unit = u"1"]
+        # B = 0.02526 * σ^0.54 (US), SI: 0.01317 * σ^0.54
+        c_B = 0.01317, [description = "Wind coefficient B constant (SI, empirical)", unit = u"1"]
+        # E = 0.715 * exp(-3.59e-4 * σ) (US), SI: 0.715 * exp(-1.094e-4 * σ)
+        c_E_1 = 0.715, [description = "Wind coefficient E constant 1 (empirical)", unit = u"1"]
+        c_E_2 = 1.094e-4, [description = "Wind coefficient E constant 2 (SI, empirical)", unit = u"1"]
 
-        # Slope factor coefficient
-        c_phis = 5.275, [description = "Slope factor coefficient"]
+        # Slope factor coefficient - Table 3
+        c_phis = 5.275, [description = "Slope factor coefficient (empirical)", unit = u"1"]
 
-        # ε = exp(-452.7/σ) (SI, original: exp(-138/σ) in 1/ft)
-        c_eps = 452.7, [description = "Effective heating number coefficient (SI)"]
+        # ε = exp(-138/σ) (US), SI: exp(-452.7/σ) - Table 3
+        c_eps = 452.7, [description = "Effective heating number coefficient (SI, empirical)", unit = u"1"]
 
-        # Qig = 581500 + 2595816*Mf (SI J/kg, original: 250 + 1116*Mf in Btu/lb)
-        c_Qig_1 = 581500.0, [description = "Heat of preignition constant 1 (SI J/kg)"]
-        c_Qig_2 = 2595816.0, [description = "Heat of preignition constant 2 (SI J/kg)"]
+        # Qig = 250 + 1116*Mf (US Btu/lb), SI: 581500 + 2595816*Mf (J/kg) - Table 3
+        c_Qig_1 = 581500.0, [description = "Heat of preignition constant 1 (SI)", unit = u"J/kg"]
+        c_Qig_2 = 2595816.0, [description = "Heat of preignition constant 2 (SI)", unit = u"J/kg"]
 
-        # t_r = 7023.8/σ (SI s, original: 384/σ in min with σ in 1/ft)
-        c_tr = 7023.8, [description = "Residence time coefficient (SI)"]
+        # t_r = 384/σ (US min with σ in 1/ft), SI: 7023.8/σ (s) - Table 7
+        c_tr = 7023.8, [description = "Residence time coefficient (SI, empirical)", unit = u"1"]
 
-        # F_L = 0.003145 * IB^0.46 (SI m, original: 0.45 * IB^0.46 with IB in Btu/ft/s)
-        c_FL = 0.003145, [description = "Flame length coefficient (SI)"]
+        # F_L = 0.45 * IB^0.46 (US ft with IB in Btu/ft/s), SI: 0.003145 * IB^0.46 - Table 7
+        c_FL = 0.003145, [description = "Flame length coefficient (SI, empirical)", unit = u"1"]
     end
 
     # Input parameters - fuel array properties (SI units)
     @parameters begin
-        σ, [description = "Surface-area-to-volume ratio (1/m)"]
-        w0, [description = "Oven-dry fuel load (kg/m²)"]
-        δ, [description = "Fuel bed depth (m)"]
-        Mx, [description = "Dead fuel moisture of extinction (dimensionless)"]
-        h = h_default, [description = "Low heat content (J/kg)"]
-        S_T = S_T_default, [description = "Total mineral content (dimensionless)"]
-        S_e = S_e_default, [description = "Effective mineral content (dimensionless)"]
-        ρ_p = ρ_p_default, [description = "Oven-dry particle density (kg/m³)"]
+        σ, [description = "Surface-area-to-volume ratio", unit = u"1/m"]
+        w0, [description = "Oven-dry fuel load", unit = u"kg/m^2"]
+        δ, [description = "Fuel bed depth", unit = u"m"]
+        Mx, [description = "Dead fuel moisture of extinction (dimensionless)", unit = u"1"]
+        h = h_default, [description = "Low heat content", unit = u"J/kg"]
+        S_T = S_T_default, [description = "Total mineral content (dimensionless)", unit = u"1"]
+        S_e = S_e_default, [description = "Effective mineral content (dimensionless)", unit = u"1"]
+        ρ_p = ρ_p_default, [description = "Oven-dry particle density", unit = u"kg/m^3"]
     end
 
     # Environmental parameters (SI units)
     @parameters begin
-        Mf, [description = "Fuel moisture content (dimensionless, dry weight basis)"]
-        U, [description = "Wind velocity at midflame height (m/s)"]
-        tanϕ, [description = "Slope steepness (dimensionless, rise/run)"]
+        Mf, [description = "Fuel moisture content (dimensionless, dry weight basis)", unit = u"1"]
+        U, [description = "Wind velocity at midflame height", unit = u"m/s"]
+        tanϕ, [description = "Slope steepness (dimensionless, rise/run)", unit = u"1"]
     end
 
     # Intermediate variables - fuel bed calculations
     @variables begin
-        wn(t), [description = "Net fuel load (kg/m²)"]
-        ρb(t), [description = "Oven-dry bulk density (kg/m³)"]
-        β(t), [description = "Packing ratio (dimensionless)"]
-        β_op(t), [description = "Optimum packing ratio (dimensionless)"]
-        β_ratio(t), [description = "Relative packing ratio β/β_op (dimensionless)"]
+        wn(t), [description = "Net fuel load", unit = u"kg/m^2"]
+        ρb(t), [description = "Oven-dry bulk density", unit = u"kg/m^3"]
+        β(t), [description = "Packing ratio (dimensionless)", unit = u"1"]
+        β_op(t), [description = "Optimum packing ratio (dimensionless)", unit = u"1"]
+        β_ratio(t), [description = "Relative packing ratio β/β_op (dimensionless)", unit = u"1"]
     end
 
     # Intermediate variables - heat source (numerator)
     @variables begin
-        Γ_max(t), [description = "Maximum reaction velocity (1/s)"]
-        A_coeff(t), [description = "Coefficient A for reaction velocity (dimensionless)"]
-        Γ_prime(t), [description = "Optimum reaction velocity (1/s)"]
-        rM(t), [description = "Moisture ratio Mf/Mx (dimensionless)"]
-        η_M(t), [description = "Moisture damping coefficient (dimensionless)"]
-        η_s(t), [description = "Mineral damping coefficient (dimensionless)"]
-        IR(t), [description = "Reaction intensity (W/m²)"]
-        ξ(t), [description = "Propagating flux ratio (dimensionless)"]
+        Γ_max(t), [description = "Maximum reaction velocity", unit = u"1/s"]
+        A_coeff(t), [description = "Coefficient A for reaction velocity (dimensionless)", unit = u"1"]
+        Γ_prime(t), [description = "Optimum reaction velocity", unit = u"1/s"]
+        rM(t), [description = "Moisture ratio Mf/Mx (dimensionless)", unit = u"1"]
+        η_M(t), [description = "Moisture damping coefficient (dimensionless)", unit = u"1"]
+        η_s(t), [description = "Mineral damping coefficient (dimensionless)", unit = u"1"]
+        IR(t), [description = "Reaction intensity", unit = u"W/m^2"]
+        ξ(t), [description = "Propagating flux ratio (dimensionless)", unit = u"1"]
     end
 
     # Intermediate variables - wind and slope factors
     @variables begin
-        C_coeff(t), [description = "Wind coefficient C (dimensionless)"]
-        B_coeff(t), [description = "Wind coefficient B (dimensionless)"]
-        E_coeff(t), [description = "Wind coefficient E (dimensionless)"]
-        φw(t), [description = "Wind factor (dimensionless)"]
-        φs(t), [description = "Slope factor (dimensionless)"]
+        C_coeff(t), [description = "Wind coefficient C (dimensionless)", unit = u"1"]
+        B_coeff(t), [description = "Wind coefficient B (dimensionless)", unit = u"1"]
+        E_coeff(t), [description = "Wind coefficient E (dimensionless)", unit = u"1"]
+        φw(t), [description = "Wind factor (dimensionless)", unit = u"1"]
+        φs(t), [description = "Slope factor (dimensionless)", unit = u"1"]
     end
 
     # Intermediate variables - heat sink (denominator)
     @variables begin
-        ε(t), [description = "Effective heating number (dimensionless)"]
-        Qig(t), [description = "Heat of preignition (J/kg)"]
+        ε(t), [description = "Effective heating number (dimensionless)", unit = u"1"]
+        Qig(t), [description = "Heat of preignition", unit = u"J/kg"]
     end
 
     # Output variables
     @variables begin
-        R0(t), [description = "No-wind no-slope rate of spread (m/s)"]
-        R(t), [description = "Rate of spread (m/s)"]
-        t_r(t), [description = "Flame residence time (s)"]
-        HA(t), [description = "Heat per unit area (J/m²)"]
-        IB(t), [description = "Fireline intensity (Byram) (W/m)"]
-        F_L(t), [description = "Flame length (Byram) (m)"]
+        R0(t), [description = "No-wind no-slope rate of spread", unit = u"m/s"]
+        R(t), [description = "Rate of spread", unit = u"m/s"]
+        t_r(t), [description = "Flame residence time", unit = u"s"]
+        HA(t), [description = "Heat per unit area", unit = u"J/m^2"]
+        IB(t), [description = "Fireline intensity (Byram)", unit = u"W/m"]
+        F_L(t), [description = "Flame length (Byram)", unit = u"m"]
     end
 
     eqs = [
-        # Fuel bed calculations - Table 3
-        wn ~ w0 * (1.0 - S_T),                              # Net fuel load
-        ρb ~ w0 / δ,                                        # Bulk density
-        β ~ ρb / ρ_p,                                       # Packing ratio
-        β_op ~ c_beta_op * σ^(-0.8189),                     # Optimum packing ratio (SI)
-        β_ratio ~ β / β_op,                                 # Relative packing ratio
+        # Fuel bed calculations - Table 3, Andrews (2018)
+        wn ~ w0 * (1.0 - S_T),                              # Eq. wn, Net fuel load
+        ρb ~ w0 / δ,                                        # Eq. ρb, Bulk density
+        β ~ ρb / ρ_p,                                       # Eq. β, Packing ratio
+        β_op ~ c_beta_op * σ^(-0.8189),                     # Eq. βop, Optimum packing ratio (SI)
+        β_ratio ~ β / β_op,                                 # Eq. β/βop, Relative packing ratio
 
-        # Reaction intensity components - Table 3 (SI coefficients)
-        Γ_max ~ σ^1.5 / (c_Gamma_denom1 + c_Gamma_denom2 * σ^1.5),  # Maximum reaction velocity (1/s)
-        A_coeff ~ c_A * σ^(-0.7913),                        # Coefficient A (SI)
-        Γ_prime ~ Γ_max * β_ratio^A_coeff * exp(A_coeff * (1.0 - β_ratio)), # Optimum reaction velocity
+        # Reaction intensity components - Table 3, Andrews (2018) (SI coefficients)
+        Γ_max ~ σ^1.5 / (c_Gamma_denom1 + c_Gamma_denom2 * σ^1.5),  # Eq. Γmax, Maximum reaction velocity
+        A_coeff ~ c_A * σ^(-0.7913),                        # Eq. A, Coefficient A (SI)
+        Γ_prime ~ Γ_max * β_ratio^A_coeff * exp(A_coeff * (1.0 - β_ratio)), # Eq. Γ', Optimum reaction velocity
 
-        # Damping coefficients - Table 3
-        rM ~ min(Mf / Mx, 1.0),                             # Moisture ratio (capped at 1.0)
-        η_M ~ 1.0 - c_etaM_1*rM + c_etaM_2*rM^2 - c_etaM_3*rM^3, # Moisture damping coefficient
-        η_s ~ min(c_etas * S_e^(-0.19), 1.0),               # Mineral damping coefficient (capped at 1.0)
+        # Damping coefficients - Table 3, Andrews (2018)
+        rM ~ min(Mf / Mx, 1.0),                             # Eq. rM, Moisture ratio (capped at 1.0)
+        η_M ~ 1.0 - c_etaM_1*rM + c_etaM_2*rM^2 - c_etaM_3*rM^3, # Eq. ηM, Moisture damping coefficient
+        η_s ~ min(c_etas * S_e^(-0.19), 1.0),               # Eq. ηs, Mineral damping coefficient (capped at 1.0)
 
-        # Reaction intensity - Table 3
-        IR ~ Γ_prime * wn * h * η_M * η_s,                 # Reaction intensity (W/m²)
+        # Reaction intensity - Table 3, Andrews (2018)
+        IR ~ Γ_prime * wn * h * η_M * η_s,                 # Eq. IR, Reaction intensity
 
-        # Propagating flux ratio - Table 3 (SI coefficients)
-        ξ ~ (c_xi_1 + c_xi_2*σ)^(-1) * exp((c_xi_3 + c_xi_4*sqrt(σ)) * (β + 0.1)),
+        # Propagating flux ratio - Table 3, Andrews (2018) (SI coefficients)
+        ξ ~ (c_xi_1 + c_xi_2*σ)^(-1) * exp((c_xi_3 + c_xi_4*sqrt(σ)) * (β + 0.1)), # Eq. ξ
 
-        # Wind factor coefficients - Table 3 (SI coefficients)
-        C_coeff ~ c_C_1 * exp(-c_C_2 * σ^0.55),            # Coefficient C (SI)
-        B_coeff ~ c_B * σ^0.54,                             # Coefficient B (SI)
-        E_coeff ~ c_E_1 * exp(-c_E_2 * σ),                 # Coefficient E (SI)
+        # Wind factor coefficients - Table 3, Andrews (2018) (SI coefficients)
+        C_coeff ~ c_C_1 * exp(-c_C_2 * σ^0.55),            # Eq. C, Wind coefficient C (SI)
+        B_coeff ~ c_B * σ^0.54,                             # Eq. B, Wind coefficient B (SI)
+        E_coeff ~ c_E_1 * exp(-c_E_2 * σ),                 # Eq. E, Wind coefficient E (SI)
 
-        # Wind and slope factors - Table 3
-        φw ~ C_coeff * U^B_coeff * β_ratio^(-E_coeff),     # Wind factor
-        φs ~ c_phis * β^(-0.3) * tanϕ^2,                   # Slope factor
+        # Wind and slope factors - Table 3, Andrews (2018)
+        φw ~ C_coeff * U^B_coeff * β_ratio^(-E_coeff),     # Eq. φw, Wind factor
+        φs ~ c_phis * β^(-0.3) * tanϕ^2,                   # Eq. φs, Slope factor
 
-        # Heat sink - Table 3 (SI coefficients)
-        ε ~ exp(-c_eps / σ),                               # Effective heating number
-        Qig ~ c_Qig_1 + c_Qig_2 * Mf,                      # Heat of preignition (J/kg)
+        # Heat sink - Table 3, Andrews (2018) (SI coefficients)
+        ε ~ exp(-c_eps / σ),                               # Eq. ε, Effective heating number
+        Qig ~ c_Qig_1 + c_Qig_2 * Mf,                      # Eq. Qig, Heat of preignition
 
-        # Rate of spread - Main equation
-        R0 ~ (IR * ξ) / (ρb * ε * Qig),                    # No-wind no-slope spread rate (m/s)
-        R ~ R0 * (1.0 + φw + φs),                          # Rate of spread with wind and slope (m/s)
+        # Rate of spread - Eq. 1, Table 3, Andrews (2018)
+        R0 ~ (IR * ξ) / (ρb * ε * Qig),                    # Eq. R (no-wind no-slope)
+        R ~ R0 * (1.0 + φw + φs),                          # Eq. R (with wind and slope)
 
-        # Related models - Table 7 (SI coefficients)
-        t_r ~ c_tr / σ,                                    # Residence time (s)
-        HA ~ IR * t_r,                                     # Heat per unit area (J/m²)
-        IB ~ HA * R,                                       # Fireline intensity (W/m)
-        F_L ~ c_FL * IB^0.46,                              # Flame length (m)
+        # Related models - Table 7, Andrews (2018) (SI coefficients)
+        t_r ~ c_tr / σ,                                    # Eq. tr, Residence time
+        HA ~ IR * t_r,                                     # Eq. HA, Heat per unit area
+        IB ~ HA * R,                                       # Eq. IB, Fireline intensity (Byram)
+        F_L ~ c_FL * IB^0.46,                              # Eq. FL, Flame length (Byram)
     ]
 
-    return System(eqs, t; name)
+    # Note: Unit checking is disabled for this system because the Rothermel model
+    # is semi-empirical with power-law relationships that don't have consistent
+    # dimensional analysis (e.g., σ^(-0.8189), σ^0.54, etc.)
+    return System(eqs, t; name, checks=false)
 end
 
 
@@ -271,25 +284,25 @@ CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Stat
 """
 @component function DynamicFuelLoadTransfer(; name=:DynamicFuelLoadTransfer)
     @constants begin
-        # Transfer fraction coefficients (dimensionless)
-        c_T_1 = -1.11, [description = "Transfer fraction coefficient 1"]
-        c_T_2 = 1.33, [description = "Transfer fraction coefficient 2"]
+        # Transfer fraction coefficients (dimensionless) - Table 6c, Andrews (2018)
+        c_T_1 = -1.11, [description = "Transfer fraction coefficient 1 (dimensionless)", unit = u"1"]
+        c_T_2 = 1.33, [description = "Transfer fraction coefficient 2 (dimensionless)", unit = u"1"]
     end
 
     @parameters begin
-        w0_live_herb, [description = "Initial live herbaceous fuel load (kg/m²)"]
-        Mf_live_herb, [description = "Live herbaceous fuel moisture content (dimensionless)"]
+        w0_live_herb, [description = "Initial live herbaceous fuel load", unit = u"kg/m^2"]
+        Mf_live_herb, [description = "Live herbaceous fuel moisture content (dimensionless)", unit = u"1"]
     end
 
     @variables begin
-        T_fraction(t), [description = "Transfer fraction (dimensionless)"]
-        w0_dead_herb(t), [description = "Dead herbaceous fuel load from transfer (kg/m²)"]
-        w0_live_herb_remaining(t), [description = "Remaining live herbaceous fuel load (kg/m²)"]
+        T_fraction(t), [description = "Transfer fraction (dimensionless)", unit = u"1"]
+        w0_dead_herb(t), [description = "Dead herbaceous fuel load from transfer", unit = u"kg/m^2"]
+        w0_live_herb_remaining(t), [description = "Remaining live herbaceous fuel load", unit = u"kg/m^2"]
     end
 
     eqs = [
-        # Transfer fraction - clamped between 0 and 1
-        T_fraction ~ max(0.0, min(1.0, c_T_1 * Mf_live_herb + c_T_2)),
+        # Transfer fraction - clamped between 0 and 1 - Table 6c, Andrews (2018)
+        T_fraction ~ max(0.0, min(1.0, c_T_1 * Mf_live_herb + c_T_2)),  # Eq. T
 
         # Adjusted fuel loads
         w0_dead_herb ~ T_fraction * w0_live_herb,
@@ -316,23 +329,23 @@ CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Stat
 """
 @component function LiveFuelMoistureExtinction(; name=:LiveFuelMoistureExtinction)
     @constants begin
-        # Coefficients for Mx_live calculation (dimensionless)
-        c_Mx_1 = 2.9, [description = "Live Mx coefficient 1"]
-        c_Mx_2 = 0.226, [description = "Live Mx coefficient 2"]
+        # Coefficients for Mx_live calculation (dimensionless) - Table 6b, Andrews (2018)
+        c_Mx_1 = 2.9, [description = "Live Mx coefficient 1 (dimensionless)", unit = u"1"]
+        c_Mx_2 = 0.226, [description = "Live Mx coefficient 2 (dimensionless)", unit = u"1"]
     end
 
     @parameters begin
-        Mx_dead, [description = "Dead fuel moisture of extinction (dimensionless)"]
-        W_ratio, [description = "Dead-to-live effective fuel load ratio (dimensionless)"]
-        Mf_dead, [description = "Fine dead fuel moisture content (dimensionless)"]
+        Mx_dead, [description = "Dead fuel moisture of extinction (dimensionless)", unit = u"1"]
+        W_ratio, [description = "Dead-to-live effective fuel load ratio (dimensionless)", unit = u"1"]
+        Mf_dead, [description = "Fine dead fuel moisture content (dimensionless)", unit = u"1"]
     end
 
     @variables begin
-        Mx_live(t), [description = "Live fuel moisture of extinction (dimensionless)"]
+        Mx_live(t), [description = "Live fuel moisture of extinction (dimensionless)", unit = u"1"]
     end
 
     eqs = [
-        # Live fuel moisture of extinction - Eq. from Table 6b
+        # Live fuel moisture of extinction - Eq. Mxlive, Table 6b, Andrews (2018)
         # Minimum value is the dead fuel moisture of extinction
         Mx_live ~ max(Mx_dead, c_Mx_1 * W_ratio * (1.0 - Mf_dead / Mx_dead) - c_Mx_2),
     ]
@@ -357,24 +370,24 @@ CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Stat
 """
 @component function EffectiveMidflameWindSpeed(; name=:EffectiveMidflameWindSpeed)
     @parameters begin
-        C_coeff, [description = "Wind coefficient C (dimensionless)"]
-        B_coeff, [description = "Wind coefficient B (dimensionless)"]
-        E_coeff, [description = "Wind coefficient E (dimensionless)"]
-        β_ratio, [description = "Relative packing ratio (dimensionless)"]
-        φw, [description = "Wind factor (dimensionless)"]
-        φs, [description = "Slope factor (dimensionless)"]
+        C_coeff, [description = "Wind coefficient C (dimensionless)", unit = u"1"]
+        B_coeff, [description = "Wind coefficient B (dimensionless)", unit = u"1"]
+        E_coeff, [description = "Wind coefficient E (dimensionless)", unit = u"1"]
+        β_ratio, [description = "Relative packing ratio (dimensionless)", unit = u"1"]
+        φw, [description = "Wind factor (dimensionless)", unit = u"1"]
+        φs, [description = "Slope factor (dimensionless)", unit = u"1"]
     end
 
     @variables begin
-        φE(t), [description = "Combined wind and slope factor (dimensionless)"]
-        UE(t), [description = "Effective midflame wind speed (m/s)"]
+        φE(t), [description = "Combined wind and slope factor (dimensionless)", unit = u"1"]
+        UE(t), [description = "Effective midflame wind speed", unit = u"m/s"]
     end
 
     eqs = [
         # Combined wind and slope factor
         φE ~ φw + φs,
 
-        # Effective midflame wind speed - Table 7
+        # Effective midflame wind speed - Eq. UE, Table 7, Andrews (2018)
         # UE = [(φE * (β/βop)^E) / C]^(1/B)
         UE ~ (φE * β_ratio^E_coeff / C_coeff)^(1.0/B_coeff),
     ]
@@ -402,7 +415,7 @@ developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Co
 CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. 121 p.
 """
 @component function WindLimit(; name=:WindLimit, use_corrected=true)
-    # Wind limit coefficients converted to SI
+    # Wind limit coefficients converted to SI - Table 7, Andrews (2018)
     # Original: U_limit (ft/min) = 96.8 * IR^(1/3) where IR is in Btu/ft²/min
     # or U_limit = 0.9 * IR
     #
@@ -415,25 +428,25 @@ CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Stat
     # U_limit_si / 0.00508 = 0.9 * IR_si / 189.27
     # U_limit_si = 0.00508 * 0.9 / 189.27 * IR_si = 2.42e-5 * IR_si
     @constants begin
-        c_Ulim_corr = 0.0857, [description = "Corrected wind limit coefficient (SI)"]
-        c_Ulim_orig = 2.42e-5, [description = "Original wind limit coefficient (SI)"]
+        c_Ulim_corr = 0.0857, [description = "Corrected wind limit coefficient (SI)", unit = u"m/s/(W/m^2)^(1/3)"]
+        c_Ulim_orig = 2.42e-5, [description = "Original wind limit coefficient (SI)", unit = u"m/s/(W/m^2)"]
     end
 
     @parameters begin
-        IR, [description = "Reaction intensity (W/m²)"]
+        IR, [description = "Reaction intensity", unit = u"W/m^2"]
     end
 
     @variables begin
-        U_limit(t), [description = "Maximum effective wind speed (m/s)"]
+        U_limit(t), [description = "Maximum effective wind speed", unit = u"m/s"]
     end
 
     if use_corrected
-        # Corrected equation (Andrews et al. 2013) - SI
+        # Corrected equation (Andrews et al. 2013) - Eq. Ulimit, Table 7, Andrews (2018)
         eqs = [
             U_limit ~ c_Ulim_corr * IR^(1.0/3.0),
         ]
     else
-        # Original equation - SI
+        # Original equation - Eq. Ulimit (original), Table 7, Andrews (2018)
         eqs = [
             U_limit ~ c_Ulim_orig * IR,
         ]
