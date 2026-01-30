@@ -10,6 +10,15 @@ const M_TO_FT = 1.0 / FT_TO_M
 const TONS_PER_ACRE_TO_KG_PER_M2 = 0.2241702
 const BTU_PER_LB_TO_J_PER_KG = 2326.0
 const FPM_TO_MS = 0.00508
+const MS_TO_FPM = 196.8504
+
+# Helper function to solve an algebraic system with given parameter values
+function solve_system(sys, param_values)
+    sys_compiled = mtkcompile(sys)
+    prob = ODEProblem(sys_compiled, [], (0.0, 1.0), param_values)
+    sol = solve(prob)
+    return sol, sys_compiled
+end
 
 @testset "WildlandFire.jl" begin
     @testset "NFDRS Fuel Models" begin
@@ -69,82 +78,248 @@ const FPM_TO_MS = 0.00508
         @test FireLoadIndex() isa System
     end
 
-    @testset "EquilibriumMoistureContent Equations" begin
-        # Test that the system has the expected structure
+    @testset "EquilibriumMoistureContent Implementation" begin
+        # Test the actual implementation against expected values from
+        # Cohen & Deeming (1985), Eq. 1a, 1b, 1c (page 1)
         emc = EquilibriumMoistureContent()
-
-        # Check that it has equations
-        @test length(equations(emc)) > 0
-
-        # Check that it has the expected input parameters (TEMP and RH)
-        params = parameters(emc)
-        param_names = [string(Symbolics.tosymbol(p, escape=false)) for p in params]
-        @test "TEMP" in param_names
-        @test "RH" in param_names
-
-        # Verify EMC equations against Cohen & Deeming (1985), Eq. 1a, 1b, 1c (page 1)
-        # These regression equations are from Simard (1968)
+        emc_compiled = mtkcompile(emc)
 
         # Test case 1: Low RH (Eq. 1a: RH < 10%)
-        # EMC = 0.03229 + 0.281073 * RH - 0.000578 * TEMP * RH
-        # At RH=5%, TEMP=70°F: EMC = 0.03229 + 0.281073*5 - 0.000578*70*5 = 1.236%
-        # (approximately 1.2%)
+        # At RH=5%, TEMP=70°F (294.26 K)
+        # EMC = 0.03229 + 0.281073*5 - 0.000578*70*5 = 1.236%
+        temp_K_low = (70.0 + 459.67) * 5 / 9  # 70°F to K
+        prob1 = ODEProblem(emc_compiled, [], (0.0, 1.0),
+            [emc_compiled.TEMP => temp_K_low, emc_compiled.RH => 0.05])
+        sol1 = solve(prob1)
+        expected_emc_low = 0.01236  # 1.236% as fraction
+        @test sol1[emc_compiled.EMC][end] ≈ expected_emc_low atol=0.002
 
         # Test case 2: Mid RH (Eq. 1b: 10% <= RH < 50%)
-        # EMC = 2.22749 + 0.160107 * RH - 0.014784 * TEMP
-        # At RH=30%, TEMP=70°F: EMC = 2.22749 + 0.160107*30 - 0.014784*70 = 5.997%
-        # (approximately 6%)
+        # At RH=30%, TEMP=70°F
+        # EMC = 2.22749 + 0.160107*30 - 0.014784*70 = 5.997%
+        prob2 = ODEProblem(emc_compiled, [], (0.0, 1.0),
+            [emc_compiled.TEMP => temp_K_low, emc_compiled.RH => 0.30])
+        sol2 = solve(prob2)
+        expected_emc_mid = 0.05997  # 5.997% as fraction
+        @test sol2[emc_compiled.EMC][end] ≈ expected_emc_mid atol=0.002
 
         # Test case 3: High RH (Eq. 1c: RH >= 50%)
-        # EMC = 21.0606 + 0.005565 * RH^2 - 0.00035 * RH * TEMP - 0.483199 * RH
-        # At RH=80%, TEMP=70°F: EMC = 21.0606 + 0.005565*6400 - 0.00035*80*70 - 0.483199*80
-        # = 21.0606 + 35.616 - 1.96 - 38.656 = 16.06%
+        # At RH=80%, TEMP=70°F
+        # EMC = 21.0606 + 0.005565*6400 - 0.00035*80*70 - 0.483199*80 = 16.06%
+        prob3 = ODEProblem(emc_compiled, [], (0.0, 1.0),
+            [emc_compiled.TEMP => temp_K_low, emc_compiled.RH => 0.80])
+        sol3 = solve(prob3)
+        expected_emc_high = 0.1606  # 16.06% as fraction
+        @test sol3[emc_compiled.EMC][end] ≈ expected_emc_high atol=0.01
     end
 
-    @testset "OneHourFuelMoisture Equations" begin
-        # Test that the system has the expected structure
+    @testset "OneHourFuelMoisture Implementation" begin
+        # Test against Cohen & Deeming (1985), page 3-4
         fm1 = OneHourFuelMoisture()
+        fm1_compiled = mtkcompile(fm1)
 
-        # Check that it has equations
-        @test length(equations(fm1)) > 0
+        # Test 1: When raining, MC1 = 35% (page 4)
+        prob_rain = ODEProblem(fm1_compiled, [], (0.0, 1.0),
+            [fm1_compiled.EMCPRM => 0.10,
+             fm1_compiled.MC10 => 0.10,
+             fm1_compiled.use_fuel_sticks => 0.0,
+             fm1_compiled.is_raining => 1.0])
+        sol_rain = solve(prob_rain)
+        @test sol_rain[fm1_compiled.MC1][end] ≈ 0.35 atol=0.001
 
-        # Check that it has parameters
-        params = parameters(fm1)
-        @test length(params) > 0
+        # Test 2: Without sticks, MC1 = 1.03 * EMCPRM (page 3)
+        prob_no_sticks = ODEProblem(fm1_compiled, [], (0.0, 1.0),
+            [fm1_compiled.EMCPRM => 0.10,
+             fm1_compiled.MC10 => 0.15,
+             fm1_compiled.use_fuel_sticks => 0.0,
+             fm1_compiled.is_raining => 0.0])
+        sol_no_sticks = solve(prob_no_sticks)
+        @test sol_no_sticks[fm1_compiled.MC1][end] ≈ 1.03 * 0.10 atol=0.001
 
-        # Verify: When raining, MC1 = 35% (page 4)
-        # Verify: Without sticks, MC1 = 1.03 * EMCPRM (page 3)
-        # Verify: With sticks, MC1 = (4.0 * EMCPRM + MC10) / 5.0 (page 3)
+        # Test 3: With sticks, MC1 = (4.0 * EMCPRM + MC10) / 5.0 (page 3)
+        prob_sticks = ODEProblem(fm1_compiled, [], (0.0, 1.0),
+            [fm1_compiled.EMCPRM => 0.10,
+             fm1_compiled.MC10 => 0.15,
+             fm1_compiled.use_fuel_sticks => 1.0,
+             fm1_compiled.is_raining => 0.0])
+        sol_sticks = solve(prob_sticks)
+        expected_mc1_sticks = (4.0 * 0.10 + 0.15) / 5.0
+        @test sol_sticks[fm1_compiled.MC1][end] ≈ expected_mc1_sticks atol=0.001
     end
 
-    @testset "FuelLoadingTransfer Equations" begin
+    @testset "TenHourFuelMoisture Implementation" begin
+        # Test against Cohen & Deeming (1985), page 4
+        fm10 = TenHourFuelMoisture()
+        fm10_compiled = mtkcompile(fm10)
+
+        # Test: Without fuel sticks, MC10 = 1.28 * EMCPRM (page 4)
+        prob = ODEProblem(fm10_compiled, [], (0.0, 1.0),
+            [fm10_compiled.EMCPRM => 0.10,
+             fm10_compiled.use_fuel_sticks => 0.0,
+             fm10_compiled.WT => 0.1,
+             fm10_compiled.AGE => 0.0,
+             fm10_compiled.CLIMAT => 2.0])
+        sol = solve(prob)
+        @test sol[fm10_compiled.MC10][end] ≈ 1.28 * 0.10 atol=0.001
+    end
+
+    @testset "FuelLoadingTransfer Implementation" begin
         # Test equations 5, 6, 7, 8 from Cohen & Deeming (1985), page 7
         flt = FuelLoadingTransfer()
-        @test length(equations(flt)) == 4
+        flt_compiled = mtkcompile(flt)
 
-        # Eq. 5: FCTCUR = 1.33 - 0.0111 * MCHERB (MCHERB as percent)
-        # At MCHERB = 30%, FCTCUR = 1.33 - 0.0111*30 = 0.997 (clamped to 1.0)
-        # At MCHERB = 120%, FCTCUR = 1.33 - 0.0111*120 = 0.0 (fully green)
+        # Test at MCHERB = 30% (0.30 as fraction)
+        # FCTCUR = 1.33 - 0.0111 * 30 = 0.997
+        W1_test = 0.05  # kg/m²
+        WHERB_test = 0.02  # kg/m²
+        prob = ODEProblem(flt_compiled, [], (0.0, 1.0),
+            [flt_compiled.MCHERB => 0.30,
+             flt_compiled.W1 => W1_test,
+             flt_compiled.WHERB => WHERB_test])
+        sol = solve(prob)
+
+        expected_fctcur = min(1.0, 1.33 - 0.0111 * 30)  # 0.997
+        @test sol[flt_compiled.FCTCUR][end] ≈ expected_fctcur atol=0.01
+
+        expected_wherbc = expected_fctcur * WHERB_test
+        @test sol[flt_compiled.WHERBC][end] ≈ expected_wherbc atol=0.001
+
+        expected_w1p = W1_test + expected_wherbc
+        @test sol[flt_compiled.W1P][end] ≈ expected_w1p atol=0.001
+
+        expected_wherbp = WHERB_test - expected_wherbc
+        @test sol[flt_compiled.WHERBP][end] ≈ expected_wherbp atol=0.001
+
+        # Test at MCHERB = 120% (0.0% transfer - fully green)
+        prob_green = ODEProblem(flt_compiled, [], (0.0, 1.0),
+            [flt_compiled.MCHERB => 1.20,
+             flt_compiled.W1 => W1_test,
+             flt_compiled.WHERB => WHERB_test])
+        sol_green = solve(prob_green)
+        @test sol_green[flt_compiled.FCTCUR][end] ≈ 0.0 atol=0.01
     end
 
-    @testset "BurningIndex Equation" begin
-        # Verify BI = 3.01 * (SC * ERC)^0.46 (page 12)
-        # BI = 10 * FL where FL = 0.301 * (SC * ERC)^0.46
+    @testset "BurningIndex Implementation" begin
+        # Test BI = 3.01 * (SC * ERC)^0.46 (page 12)
+        # SC is in ft/min for the original equation, so we need to convert
         bi = BurningIndex()
-        @test length(equations(bi)) == 1
+        bi_compiled = mtkcompile(bi)
+
+        # Test case: SC=50 ft/min converted to m/s, ERC=20
+        SC_fpm = 50.0
+        SC_ms = SC_fpm * FPM_TO_MS
+        ERC_val = 20.0
+
+        prob = ODEProblem(bi_compiled, [], (0.0, 1.0),
+            [bi_compiled.SC => SC_ms,
+             bi_compiled.ERC => ERC_val,
+             bi_compiled.fuels_wet => 0.0])
+        sol = solve(prob)
+
+        # Expected BI using original ft/min units for SC
+        expected_bi = 3.01 * (SC_fpm * ERC_val)^0.46
+        @test sol[bi_compiled.BI][end] ≈ expected_bi atol=1.0
+
+        # Test wet conditions - BI should be 0
+        prob_wet = ODEProblem(bi_compiled, [], (0.0, 1.0),
+            [bi_compiled.SC => SC_ms,
+             bi_compiled.ERC => ERC_val,
+             bi_compiled.fuels_wet => 1.0])
+        sol_wet = solve(prob_wet)
+        @test sol_wet[bi_compiled.BI][end] ≈ 0.0 atol=0.001
     end
 
-    @testset "FireLoadIndex Equation" begin
-        # Verify FLI = 0.71 * sqrt(BI^2 + (LOI + MCOI)^2) (page 14)
-        # With BI and (LOI + MCOI) each limited to 100
+    @testset "FireLoadIndex Implementation" begin
+        # Test FLI = 0.71 * sqrt(BI^2 + (LOI + MCOI)^2) (page 14)
         fli = FireLoadIndex()
-        @test length(equations(fli)) == 1
+        fli_compiled = mtkcompile(fli)
+
+        # Test case: BI=50, LOI=30, MCOI=20
+        prob = ODEProblem(fli_compiled, [], (0.0, 1.0),
+            [fli_compiled.BI => 50.0,
+             fli_compiled.LOI => 30.0,
+             fli_compiled.MCOI => 20.0])
+        sol = solve(prob)
+
+        expected_fli = 0.71 * sqrt(50.0^2 + (30.0 + 20.0)^2)
+        @test sol[fli_compiled.FLI][end] ≈ expected_fli atol=0.1
+
+        # Test with BI limited to 100
+        prob_limit = ODEProblem(fli_compiled, [], (0.0, 1.0),
+            [fli_compiled.BI => 150.0,  # Should be limited to 100
+             fli_compiled.LOI => 30.0,
+             fli_compiled.MCOI => 30.0])
+        sol_limit = solve(prob_limit)
+
+        expected_fli_limit = 0.71 * sqrt(100.0^2 + min(100.0, 60.0)^2)
+        @test sol_limit[fli_compiled.FLI][end] ≈ expected_fli_limit atol=0.1
     end
 
-    @testset "HumanFireOccurrenceIndex Equation" begin
-        # Verify MCOI = 0.01 * MRISK * IC (page 13)
+    @testset "HumanFireOccurrenceIndex Implementation" begin
+        # Test MCOI = 0.01 * MRISK * IC (page 13)
         mcoi = HumanFireOccurrenceIndex()
-        @test length(equations(mcoi)) == 1
+        mcoi_compiled = mtkcompile(mcoi)
+
+        # Test case: MRISK=50, IC=80
+        prob = ODEProblem(mcoi_compiled, [], (0.0, 1.0),
+            [mcoi_compiled.MRISK => 50.0,
+             mcoi_compiled.IC => 80.0])
+        sol = solve(prob)
+
+        expected_mcoi = 0.01 * 50.0 * 80.0
+        @test sol[mcoi_compiled.MCOI][end] ≈ expected_mcoi atol=0.1
+    end
+
+    @testset "HerbaceousFuelMoisture Climate Parameters" begin
+        # Verify the implementation produces expected values for different climate classes
+        # Based on Cohen & Deeming (1985), page 7-8
+        hfm = HerbaceousFuelMoisture()
+        hfm_compiled = mtkcompile(hfm)
+
+        # Test green stage at X1000 = 15% (0.15)
+        # For climate class 1: MCHERB = (-70 + 12.8 * 15) / 100 = 1.22 (122%)
+        prob_c1 = ODEProblem(hfm_compiled, [], (0.0, 1.0),
+            [hfm_compiled.X1000 => 0.15,
+             hfm_compiled.MC1 => 0.05,
+             hfm_compiled.CLIMAT => 1.0,
+             hfm_compiled.is_annual => 0.0,
+             hfm_compiled.GRNDAY => 0.0,
+             hfm_compiled.is_greenup => 0.0,
+             hfm_compiled.is_cured => 0.0])
+        sol_c1 = solve(prob_c1)
+
+        expected_mcherb_c1 = (-70.0 + 12.8 * 15) / 100.0
+        @test sol_c1[hfm_compiled.MCHERB][end] ≈ expected_mcherb_c1 atol=0.02
+    end
+
+    @testset "WoodyFuelMoisture Climate Parameters" begin
+        # Verify the implementation produces expected values for different climate classes
+        # Based on Cohen & Deeming (1985), page 8-9
+        wfm = WoodyFuelMoisture()
+        wfm_compiled = mtkcompile(wfm)
+
+        # Test frozen stage for climate class 2 (PREGRN = 60%)
+        prob_frozen = ODEProblem(wfm_compiled, [], (0.0, 1.0),
+            [wfm_compiled.MC1000 => 0.20,
+             wfm_compiled.CLIMAT => 2.0,
+             wfm_compiled.GRNDAY => 0.0,
+             wfm_compiled.is_greenup => 0.0,
+             wfm_compiled.is_frozen => 1.0])
+        sol_frozen = solve(prob_frozen)
+        @test sol_frozen[wfm_compiled.MCWOOD][end] ≈ 0.60 atol=0.01
+
+        # Test green stage for climate class 2 at MC1000 = 20%
+        # MCWOOD = (-5.0 + 8.2 * 20) / 100 = 1.59 (159%)
+        prob_green = ODEProblem(wfm_compiled, [], (0.0, 1.0),
+            [wfm_compiled.MC1000 => 0.20,
+             wfm_compiled.CLIMAT => 2.0,
+             wfm_compiled.GRNDAY => 0.0,
+             wfm_compiled.is_greenup => 0.0,
+             wfm_compiled.is_frozen => 0.0])
+        sol_green = solve(prob_green)
+
+        expected_mcwood = (-5.0 + 8.2 * 20) / 100.0
+        @test sol_green[wfm_compiled.MCWOOD][end] ≈ expected_mcwood atol=0.02
     end
 
     @testset "SpreadComponent Structure" begin
@@ -152,6 +327,13 @@ const FPM_TO_MS = 0.00508
         sc = SpreadComponent()
         @test length(equations(sc)) > 0
         @test length(parameters(sc)) > 0
+
+        # Verify outputs include SC, ROS, IR
+        vars = unknowns(sc)
+        var_names = [string(Symbolics.tosymbol(v, escape=false)) for v in vars]
+        @test "SC" in var_names
+        @test "ROS" in var_names
+        @test "IR" in var_names
     end
 
     @testset "EnergyReleaseComponent Structure" begin
@@ -159,6 +341,12 @@ const FPM_TO_MS = 0.00508
         erc = EnergyReleaseComponent()
         @test length(equations(erc)) > 0
         @test length(parameters(erc)) > 0
+
+        # Verify outputs include ERC, IRE
+        vars = unknowns(erc)
+        var_names = [string(Symbolics.tosymbol(v, escape=false)) for v in vars]
+        @test "ERC" in var_names
+        @test "IRE" in var_names
     end
 
     @testset "Fuel Loading Conversion" begin
@@ -173,116 +361,54 @@ const FPM_TO_MS = 0.00508
         @test WildlandFire.fuel_loading_to_lb_per_sqft(0.20) ≈ 0.00918274 atol=1e-6
     end
 
-    @testset "Herbaceous Fuel Moisture Climate Parameters" begin
-        # Verify climate-dependent parameters from Cohen & Deeming (1985), page 7
-        # HERBGA and HERBGB for greenup/green stage
-        hfm = HerbaceousFuelMoisture()
-        @test length(equations(hfm)) > 0
-
-        # Climate class 1: HERBGA = -70.0, HERBGB = 12.8
-        # Climate class 2: HERBGA = -100.0, HERBGB = 14.0
-        # Climate class 3: HERBGA = -137.5, HERBGB = 15.5
-        # Climate class 4: HERBGA = -185.0, HERBGB = 17.4
-    end
-
-    @testset "Woody Fuel Moisture Climate Parameters" begin
-        # Verify climate-dependent parameters from Cohen & Deeming (1985), page 8
-        wfm = WoodyFuelMoisture()
-        @test length(equations(wfm)) > 0
-
-        # PREGRN (dormant moisture content):
-        # Climate class 1: 50%, class 2: 60%, class 3: 70%, class 4: 80%
-
-        # WOODGA and WOODGB:
-        # Climate class 1: WOODGA = 12.5, WOODGB = 7.5
-        # Climate class 2: WOODGA = -5.0, WOODGB = 8.2
-        # Climate class 3: WOODGA = -22.5, WOODGB = 8.9
-        # Climate class 4: WOODGA = -45.0, WOODGB = 9.8
-    end
-
-    @testset "Numerical Validation - EMC Equations" begin
-        # Verify EMC equations against Cohen & Deeming (1985), Eq. 1a, 1b, 1c (page 1)
-        # These regression equations are from Simard (1968)
-
-        # Manual calculation functions matching the paper (uses °F and RH as percent)
-        function emc_manual(temp_F, rh_pct)
-            if rh_pct < 10
-                return 0.03229 + 0.281073 * rh_pct - 0.000578 * temp_F * rh_pct
-            elseif rh_pct < 50
-                return 2.22749 + 0.160107 * rh_pct - 0.014784 * temp_F
-            else
-                return 21.0606 + 0.005565 * rh_pct^2 - 0.00035 * rh_pct * temp_F - 0.483199 * rh_pct
-            end
-        end
-
-        # Test case 1: Low RH (Eq. 1a: RH < 10%)
-        # At RH=5%, TEMP=70°F
-        expected_low = emc_manual(70.0, 5.0)  # Should be ~1.236%
-        @test expected_low ≈ 1.236 atol=0.01
-
-        # Test case 2: Mid RH (Eq. 1b: 10% <= RH < 50%)
-        # At RH=30%, TEMP=70°F
-        expected_mid = emc_manual(70.0, 30.0)  # Should be ~5.997%
-        @test expected_mid ≈ 5.997 atol=0.01
-
-        # Test case 3: High RH (Eq. 1c: RH >= 50%)
-        # At RH=80%, TEMP=70°F
-        expected_high = emc_manual(70.0, 80.0)  # Should be ~16.06%
-        @test expected_high ≈ 16.06 atol=0.1
-    end
-
-    @testset "Numerical Validation - Fuel Loading Transfer" begin
-        # Test Eq. 5: FCTCUR = 1.33 - 0.0111 * MCHERB (MCHERB as percent)
-        # At MCHERB = 30%, FCTCUR = 1.33 - 0.0111*30 = 0.997
-        @test 1.33 - 0.0111 * 30 ≈ 0.997 atol=0.001
-
-        # At MCHERB = 120%, FCTCUR = 1.33 - 0.0111*120 = -0.002 (clamped to 0)
-        @test max(0.0, 1.33 - 0.0111 * 120) ≈ 0.0 atol=0.01
-
-        # At MCHERB = 30% (boundary), nearly all herb transferred
-        @test min(1.0, 1.33 - 0.0111 * 30) ≈ 0.997 atol=0.01
-    end
-
-    @testset "Numerical Validation - Burning Index" begin
-        # Verify BI = 3.01 * (SC * ERC)^0.46 (page 12)
-        # Example: SC=50 ft/min, ERC=20 -> BI = 3.01 * (50*20)^0.46 = 3.01 * 1000^0.46
-        # 1000^0.46 ≈ 23.99, so BI ≈ 72.2
-        @test 3.01 * (50 * 20)^0.46 ≈ 72.2 atol=1.0
-
-        # Zero case
-        @test 3.01 * (0 * 0)^0.46 == 0.0
-    end
-
-    @testset "Numerical Validation - Fire Load Index" begin
-        # Verify FLI = 0.71 * sqrt(BI^2 + (LOI + MCOI)^2) (page 14)
-        # Example: BI=50, LOI=30, MCOI=20 -> (LOI+MCOI)=50
-        # FLI = 0.71 * sqrt(50^2 + 50^2) = 0.71 * sqrt(5000) ≈ 50.2
-        @test 0.71 * sqrt(50^2 + 50^2) ≈ 50.2 atol=0.1
-
-        # With limits: BI=150 (limited to 100), LOI+MCOI=60
-        # FLI = 0.71 * sqrt(100^2 + 60^2) = 0.71 * sqrt(13600) ≈ 82.8
-        @test 0.71 * sqrt(100^2 + 60^2) ≈ 82.8 atol=0.1
-    end
-
-    @testset "Numerical Validation - Human Fire Occurrence" begin
-        # Verify MCOI = 0.01 * MRISK * IC (page 13)
-        # Example: MRISK=50, IC=80 -> MCOI = 0.01 * 50 * 80 = 40
-        @test 0.01 * 50 * 80 == 40.0
-    end
-
-    @testset "Lightning Fire Occurrence Index" begin
+    @testset "LightningFireOccurrenceIndex Structure" begin
         # Test component creation
         loi = LightningFireOccurrenceIndex()
         @test length(equations(loi)) > 0
 
-        # Verify LAL table values from page 13
-        # LAL 2: CGRATE=12.5, STMDIA=3.0, TOTWID=7.0
-        # LAL 3: CGRATE=25.0, STMDIA=4.0, TOTWID=8.0
-        # LAL 4: CGRATE=50.0, STMDIA=5.0, TOTWID=9.0
-        # LAL 5: CGRATE=100.0, STMDIA=7.0, TOTWID=11.0
+        # Verify outputs include expected variables
+        vars = unknowns(loi)
+        var_names = [string(Symbolics.tosymbol(v, escape=false)) for v in vars]
+        @test "LOI" in var_names
+        @test "LRISK" in var_names
+        @test "CGRATE" in var_names
+    end
 
-        # Test LGTDUR equation: LGTDUR = -86.83 + 153.41 * CGRATE^0.1437
-        # At CGRATE=25: LGTDUR = -86.83 + 153.41 * 25^0.1437 ≈ -86.83 + 153.41 * 1.588 ≈ 156.8
-        @test -86.83 + 153.41 * 25^0.1437 ≈ 156.8 atol=1.0
+    @testset "IgnitionComponent Structure" begin
+        # Test component creation
+        ic = IgnitionComponent()
+        @test length(equations(ic)) > 0
+
+        # Verify outputs include expected variables
+        vars = unknowns(ic)
+        var_names = [string(Symbolics.tosymbol(v, escape=false)) for v in vars]
+        @test "IC" in var_names
+        @test "PI" in var_names
+        @test "QIGN" in var_names
+    end
+
+    @testset "HundredHourFuelMoisture Structure" begin
+        # Test component creation
+        fm100 = HundredHourFuelMoisture()
+        @test length(equations(fm100)) > 0
+
+        # Verify outputs include expected variables
+        vars = unknowns(fm100)
+        var_names = [string(Symbolics.tosymbol(v, escape=false)) for v in vars]
+        @test "MC100" in var_names
+        @test "EMCBAR" in var_names
+        @test "BNDRYH" in var_names
+    end
+
+    @testset "ThousandHourFuelMoisture Structure" begin
+        # Test component creation
+        fm1000 = ThousandHourFuelMoisture()
+        @test length(equations(fm1000)) > 0
+
+        # Verify outputs include expected variables
+        vars = unknowns(fm1000)
+        var_names = [string(Symbolics.tosymbol(v, escape=false)) for v in vars]
+        @test "MC1000" in var_names
+        @test "BNDRYT" in var_names
     end
 end

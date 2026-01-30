@@ -281,51 +281,85 @@ equations(fli)
 
 ### Numerical Validation
 
-The following examples verify the implementation against known values from Cohen & Deeming (1985).
+The following examples verify the implementation by running the actual ModelingToolkit components with known input values from Cohen & Deeming (1985).
 
 #### EMC Equations (Eq. 1a, 1b, 1c)
 
+The implementation uses SI units (temperature in Kelvin, RH as fraction 0-1).
+
 ```@example validation
-# Verify EMC regression equations from Simard (1968)
-function emc_manual(temp, rh_pct)
-    if rh_pct < 10
-        return 0.03229 + 0.281073 * rh_pct - 0.000578 * temp * rh_pct
-    elseif rh_pct < 50
-        return 2.22749 + 0.160107 * rh_pct - 0.014784 * temp
-    else
-        return 21.0606 + 0.005565 * rh_pct^2 - 0.00035 * rh_pct * temp - 0.483199 * rh_pct
-    end
+using WildlandFire
+using ModelingToolkit
+using OrdinaryDiffEqDefault
+
+# Create and compile the EMC system
+emc_sys = EquilibriumMoistureContent()
+compiled_emc = mtkcompile(emc_sys)
+
+# Helper function to compute EMC for given temperature (°F) and RH (%)
+function compute_emc(temp_f, rh_pct)
+    # Convert °F to K: K = (°F + 459.67) × 5/9
+    temp_k = (temp_f + 459.67) * 5 / 9
+    rh_frac = rh_pct / 100.0
+
+    prob = ODEProblem(compiled_emc,
+        Dict(compiled_emc.TEMP => temp_k, compiled_emc.RH => rh_frac),
+        (0.0, 1.0))
+    sol = solve(prob)
+    return sol[compiled_emc.EMC][end] * 100  # Convert fraction to %
 end
 
 # Test case 1: Low RH (Eq. 1a: RH < 10%)
-# At RH=5%, TEMP=70°F: EMC ≈ 1.236%
-println("EMC at RH=5%, T=70°F: $(round(emc_manual(70.0, 5.0), digits=3))%")
+# At RH=5%, TEMP=70°F: EMC ≈ 1.2%
+println("EMC at RH=5%, T=70°F: $(round(compute_emc(70.0, 5.0), digits=2))%")
 
 # Test case 2: Mid RH (Eq. 1b: 10% <= RH < 50%)
-# At RH=30%, TEMP=70°F: EMC ≈ 5.997%
-println("EMC at RH=30%, T=70°F: $(round(emc_manual(70.0, 30.0), digits=3))%")
+# At RH=30%, TEMP=70°F: EMC ≈ 6.0%
+println("EMC at RH=30%, T=70°F: $(round(compute_emc(70.0, 30.0), digits=2))%")
 
 # Test case 3: High RH (Eq. 1c: RH >= 50%)
-# At RH=80%, TEMP=70°F: EMC ≈ 16.06%
-println("EMC at RH=80%, T=70°F: $(round(emc_manual(70.0, 80.0), digits=2))%")
+# At RH=80%, TEMP=70°F: EMC ≈ 16.1%
+println("EMC at RH=80%, T=70°F: $(round(compute_emc(70.0, 80.0), digits=2))%")
 ```
 
 #### Burning Index (page 12)
 
 ```@example validation
-# BI = 3.01 * (SC * ERC)^0.46
-# Example: SC=50, ERC=20 -> BI ≈ 60
-bi_example = 3.01 * (50 * 20)^0.46
-println("BI at SC=50, ERC=20: $(round(bi_example, digits=1))")
+using WildlandFire
+using ModelingToolkit
+using OrdinaryDiffEqDefault
+
+# Create and compile the Burning Index system
+bi_sys = BurningIndex()
+compiled_bi = mtkcompile(bi_sys)
+
+# SC=50, ERC=20 -> BI ≈ 60
+prob = ODEProblem(compiled_bi,
+    Dict(compiled_bi.SC => 50.0, compiled_bi.ERC => 20.0),
+    (0.0, 1.0))
+sol = solve(prob)
+bi_result = sol[compiled_bi.BI][end]
+println("BI at SC=50, ERC=20: $(round(bi_result, digits=1))")
 ```
 
 #### Fire Load Index (page 14)
 
 ```@example validation
-# FLI = 0.71 * sqrt(BI^2 + (LOI + MCOI)^2)
-# Example: BI=50, LOI=30, MCOI=20
-fli_example = 0.71 * sqrt(50^2 + (30 + 20)^2)
-println("FLI at BI=50, LOI=30, MCOI=20: $(round(fli_example, digits=1))")
+using WildlandFire
+using ModelingToolkit
+using OrdinaryDiffEqDefault
+
+# Create and compile the Fire Load Index system
+fli_sys = FireLoadIndex()
+compiled_fli = mtkcompile(fli_sys)
+
+# BI=50, LOI=30, MCOI=20
+prob = ODEProblem(compiled_fli,
+    Dict(compiled_fli.BI => 50.0, compiled_fli.LOI => 30.0, compiled_fli.MCOI => 20.0),
+    (0.0, 1.0))
+sol = solve(prob)
+fli_result = sol[compiled_fli.FLI][end]
+println("FLI at BI=50, LOI=30, MCOI=20: $(round(fli_result, digits=1))")
 ```
 
 ### Fuel Loading Comparison
