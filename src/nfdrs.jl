@@ -25,39 +25,37 @@ This implementation uses SI units throughout:
 - Heat of combustion: J/kg
 - Wind speed: m/s
 - Rate of spread: m/s
-- Moisture content: fraction (0-1)
+- Moisture content: dimensionless fraction (0-1)
 - Density: kg/m³
 
 The original NFDRS equations use imperial units. All empirical coefficients have been
-converted to SI units. Conversion factors are explicitly defined as constants.
+converted to SI units. Conversion factors are explicitly defined.
 """
 
 # t and D are imported in the main WildlandFire module
 
 # =============================================================================
-# Unit Conversion Constants
+# Unit Conversion Functions (module level, not symbolic)
 # =============================================================================
 
-# These conversion factors are used throughout the module to convert
-# between imperial units (used in the original NFDRS equations) and SI units.
-
-const FT_TO_M = 0.3048                    # feet to meters
-const M_TO_FT = 1.0 / FT_TO_M             # meters to feet (3.28084)
-const MI_TO_M = 1609.344                  # miles to meters
-const MPH_TO_MS = 0.44704                 # miles per hour to meters per second
-const MS_TO_FPM = 196.8504                # meters per second to feet per minute
-const LB_PER_FT3_TO_KG_PER_M3 = 16.01846  # lb/ft³ to kg/m³
-const LB_PER_FT2_TO_KG_PER_M2 = 4.88243   # lb/ft² to kg/m²
-const KG_PER_M2_TO_LB_PER_FT2 = 1.0 / LB_PER_FT2_TO_KG_PER_M2
-const BTU_PER_LB_TO_J_PER_KG = 2326.0     # Btu/lb to J/kg
-const CAL_PER_G_TO_J_PER_KG = 4184.0      # cal/g to J/kg
-const TONS_PER_ACRE_TO_KG_PER_M2 = 0.2241702  # tons/acre to kg/m²
-
-# Temperature conversion functions
+# Temperature conversion functions (for use in computations, not symbolic)
 fahrenheit_to_kelvin(F) = (F + 459.67) * 5 / 9
 kelvin_to_fahrenheit(K) = K * 9 / 5 - 459.67
 celsius_to_kelvin(C) = C + 273.15
 kelvin_to_celsius(K) = K - 273.15
+
+# Conversion factors for fuel model data (module constants, not symbolic)
+const _FT_TO_M = 0.3048
+const _M_TO_FT = 1.0 / _FT_TO_M
+const _MI_TO_M = 1609.344
+const _MPH_TO_MS = 0.44704
+const _MS_TO_FPM = 196.8504
+const _LB_PER_FT3_TO_KG_PER_M3 = 16.01846
+const _LB_PER_FT2_TO_KG_PER_M2 = 4.88243
+const _KG_PER_M2_TO_LB_PER_FT2 = 1.0 / _LB_PER_FT2_TO_KG_PER_M2
+const _BTU_PER_LB_TO_J_PER_KG = 2326.0
+const _CAL_PER_G_TO_J_PER_KG = 4184.0
+const _TONS_PER_ACRE_TO_KG_PER_M2 = 0.2241702
 
 # =============================================================================
 # Equilibrium Moisture Content (EMC)
@@ -69,9 +67,9 @@ kelvin_to_celsius(K) = K - 273.15
 Calculate equilibrium moisture content (EMC) from temperature and relative humidity.
 
 Based on regression equations developed by Simard (1968) from Wood Handbook tables.
-EMC is expressed as fraction moisture content.
+EMC is expressed as fraction moisture content (dimensionless).
 
-Implements Equations 1a, 1b, 1c from Cohen & Deeming (1985).
+Implements Equations 1a, 1b, 1c from Cohen & Deeming (1985), page 1.
 
 # Parameters
 - `TEMP`: Dry bulb temperature (K)
@@ -82,12 +80,12 @@ Implements Equations 1a, 1b, 1c from Cohen & Deeming (1985).
 """
 @component function EquilibriumMoistureContent(; name=:EquilibriumMoistureContent)
     @parameters begin
-        TEMP, [description = "Dry bulb temperature (K)"]
-        RH, [description = "Relative humidity (dimensionless)"]
+        TEMP, [description = "Dry bulb temperature, in K (dimensionless numerical value)"]
+        RH, [description = "Relative humidity (dimensionless, 0-1)"]
     end
 
     @variables begin
-        EMC(t), [description = "Equilibrium moisture content (dimensionless)"]
+        EMC(t), [description = "Equilibrium moisture content (dimensionless, 0-1)"]
     end
 
     # Convert temperature to Fahrenheit for the empirical equations
@@ -124,11 +122,16 @@ Calculate 1-hour timelag fuel moisture content.
 The response of 1-hour timelag fuels to environmental changes is so rapid that only
 the potential moisture content (equivalent to EMC at fuel-atmosphere interface) is required.
 
+From Cohen & Deeming (1985), page 3:
+- When fuel moisture sticks are not used: MC1 = 1.03 × EMCPRM
+- When fuel moisture sticks are used: MC1 = (4.0 × EMCPRM + MC10) / 5.0
+- If raining at observation time: MC1 = 35%
+
 # Parameters
 - `EMCPRM`: EMC at fuel-atmosphere interface (dimensionless)
 - `MC10`: 10-hour fuel moisture content (dimensionless), used when fuel sticks are used
-- `use_fuel_sticks`: Flag (1 if fuel sticks used, 0 otherwise)
-- `is_raining`: Flag (1 if raining, 0 otherwise)
+- `use_fuel_sticks`: Flag (1 if fuel sticks used, 0 otherwise) (dimensionless)
+- `is_raining`: Flag (1 if raining, 0 otherwise) (dimensionless)
 
 # Variables
 - `MC1`: 1-hour fuel moisture content (dimensionless)
@@ -137,8 +140,8 @@ the potential moisture content (equivalent to EMC at fuel-atmosphere interface) 
     @parameters begin
         EMCPRM, [description = "EMC at fuel-atmosphere interface (dimensionless)"]
         MC10, [description = "10-hour fuel moisture content (dimensionless)"]
-        use_fuel_sticks, [description = "Flag: 1 if fuel sticks used, 0 otherwise"]
-        is_raining, [description = "Flag: 1 if raining, 0 otherwise"]
+        use_fuel_sticks, [description = "Flag: 1 if fuel sticks used, 0 otherwise (dimensionless)"]
+        is_raining, [description = "Flag: 1 if raining, 0 otherwise (dimensionless)"]
     end
 
     @variables begin
@@ -146,11 +149,12 @@ the potential moisture content (equivalent to EMC at fuel-atmosphere interface) 
     end
 
     eqs = [
+        # Page 3-4: MC1 calculation based on conditions
         MC1 ~ ifelse(is_raining > 0.5,
-            0.35,  # 35% if raining
+            0.35,  # 35% if raining (page 4)
             ifelse(use_fuel_sticks > 0.5,
-                (4.0 * EMCPRM + MC10) / 5.0,  # With fuel sticks
-                1.03 * EMCPRM  # Without fuel sticks
+                (4.0 * EMCPRM + MC10) / 5.0,  # With fuel sticks (page 3)
+                1.03 * EMCPRM  # Without fuel sticks (page 3)
             )
         )
     ]
@@ -167,50 +171,53 @@ end
 
 Calculate 10-hour timelag fuel moisture content.
 
-Without fuel sticks, MC10 = 1.28 * EMCPRM.
-With fuel sticks, age correction is applied based on Haines and Frost (1978).
+From Cohen & Deeming (1985), page 4:
+- Without fuel sticks: MC10 = 1.28 × EMCPRM
+- With fuel sticks: MC10 = AA×CC + BB×CC×(WT - 100.0)
+  where age correction factors are based on Haines and Frost (1978):
+  - AA = 0.5 × AGE / 30.0
+  - BB = 1.0 + (0.02 × AGE / 30.0)
+  - CC = CLIMAT / 4.0
 
 # Parameters
 - `EMCPRM`: EMC at fuel-atmosphere interface (dimensionless)
-- `use_fuel_sticks`: Flag (1 if fuel sticks used, 0 otherwise)
+- `use_fuel_sticks`: Flag (1 if fuel sticks used, 0 otherwise) (dimensionless)
 - `WT`: Weight of fuel sticks (kg)
-- `AGE`: Days since sticks were set out
-- `CLIMAT`: NFDRS climate class (1-4)
+- `AGE`: Days since sticks were set out (dimensionless)
+- `CLIMAT`: NFDRS climate class 1-4 (dimensionless)
 
 # Variables
 - `MC10`: 10-hour fuel moisture content (dimensionless)
 """
 @component function TenHourFuelMoisture(; name=:TenHourFuelMoisture)
     @constants begin
-        # Conversion factor from grams to kg
-        g_to_kg = 0.001, [description = "Grams to kilograms conversion"]
-        # Reference weight for fuel sticks (100 grams in original)
-        WT_ref = 0.1, [description = "Reference fuel stick weight (kg)"]
+        g_to_kg = 0.001, [description = "Grams to kilograms conversion (dimensionless)"]
+        WT_ref_g = 100.0, [description = "Reference fuel stick weight, in g (dimensionless)"]
     end
 
     @parameters begin
-        EMCPRM, [description = "EMC at fuel-atmosphere interface (dimensionless)"]
-        use_fuel_sticks, [description = "Flag: 1 if fuel sticks used, 0 otherwise"]
-        WT = 0.1, [description = "Weight of fuel sticks (kg)"]
-        AGE = 0.0, [description = "Days since sticks were set out"]
-        CLIMAT = 2.0, [description = "NFDRS climate class (1-4)"]
+        EMCPRM, [description = "EMC at fuel-atmosphere interface (dimensionless, 0-1)"]
+        use_fuel_sticks, [description = "Flag: 1 if fuel sticks used, 0 otherwise (dimensionless)"]
+        WT = 0.1, [description = "Weight of fuel sticks, in kg (dimensionless numerical value)"]
+        AGE = 0.0, [description = "Days since sticks were set out (dimensionless)"]
+        CLIMAT = 2.0, [description = "NFDRS climate class 1-4 (dimensionless)"]
     end
 
     @variables begin
-        MC10(t), [description = "10-hour fuel moisture content (dimensionless)"]
+        MC10(t), [description = "10-hour fuel moisture content (dimensionless, 0-1)"]
     end
 
-    # Age correction factors (same as original - dimensionless)
+    # Age correction factors (page 4)
     AA = 0.5 * AGE / 30.0
     BB = 1.0 + (0.02 * AGE / 30.0)
     CC = CLIMAT / 4.0
 
-    # Weight difference in kg, but equation expects grams difference from 100g
-    # Convert WT to grams and subtract reference 100g
+    # Weight difference: convert WT to grams and subtract reference 100g
     WT_grams = WT / g_to_kg
-    WT_diff = WT_grams - 100.0
+    WT_diff = WT_grams - WT_ref_g
 
     eqs = [
+        # Page 4: MC10 calculation
         MC10 ~ ifelse(use_fuel_sticks > 0.5,
             # With fuel sticks (age corrected)
             (AA * CC + BB * CC * WT_diff) / 100.0,  # Convert to fraction
@@ -234,15 +241,17 @@ Calculate 100-hour timelag fuel moisture content using daily discrete update.
 Uses weighted 24-hour average EMC (EMCBAR) based on hours of daylight.
 The moisture content responds to the boundary condition with a response coefficient.
 
-Based on Eq. from page 5 of Cohen & Deeming (1985):
-    MC100 = YMC100 + (BNDRYH - YMC100) * (1.0 - 0.87 * exp(-0.24))
+From Cohen & Deeming (1985), page 4-5:
+- EMCBAR = (DAYLIT × EMCMIN + (24 - DAYLIT) × EMCMAX) / 24
+- BNDRYH = ((24 - PPTDUR) × EMCBAR + PPTDUR × (0.5×PPTDUR + 41)) / 24
+- MC100 = YMC100 + (BNDRYH - YMC100) × (1.0 - 0.87 × exp(-0.24))
 
 # Parameters
 - `EMCMIN`: EMC at max temp/min RH (dimensionless)
 - `EMCMAX`: EMC at min temp/max RH (dimensionless)
 - `PPTDUR`: Duration of precipitation (s)
 - `LAT`: Station latitude (rad)
-- `JDATE`: Julian day of year (1-366)
+- `JDATE`: Julian day of year 1-366 (dimensionless)
 - `YMC100`: Previous day's MC100 value (dimensionless)
 
 # Variables
@@ -252,19 +261,17 @@ Based on Eq. from page 5 of Cohen & Deeming (1985):
 """
 @component function HundredHourFuelMoisture(; name=:HundredHourFuelMoisture)
     @constants begin
-        # Time conversion
-        hr_to_s = 3600.0, [description = "Hours to seconds conversion"]
-        # Response coefficient: (1.0 - 0.87 * exp(-0.24)) ≈ 0.1836
-        response_coef = 1.0 - 0.87 * exp(-0.24), [description = "Moisture response coefficient"]
+        hr_to_s = 3600.0, [description = "Hours to seconds conversion (dimensionless)"]
+        response_coef = 1.0 - 0.87 * exp(-0.24), [description = "Moisture response coefficient (dimensionless)"]
     end
 
     @parameters begin
-        EMCMIN, [description = "EMC at max temp/min RH (dimensionless)"]
-        EMCMAX, [description = "EMC at min temp/max RH (dimensionless)"]
-        PPTDUR = 0.0, [description = "Duration of precipitation (s)"]
-        LAT = 0.6981, [description = "Station latitude (rad)"]  # ~40° in radians
-        JDATE = 180.0, [description = "Julian day of year (1-366)"]
-        YMC100, [description = "Previous day's MC100 value (dimensionless)"]
+        EMCMIN, [description = "EMC at max temp/min RH (dimensionless, 0-1)"]
+        EMCMAX, [description = "EMC at min temp/max RH (dimensionless, 0-1)"]
+        PPTDUR = 0.0, [description = "Duration of precipitation, in s (dimensionless numerical value)"]
+        LAT = 0.6981, [description = "Station latitude, in rad (dimensionless numerical value)"]
+        JDATE = 180.0, [description = "Julian day of year 1-366 (dimensionless)"]
+        YMC100, [description = "Previous day's MC100 value (dimensionless, 0-1)"]
     end
 
     @variables begin
@@ -276,23 +283,20 @@ Based on Eq. from page 5 of Cohen & Deeming (1985):
     # Convert precipitation duration from seconds to hours for equation
     PPTDUR_hr = PPTDUR / hr_to_s
 
-    # Daylength calculation (LAT is already in radians)
+    # Daylength calculation (page 4-5)
     DECL = 0.41008 * sin((JDATE - 82) * 0.01745)
-    # Limit tan product to avoid domain errors
     tan_product = tan(LAT) * tan(DECL)
     tan_product_clamped = max(-0.99, min(0.99, tan_product))
     DAYLIT = 24.0 * (1.0 - acos(tan_product_clamped) / 3.1416)
 
     eqs = [
-        # Weighted 24-hour average EMC
+        # Weighted 24-hour average EMC (page 5)
         EMCBAR ~ (DAYLIT * EMCMIN + (24.0 - DAYLIT) * EMCMAX) / 24.0,
 
-        # Weighted 24-hour average boundary condition (Eq. from page 5)
-        # Note: The precipitation term uses percent moisture, so we convert appropriately
+        # Weighted 24-hour average boundary condition (page 5)
         BNDRYH ~ ((24.0 - PPTDUR_hr) * EMCBAR + PPTDUR_hr * (0.5 * PPTDUR_hr + 41.0) / 100.0) / 24.0,
 
-        # 100-hour fuel moisture daily update equation
-        # MC100 = YMC100 + (BNDRYH - YMC100) * response_coef
+        # 100-hour fuel moisture daily update equation (page 5)
         MC100 ~ YMC100 + (BNDRYH - YMC100) * response_coef
     ]
 
@@ -309,8 +313,9 @@ end
 Calculate 1000-hour timelag fuel moisture content using daily discrete update.
 
 Uses 7-day running average of boundary conditions (BDYBAR).
-Based on Eq. from page 5 of Cohen & Deeming (1985):
-    MC1000 = PM1000 + (BDYBAR - PM1000) * (1.0 - 0.82 * exp(-0.168))
+From Cohen & Deeming (1985), page 5:
+- BNDRYT = ((24 - PPTDUR) × EMCBAR + PPTDUR × (2.7×PPTDUR + 76)) / 24
+- MC1000 = PM1000 + (BDYBAR - PM1000) × (1.0 - 0.82 × exp(-0.168))
 
 Note: In the original NFDRS, BNDRYT is calculated daily but BDYBAR and MC1000
 are calculated only every seventh day. This implementation calculates daily
@@ -328,17 +333,15 @@ with the running average provided as a parameter.
 """
 @component function ThousandHourFuelMoisture(; name=:ThousandHourFuelMoisture)
     @constants begin
-        # Time conversion
-        hr_to_s = 3600.0, [description = "Hours to seconds conversion"]
-        # Response coefficient: (1.0 - 0.82 * exp(-0.168)) ≈ 0.1532
-        response_coef = 1.0 - 0.82 * exp(-0.168), [description = "Moisture response coefficient"]
+        hr_to_s = 3600.0, [description = "Hours to seconds conversion (dimensionless)"]
+        response_coef = 1.0 - 0.82 * exp(-0.168), [description = "Moisture response coefficient (dimensionless)"]
     end
 
     @parameters begin
-        EMCBAR, [description = "Weighted 24-hour average EMC (dimensionless)"]
-        PPTDUR = 0.0, [description = "Duration of precipitation (s)"]
-        BDYBAR, [description = "7-day running average boundary condition (dimensionless)"]
-        PM1000, [description = "Previous MC1000 value (dimensionless)"]
+        EMCBAR, [description = "Weighted 24-hour average EMC (dimensionless, 0-1)"]
+        PPTDUR = 0.0, [description = "Duration of precipitation, in s (dimensionless numerical value)"]
+        BDYBAR, [description = "7-day running average boundary condition (dimensionless, 0-1)"]
+        PM1000, [description = "Previous MC1000 value (dimensionless, 0-1)"]
     end
 
     @variables begin
@@ -350,12 +353,10 @@ with the running average provided as a parameter.
     PPTDUR_hr = PPTDUR / hr_to_s
 
     eqs = [
-        # Weighted 24-hour average boundary condition for 1000-hr (Eq. from page 5)
-        # Uses different coefficients than 100-hr
+        # Weighted 24-hour average boundary condition for 1000-hr (page 5)
         BNDRYT ~ ((24.0 - PPTDUR_hr) * EMCBAR + PPTDUR_hr * (2.7 * PPTDUR_hr + 76.0) / 100.0) / 24.0,
 
-        # 1000-hour fuel moisture daily update equation
-        # MC1000 = PM1000 + (BDYBAR - PM1000) * response_coef
+        # 1000-hour fuel moisture daily update equation (page 5)
         MC1000 ~ PM1000 + (BDYBAR - PM1000) * response_coef
     ]
 
@@ -375,14 +376,28 @@ The model tracks five stages: pregreen, greenup, green, transition, and cured/fr
 MCHERB is a function of X1000 (modified 1000-hr moisture), herbaceous type (annual/perennial),
 and NFDRS climate class.
 
+From Cohen & Deeming (1985), pages 6-8:
+- Greenup: MCHERB = MCHRBI + (MCHRBP - MCHRBI) × GREN
+- Green: MCHERB = HERBGA + HERBGB × X1000
+- Transition (annuals): MCHERB = ANNTA + ANNTB × X1000
+- Transition (perennials): MCHERB = PERTA + PERTB × X1000
+
+Climate-dependent parameters (page 7):
+| Climate | HERBGA | HERBGB | ANNTA  | ANNTB | PERTA | PERTB |
+|---------|--------|--------|--------|-------|-------|-------|
+| 1       | -70.0  | 12.8   | -150.5 | 18.4  | 11.2  | 7.4   |
+| 2       | -100.0 | 14.0   | -187.7 | 19.6  | -10.3 | 8.3   |
+| 3       | -137.5 | 15.5   | -245.2 | 22.0  | -42.7 | 9.8   |
+| 4       | -185.0 | 17.4   | -305.2 | 24.3  | -93.5 | 12.2  |
+
 # Parameters
 - `X1000`: Modified 1000-hr moisture for herbaceous model (dimensionless)
 - `MC1`: 1-hour fuel moisture content (dimensionless)
-- `CLIMAT`: NFDRS climate class (1-4)
-- `is_annual`: Flag (1 if annual, 0 if perennial)
-- `GRNDAY`: Days since greenup started
-- `is_greenup`: Flag (1 if in greenup, 0 otherwise)
-- `is_cured`: Flag (1 if cured/frozen, 0 otherwise)
+- `CLIMAT`: NFDRS climate class 1-4 (dimensionless)
+- `is_annual`: Flag: 1 if annual, 0 if perennial (dimensionless)
+- `GRNDAY`: Days since greenup started (dimensionless)
+- `is_greenup`: Flag: 1 if in greenup, 0 otherwise (dimensionless)
+- `is_cured`: Flag: 1 if cured/frozen, 0 otherwise (dimensionless)
 
 # Variables
 - `MCHERB`: Herbaceous fuel moisture content (dimensionless)
@@ -391,21 +406,21 @@ and NFDRS climate class.
     @parameters begin
         X1000, [description = "Modified 1000-hr moisture (dimensionless)"]
         MC1, [description = "1-hour fuel moisture content (dimensionless)"]
-        CLIMAT = 2.0, [description = "NFDRS climate class (1-4)"]
-        is_annual = 0.0, [description = "Flag: 1 if annual, 0 if perennial"]
-        GRNDAY = 0.0, [description = "Days since greenup started"]
-        is_greenup = 0.0, [description = "Flag: 1 if in greenup, 0 otherwise"]
-        is_cured = 0.0, [description = "Flag: 1 if cured/frozen, 0 otherwise"]
+        CLIMAT = 2.0, [description = "NFDRS climate class 1-4 (dimensionless)"]
+        is_annual = 0.0, [description = "Flag: 1 if annual, 0 if perennial (dimensionless)"]
+        GRNDAY = 0.0, [description = "Days since greenup started (dimensionless)"]
+        is_greenup = 0.0, [description = "Flag: 1 if in greenup, 0 otherwise (dimensionless)"]
+        is_cured = 0.0, [description = "Flag: 1 if cured/frozen, 0 otherwise (dimensionless)"]
     end
 
     @variables begin
         MCHERB(t), [description = "Herbaceous fuel moisture content (dimensionless)"]
     end
 
-    # Climate class dependent parameters (X1000 as percent for these equations)
+    # Climate class dependent parameters (page 7) - X1000 as percent for these equations
     X1000_pct = X1000 * 100
 
-    # Greenup parameters
+    # Greenup parameters (page 7)
     HERBGA = ifelse(CLIMAT < 1.5, -70.0,
              ifelse(CLIMAT < 2.5, -100.0,
              ifelse(CLIMAT < 3.5, -137.5, -185.0)))
@@ -413,7 +428,7 @@ and NFDRS climate class.
              ifelse(CLIMAT < 2.5, 14.0,
              ifelse(CLIMAT < 3.5, 15.5, 17.4)))
 
-    # Transition parameters for annuals
+    # Transition parameters for annuals (page 8)
     ANNTA = ifelse(CLIMAT < 1.5, -150.5,
             ifelse(CLIMAT < 2.5, -187.7,
             ifelse(CLIMAT < 3.5, -245.2, -305.2)))
@@ -421,7 +436,7 @@ and NFDRS climate class.
             ifelse(CLIMAT < 2.5, 19.6,
             ifelse(CLIMAT < 3.5, 22.0, 24.3)))
 
-    # Transition parameters for perennials
+    # Transition parameters for perennials (page 8)
     PERTA = ifelse(CLIMAT < 1.5, 11.2,
             ifelse(CLIMAT < 2.5, -10.3,
             ifelse(CLIMAT < 3.5, -42.7, -93.5)))
@@ -429,25 +444,25 @@ and NFDRS climate class.
             ifelse(CLIMAT < 2.5, 8.3,
             ifelse(CLIMAT < 3.5, 9.8, 12.2)))
 
-    # Greenup fraction (Eq. 4)
+    # Greenup fraction (Eq. 4, page 7)
     GREN = min(1.0, GRNDAY / (7.0 * CLIMAT))
 
     # Potential herbaceous moisture (as fraction)
     MCHRBP = (HERBGA + HERBGB * X1000_pct) / 100.0
 
     eqs = [
-        # MCHERB calculation based on stage
+        # MCHERB calculation based on stage (pages 6-8)
         MCHERB ~ ifelse(is_cured > 0.5,
-            # Cured/frozen stage
+            # Cured/frozen stage (page 8)
             ifelse(is_annual > 0.5, MC1, max(0.30, min(1.50, (PERTA + PERTB * X1000_pct) / 100.0))),
             ifelse(is_greenup > 0.5,
-                # Greenup stage: phase from 0.30 to MCHRBP
+                # Greenup stage (page 7): phase from 0.30 to MCHRBP
                 0.30 + (max(0.30, MCHRBP) - 0.30) * GREN,
                 # Green or transition stage
                 ifelse(MCHRBP > 1.20,
-                    # Green stage (MCHERB > 120%)
+                    # Green stage (page 7): MCHERB > 120%
                     min(2.50, MCHRBP),
-                    # Transition stage (30% < MCHERB < 120%)
+                    # Transition stage (page 8): 30% < MCHERB < 120%
                     ifelse(is_annual > 0.5,
                         max(0.30, min(1.50, (ANNTA + ANNTB * X1000_pct) / 100.0)),
                         max(0.30, min(1.50, (PERTA + PERTB * X1000_pct) / 100.0))
@@ -472,12 +487,25 @@ Calculate woody shrub fuel moisture content (MCWOOD).
 The model has four stages: pregreen, greenup, green, and frozen.
 MCWOOD is a function of MC1000 and NFDRS climate class.
 
+From Cohen & Deeming (1985), pages 8-9:
+- Pregreen: MCWOOD = PREGRN
+- Greenup: MCWOOD = MCWODI + (MCWODP - MCWODI) × GREN
+- Green: MCWOOD = WOODGA + WOODGB × MC1000
+
+Climate-dependent parameters (page 8):
+| Climate | PREGRN | WOODGA | WOODGB |
+|---------|--------|--------|--------|
+| 1       | 50%    | 12.5   | 7.5    |
+| 2       | 60%    | -5.0   | 8.2    |
+| 3       | 70%    | -22.5  | 8.9    |
+| 4       | 80%    | -45.0  | 9.8    |
+
 # Parameters
 - `MC1000`: 1000-hour fuel moisture content (dimensionless)
-- `CLIMAT`: NFDRS climate class (1-4)
-- `GRNDAY`: Days since greenup started
-- `is_greenup`: Flag (1 if in greenup, 0 otherwise)
-- `is_frozen`: Flag (1 if frozen/dormant, 0 otherwise)
+- `CLIMAT`: NFDRS climate class 1-4 (dimensionless)
+- `GRNDAY`: Days since greenup started (dimensionless)
+- `is_greenup`: Flag: 1 if in greenup, 0 otherwise (dimensionless)
+- `is_frozen`: Flag: 1 if frozen/dormant, 0 otherwise (dimensionless)
 
 # Variables
 - `MCWOOD`: Woody fuel moisture content (dimensionless)
@@ -485,10 +513,10 @@ MCWOOD is a function of MC1000 and NFDRS climate class.
 @component function WoodyFuelMoisture(; name=:WoodyFuelMoisture)
     @parameters begin
         MC1000, [description = "1000-hour fuel moisture content (dimensionless)"]
-        CLIMAT = 2.0, [description = "NFDRS climate class (1-4)"]
-        GRNDAY = 0.0, [description = "Days since greenup started"]
-        is_greenup = 0.0, [description = "Flag: 1 if in greenup, 0 otherwise"]
-        is_frozen = 0.0, [description = "Flag: 1 if frozen/dormant, 0 otherwise"]
+        CLIMAT = 2.0, [description = "NFDRS climate class 1-4 (dimensionless)"]
+        GRNDAY = 0.0, [description = "Days since greenup started (dimensionless)"]
+        is_greenup = 0.0, [description = "Flag: 1 if in greenup, 0 otherwise (dimensionless)"]
+        is_frozen = 0.0, [description = "Flag: 1 if frozen/dormant, 0 otherwise (dimensionless)"]
     end
 
     @variables begin
@@ -498,12 +526,12 @@ MCWOOD is a function of MC1000 and NFDRS climate class.
     # MC1000 as percent for equations
     MC1000_pct = MC1000 * 100
 
-    # PREGRN values by climate class
+    # PREGRN values by climate class (page 8)
     PREGRN = ifelse(CLIMAT < 1.5, 0.50,
              ifelse(CLIMAT < 2.5, 0.60,
              ifelse(CLIMAT < 3.5, 0.70, 0.80)))
 
-    # WOODGA and WOODGB by climate class
+    # WOODGA and WOODGB by climate class (page 8)
     WOODGA = ifelse(CLIMAT < 1.5, 12.5,
              ifelse(CLIMAT < 2.5, -5.0,
              ifelse(CLIMAT < 3.5, -22.5, -45.0)))
@@ -511,21 +539,21 @@ MCWOOD is a function of MC1000 and NFDRS climate class.
              ifelse(CLIMAT < 2.5, 8.2,
              ifelse(CLIMAT < 3.5, 8.9, 9.8)))
 
-    # Greenup fraction
+    # Greenup fraction (page 9)
     GREN = min(1.0, GRNDAY / (7.0 * CLIMAT))
 
     # Potential woody moisture (as fraction)
     MCWODP = (WOODGA + WOODGB * MC1000_pct) / 100.0
 
     eqs = [
-        # MCWOOD calculation
+        # MCWOOD calculation (pages 8-9)
         MCWOOD ~ ifelse(is_frozen > 0.5,
-            # Frozen/dormant stage
+            # Frozen/dormant stage (page 9)
             PREGRN,
             ifelse(is_greenup > 0.5,
-                # Greenup stage
+                # Greenup stage (page 9)
                 PREGRN + (max(PREGRN, MCWODP) - PREGRN) * GREN,
-                # Green stage
+                # Green stage (page 9)
                 max(PREGRN, min(2.0, MCWODP))
             )
         )
@@ -544,7 +572,11 @@ end
 Calculate the transfer of herbaceous fuel loading to 1-hour dead fuel class
 based on herbaceous moisture content (curing).
 
-Implements Equations 5, 6, 7, 8 from Cohen & Deeming (1985).
+Implements Equations 5, 6, 7, 8 from Cohen & Deeming (1985), page 7:
+- Eq. 5: FCTCUR = 1.33 - 0.0111 × MCHERB (where MCHERB in percent)
+- Eq. 6: WHERBC = FCTCUR × WHERB
+- Eq. 7: W1P = W1 + WHERBC
+- Eq. 8: WHERBP = WHERB - WHERBC
 
 # Parameters
 - `MCHERB`: Herbaceous fuel moisture content (dimensionless)
@@ -553,37 +585,38 @@ Implements Equations 5, 6, 7, 8 from Cohen & Deeming (1985).
 
 # Variables
 - `FCTCUR`: Fraction transferred to 1-hour class (dimensionless)
+- `WHERBC`: Herbaceous loading transferred (kg/m²)
 - `W1P`: Effective 1-hour fuel loading (kg/m²)
 - `WHERBP`: Remaining herbaceous loading (kg/m²)
 """
 @component function FuelLoadingTransfer(; name=:FuelLoadingTransfer)
     @parameters begin
-        MCHERB, [description = "Herbaceous fuel moisture content (dimensionless)"]
-        W1, [description = "Base 1-hour fuel loading (kg/m²)"]
-        WHERB, [description = "Herbaceous fuel loading (kg/m²)"]
+        MCHERB, [description = "Herbaceous fuel moisture content (dimensionless, 0-1)"]
+        W1, [description = "Base 1-hour fuel loading, in kg/m² (dimensionless numerical value)"]
+        WHERB, [description = "Herbaceous fuel loading, in kg/m² (dimensionless numerical value)"]
     end
 
     @variables begin
         FCTCUR(t), [description = "Fraction transferred to 1-hour class (dimensionless)"]
-        WHERBC(t), [description = "Herbaceous loading transferred (kg/m²)"]
-        W1P(t), [description = "Effective 1-hour fuel loading (kg/m²)"]
-        WHERBP(t), [description = "Remaining herbaceous loading (kg/m²)"]
+        WHERBC(t), [description = "Herbaceous loading transferred, in kg/m² (dimensionless numerical value)"]
+        W1P(t), [description = "Effective 1-hour fuel loading, in kg/m² (dimensionless numerical value)"]
+        WHERBP(t), [description = "Remaining herbaceous loading, in kg/m² (dimensionless numerical value)"]
     end
 
     # MCHERB as percent for equation
     MCHERB_pct = MCHERB * 100
 
     eqs = [
-        # Eq. 5: Fraction transferred
+        # Eq. 5 (page 7): Fraction transferred
         FCTCUR ~ max(0.0, min(1.0, 1.33 - 0.0111 * MCHERB_pct)),
 
-        # Eq. 6: Amount transferred
+        # Eq. 6 (page 7): Amount transferred
         WHERBC ~ FCTCUR * WHERB,
 
-        # Eq. 7: Effective 1-hour loading
+        # Eq. 7 (page 7): Effective 1-hour loading
         W1P ~ W1 + WHERBC,
 
-        # Eq. 8: Remaining herbaceous loading
+        # Eq. 8 (page 7): Remaining herbaceous loading
         WHERBP ~ WHERB - WHERBC
     ]
 
@@ -602,6 +635,8 @@ Calculate the NFDRS Spread Component (SC) based on Rothermel's fire spread model
 The SC is the forward rate of spread of the flaming front in m/s.
 Implements equations from pages 9-11 of Cohen & Deeming (1985).
 
+Based on Rothermel (1972) as modified by Albini (1976).
+
 # Parameters
 Fuel loadings (kg/m²):
 - `W1P`: 1-hour fuel loading (including transferred herbaceous)
@@ -617,56 +652,59 @@ Surface-area-to-volume ratios (m⁻¹):
 Other parameters:
 - `MC1`, `MC10`, `MC100`: Dead fuel moisture contents (dimensionless)
 - `MCHERB`, `MCWOOD`: Live fuel moisture contents (dimensionless)
-- `MXD`: Dead fuel moisture of extinction (percent, e.g., 15 for 15%)
+- `MXD`: Dead fuel moisture of extinction (percent)
 - `HD`, `HL`: Heat of combustion (J/kg) for dead and live fuels
 - `DEPTH`: Fuel bed depth (m)
 - `WS`: 20-ft windspeed (m/s)
 - `WNDFC`: Wind reduction factor (dimensionless)
-- `slope_class`: NFDRS slope class (1-5)
-- `fuels_wet`: Flag (1 if fuels wet or snow-covered)
+- `slope_class`: NFDRS slope class 1-5 (dimensionless)
+- `fuels_wet`: Flag: 1 if fuels wet or snow-covered (dimensionless)
 
 # Variables
 - `SC`: Spread component (m/s)
 - `ROS`: Rate of spread (m/s)
+- `IR`: Reaction intensity (W/m²)
 """
 @component function SpreadComponent(; name=:SpreadComponent)
     @constants begin
-        # Unit conversion factors
-        ft_to_m = 0.3048, [description = "Feet to meters"]
-        m_to_ft = 3.28084, [description = "Meters to feet"]
-        ms_to_fpm = 196.8504, [description = "m/s to ft/min"]
-        fpm_to_ms = 0.00508, [description = "ft/min to m/s"]
-        kg_m2_to_lb_ft2 = 0.204816, [description = "kg/m² to lb/ft²"]
-        lb_ft3_to_kg_m3 = 16.01846, [description = "lb/ft³ to kg/m³"]
-        J_kg_to_Btu_lb = 0.000429923, [description = "J/kg to Btu/lb"]
+        # Unit conversion factors (dimensionless numerical factors)
+        ft_to_m = 0.3048, [description = "Feet to meters conversion (dimensionless)"]
+        m_to_ft = 3.28084, [description = "Meters to feet conversion (dimensionless)"]
+        ms_to_fpm = 196.8504, [description = "m/s to ft/min conversion (dimensionless)"]
+        fpm_to_ms = 0.00508, [description = "ft/min to m/s conversion (dimensionless)"]
+        kg_m2_to_lb_ft2 = 0.204816, [description = "kg/m² to lb/ft² conversion (dimensionless)"]
+        J_kg_to_Btu_lb = 0.000429923, [description = "J/kg to Btu/lb conversion (dimensionless)"]
 
-        # Particle densities (SI: kg/m³, equivalent to 32 lb/ft³)
-        RHOD = 512.59, [description = "Dead fuel particle density (kg/m³)"]
-        RHOL = 512.59, [description = "Live fuel particle density (kg/m³)"]
+        # Particle densities (imperial for Rothermel equations: 32 lb/ft³)
+        RHOD_imp = 32.0, [description = "Dead fuel particle density, lb/ft³ (dimensionless)"]
+        RHOL_imp = 32.0, [description = "Live fuel particle density, lb/ft³ (dimensionless)"]
 
-        # Mineral contents (dimensionless)
+        # Mineral contents (page 9, dimensionless)
         STD = 0.0555, [description = "Dead fuel total mineral content (dimensionless)"]
         STL = 0.0555, [description = "Live fuel total mineral content (dimensionless)"]
         SD = 0.01, [description = "Dead fuel silica-free mineral content (dimensionless)"]
         SL = 0.01, [description = "Live fuel silica-free mineral content (dimensionless)"]
+
+        # Reaction intensity conversion (Btu/ft²/min to W/m²)
+        IR_SI_factor = 189.27, [description = "IR conversion factor (dimensionless)"]
     end
 
     @parameters begin
-        # Fuel loadings (kg/m²)
-        W1P, [description = "1-hour fuel loading including transferred herb (kg/m²)"]
-        W10, [description = "10-hour fuel loading (kg/m²)"]
-        W100, [description = "100-hour fuel loading (kg/m²)"]
-        WHERBP, [description = "Remaining herbaceous loading (kg/m²)"]
-        WWOOD, [description = "Woody fuel loading (kg/m²)"]
+        # Fuel loadings (SI numerical values: kg/m²)
+        W1P, [description = "1-hour fuel loading including transferred herb, in kg/m² (dimensionless numerical value)"]
+        W10, [description = "10-hour fuel loading, in kg/m² (dimensionless numerical value)"]
+        W100, [description = "100-hour fuel loading, in kg/m² (dimensionless numerical value)"]
+        WHERBP, [description = "Remaining herbaceous loading, in kg/m² (dimensionless numerical value)"]
+        WWOOD, [description = "Woody fuel loading, in kg/m² (dimensionless numerical value)"]
 
-        # SAV ratios (m⁻¹)
-        SG1, [description = "1-hour fuel SAV ratio (m⁻¹)"]
-        SG10, [description = "10-hour fuel SAV ratio (m⁻¹)"]
-        SG100, [description = "100-hour fuel SAV ratio (m⁻¹)"]
-        SGHERB, [description = "Herbaceous fuel SAV ratio (m⁻¹)"]
-        SGWOOD, [description = "Woody fuel SAV ratio (m⁻¹)"]
+        # SAV ratios (SI numerical values: m⁻¹)
+        SG1, [description = "1-hour fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
+        SG10, [description = "10-hour fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
+        SG100, [description = "100-hour fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
+        SGHERB, [description = "Herbaceous fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
+        SGWOOD, [description = "Woody fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
 
-        # Moisture contents (dimensionless)
+        # Moisture contents (dimensionless fractions, 0-1)
         MC1, [description = "1-hour fuel moisture (dimensionless)"]
         MC10, [description = "10-hour fuel moisture (dimensionless)"]
         MC100, [description = "100-hour fuel moisture (dimensionless)"]
@@ -674,22 +712,22 @@ Other parameters:
         MCWOOD, [description = "Woody fuel moisture (dimensionless)"]
 
         # Other fuel model parameters
-        MXD, [description = "Dead fuel moisture of extinction (percent, e.g., 15 for 15%)"]
-        HD = 18608000.0, [description = "Dead fuel heat of combustion (J/kg)"]  # 8000 Btu/lb
-        HL = 18608000.0, [description = "Live fuel heat of combustion (J/kg)"]  # 8000 Btu/lb
-        DEPTH, [description = "Fuel bed depth (m)"]
+        MXD, [description = "Dead fuel moisture of extinction, percent (dimensionless)"]
+        HD = 18608000.0, [description = "Dead fuel heat of combustion, in J/kg (dimensionless numerical value)"]
+        HL = 18608000.0, [description = "Live fuel heat of combustion, in J/kg (dimensionless numerical value)"]
+        DEPTH, [description = "Fuel bed depth, in m (dimensionless numerical value)"]
 
         # Environmental parameters
-        WS = 0.0, [description = "20-ft windspeed (m/s)"]
+        WS = 0.0, [description = "20-ft windspeed, in m/s (dimensionless numerical value)"]
         WNDFC = 0.4, [description = "Wind reduction factor (dimensionless)"]
-        slope_class = 1.0, [description = "NFDRS slope class (1-5)"]
-        fuels_wet = 0.0, [description = "Flag: 1 if fuels wet or snow-covered"]
+        slope_class = 1.0, [description = "NFDRS slope class 1-5 (dimensionless)"]
+        fuels_wet = 0.0, [description = "Flag: 1 if fuels wet or snow-covered (dimensionless)"]
     end
 
     @variables begin
-        SC(t), [description = "Spread component (m/s)"]
-        ROS(t), [description = "Rate of spread (m/s)"]
-        IR(t), [description = "Reaction intensity (W/m²)"]
+        SC(t), [description = "Spread component, in m/s (dimensionless numerical value)"]
+        ROS(t), [description = "Rate of spread, in m/s (dimensionless numerical value)"]
+        IR(t), [description = "Reaction intensity, in W/m² (dimensionless numerical value)"]
     end
 
     # Convert inputs to imperial units for Rothermel equations
@@ -713,11 +751,7 @@ Other parameters:
 
     WS_fpm = WS * ms_to_fpm  # Wind in ft/min
 
-    # Particle densities in imperial (lb/ft³)
-    RHOD_imp = 32.0
-    RHOL_imp = 32.0
-
-    # Net loadings (imperial)
+    # Net loadings (imperial, page 9)
     W1N = W1P_imp * (1.0 - STD)
     W10N = W10_imp * (1.0 - STD)
     W100N = W100_imp * (1.0 - STD)
@@ -852,12 +886,8 @@ Other parameters:
                  FWOOD * exp(-138.0/max(1.0,SGWOOD_imp)) * (250.0 + 11.16 * MCWOOD * 100))
     )
 
-    # Rate of spread in ft/min (imperial)
+    # Rate of spread in ft/min (imperial, page 11)
     ROS_imp = IR_calc_imp * ZETA * (1.0 + PHISLP + PHIWND) / max(0.01, HTSINK)
-
-    # Convert IR from Btu/ft²/min to W/m² (SI)
-    # 1 Btu/ft²/min = 189.27 W/m²
-    IR_SI_factor = 189.27
 
     eqs = [
         # Reaction intensity (convert to W/m²)
@@ -887,6 +917,9 @@ It represents the available energy release per unit area.
 
 Implements equations from pages 11-12 of Cohen & Deeming (1985).
 
+The 0.04 scaling factor has units ft²/Btu, so a unit value of ERC is equivalent
+to 25 Btu of available energy per square foot (page 12).
+
 # Parameters
 Same as SpreadComponent, plus:
 - `W1000`: 1000-hour fuel loading (kg/m²)
@@ -894,46 +927,49 @@ Same as SpreadComponent, plus:
 - `MC1000`: 1000-hour fuel moisture (dimensionless)
 
 # Variables
-- `ERC`: Energy release component
-- `IRE`: Loading-weighted reaction intensity
+- `ERC`: Energy release component (dimensionless)
+- `IRE`: Loading-weighted reaction intensity (W/m²)
 """
 @component function EnergyReleaseComponent(; name=:EnergyReleaseComponent)
     @constants begin
-        # Unit conversion factors
-        ft_to_m = 0.3048, [description = "Feet to meters"]
-        m_to_ft = 3.28084, [description = "Meters to feet"]
-        kg_m2_to_lb_ft2 = 0.204816, [description = "kg/m² to lb/ft²"]
-        J_kg_to_Btu_lb = 0.000429923, [description = "J/kg to Btu/lb"]
+        # Unit conversion factors (dimensionless numerical factors)
+        ft_to_m = 0.3048, [description = "Feet to meters conversion (dimensionless)"]
+        m_to_ft = 3.28084, [description = "Meters to feet conversion (dimensionless)"]
+        kg_m2_to_lb_ft2 = 0.204816, [description = "kg/m² to lb/ft² conversion (dimensionless)"]
+        J_kg_to_Btu_lb = 0.000429923, [description = "J/kg to Btu/lb conversion (dimensionless)"]
 
         # Particle densities (imperial for Rothermel equations)
-        RHOD_imp = 32.0, [description = "Dead fuel particle density (lb/ft³)"]
-        RHOL_imp = 32.0, [description = "Live fuel particle density (lb/ft³)"]
+        RHOD_imp = 32.0, [description = "Dead fuel particle density, lb/ft³ (dimensionless)"]
+        RHOL_imp = 32.0, [description = "Live fuel particle density, lb/ft³ (dimensionless)"]
 
-        # Mineral contents (dimensionless)
+        # Mineral contents (page 9, dimensionless)
         STD = 0.0555, [description = "Dead fuel total mineral content (dimensionless)"]
         STL = 0.0555, [description = "Live fuel total mineral content (dimensionless)"]
         SD = 0.01, [description = "Dead fuel silica-free mineral content (dimensionless)"]
         SL = 0.01, [description = "Live fuel silica-free mineral content (dimensionless)"]
+
+        # Reaction intensity conversion
+        IR_SI_factor = 189.27, [description = "IR conversion factor (dimensionless)"]
     end
 
     @parameters begin
-        # Fuel loadings (kg/m²)
-        W1P, [description = "1-hour fuel loading including transferred herb (kg/m²)"]
-        W10, [description = "10-hour fuel loading (kg/m²)"]
-        W100, [description = "100-hour fuel loading (kg/m²)"]
-        W1000 = 0.0, [description = "1000-hour fuel loading (kg/m²)"]
-        WHERBP, [description = "Remaining herbaceous loading (kg/m²)"]
-        WWOOD, [description = "Woody fuel loading (kg/m²)"]
+        # Fuel loadings (SI numerical values: kg/m²)
+        W1P, [description = "1-hour fuel loading including transferred herb, in kg/m² (dimensionless numerical value)"]
+        W10, [description = "10-hour fuel loading, in kg/m² (dimensionless numerical value)"]
+        W100, [description = "100-hour fuel loading, in kg/m² (dimensionless numerical value)"]
+        W1000 = 0.0, [description = "1000-hour fuel loading, in kg/m² (dimensionless numerical value)"]
+        WHERBP, [description = "Remaining herbaceous loading, in kg/m² (dimensionless numerical value)"]
+        WWOOD, [description = "Woody fuel loading, in kg/m² (dimensionless numerical value)"]
 
-        # SAV ratios (m⁻¹)
-        SG1, [description = "1-hour fuel SAV ratio (m⁻¹)"]
-        SG10, [description = "10-hour fuel SAV ratio (m⁻¹)"]
-        SG100, [description = "100-hour fuel SAV ratio (m⁻¹)"]
-        SG1000 = 26.25, [description = "1000-hour fuel SAV ratio (m⁻¹)"]  # 8 ft⁻¹
-        SGHERB, [description = "Herbaceous fuel SAV ratio (m⁻¹)"]
-        SGWOOD, [description = "Woody fuel SAV ratio (m⁻¹)"]
+        # SAV ratios (SI numerical values: m⁻¹)
+        SG1, [description = "1-hour fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
+        SG10, [description = "10-hour fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
+        SG100, [description = "100-hour fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
+        SG1000 = 26.25, [description = "1000-hour fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
+        SGHERB, [description = "Herbaceous fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
+        SGWOOD, [description = "Woody fuel SAV ratio, in m⁻¹ (dimensionless numerical value)"]
 
-        # Moisture contents (dimensionless)
+        # Moisture contents (dimensionless fractions, 0-1)
         MC1, [description = "1-hour fuel moisture (dimensionless)"]
         MC10, [description = "10-hour fuel moisture (dimensionless)"]
         MC100, [description = "100-hour fuel moisture (dimensionless)"]
@@ -942,16 +978,16 @@ Same as SpreadComponent, plus:
         MCWOOD, [description = "Woody fuel moisture (dimensionless)"]
 
         # Other fuel model parameters
-        MXD, [description = "Dead fuel moisture of extinction (percent, e.g., 15 for 15%)"]
-        MXL, [description = "Live fuel moisture of extinction (percent, e.g., 15 for 15%)"]
-        HD = 18608000.0, [description = "Dead fuel heat of combustion (J/kg)"]
-        HL = 18608000.0, [description = "Live fuel heat of combustion (J/kg)"]
-        DEPTH, [description = "Fuel bed depth (m)"]
+        MXD, [description = "Dead fuel moisture of extinction, percent (dimensionless)"]
+        MXL, [description = "Live fuel moisture of extinction, percent (dimensionless)"]
+        HD = 18608000.0, [description = "Dead fuel heat of combustion, in J/kg (dimensionless numerical value)"]
+        HL = 18608000.0, [description = "Live fuel heat of combustion, in J/kg (dimensionless numerical value)"]
+        DEPTH, [description = "Fuel bed depth, in m (dimensionless numerical value)"]
     end
 
     @variables begin
-        ERC(t), [description = "Energy release component"]
-        IRE(t), [description = "Loading-weighted reaction intensity (W/m²)"]
+        ERC(t), [description = "Energy release component (dimensionless)"]
+        IRE(t), [description = "Loading-weighted reaction intensity, in W/m² (dimensionless numerical value)"]
     end
 
     # Convert inputs to imperial units for Rothermel equations
@@ -1057,12 +1093,9 @@ Same as SpreadComponent, plus:
     # Residence time (uses surface-area weighted SGBRT, in minutes)
     TAU = 384.0 / SGBRT_safe
 
-    # Loading-weighted reaction intensity (Btu/ft²/min)
+    # Loading-weighted reaction intensity (Btu/ft²/min, page 12)
     IRE_imp = GMAOPE * (FDEADE * WDEDNE * HD_imp * ETASD * ETAMDE +
                         FLIVEE * WLIVNE * HL_imp * ETASL * ETAMLE)
-
-    # Convert IR from Btu/ft²/min to W/m²
-    IR_SI_factor = 189.27
 
     eqs = [
         # Loading-weighted reaction intensity (W/m²)
@@ -1086,40 +1119,46 @@ end
 Calculate the NFDRS Burning Index (BI).
 
 BI is numerically equivalent to 10 times the predicted flame length in feet,
-based on Byram's flame length model.
+based on Byram's flame length model (Byram 1959).
+
+From Cohen & Deeming (1985), page 12:
+- FL = 0.45 × I^0.46 (Byram's equation, FL in ft, I in Btu/ft/s)
+- I = (ROS/60) × IRE × TAU = SC × 25 × ERC (after substitution)
+- FL = 0.301 × (SC × ERC)^0.46
+- BI = 10 × FL = 3.01 × (SC × ERC)^0.46
 
 # Parameters
 - `SC`: Spread component (m/s)
-- `ERC`: Energy release component (dimensionless index)
-- `fuels_wet`: Flag (1 if fuels wet or snow-covered, 0 otherwise)
+- `ERC`: Energy release component (dimensionless)
+- `fuels_wet`: Flag: 1 if fuels wet or snow-covered (dimensionless)
 
 # Variables
 - `BI`: Burning index (dimensionless)
 """
 @component function BurningIndex(; name=:BurningIndex)
     @constants begin
-        # Conversion factor to match original BI formula
-        # Original: BI = 3.01 * (SC_fpm * ERC)^0.46
-        # SC in ft/min, so we convert m/s to ft/min
-        ms_to_fpm = 196.8504, [description = "m/s to ft/min conversion"]
+        # Conversion factor: m/s to ft/min
+        # 1 m/s = 196.8504 ft/min (numerically converts m/s value to ft/min value)
+        ms_to_fpm = 196.8504, [description = "Numerical conversion: m/s to ft/min (dimensionless)"]
     end
 
     @parameters begin
-        SC, [description = "Spread component (m/s)"]
-        ERC, [description = "Energy release component"]
-        fuels_wet = 0.0, [description = "Flag: 1 if fuels wet or snow-covered"]
+        SC, [description = "Spread component in m/s (dimensionless numerical value)"]
+        ERC, [description = "Energy release component (dimensionless)"]
+        fuels_wet = 0.0, [description = "Flag: 1 if fuels wet or snow-covered (dimensionless)"]
     end
 
     @variables begin
-        BI(t), [description = "Burning index"]
+        BI(t), [description = "Burning index (dimensionless)"]
     end
 
-    # Convert SC to ft/min for the BI calculation
+    # Convert SC from m/s to ft/min for the BI calculation (page 12)
+    # The original NFDRS equation uses SC in ft/min
     SC_fpm = SC * ms_to_fpm
 
     eqs = [
-        # BI = 10 * FL where FL = 0.301 * (SC * ERC)^0.46
-        # So BI = 3.01 * (SC * ERC)^0.46
+        # BI = 3.01 × (SC × ERC)^0.46 (page 12)
+        # The 3.01 coefficient is calibrated for SC in ft/min
         BI ~ ifelse(fuels_wet > 0.5, 0.0, 3.01 * (max(0.0, SC_fpm * ERC))^0.46)
     ]
 
@@ -1135,11 +1174,15 @@ end
 
 Calculate the NFDRS Ignition Component (IC).
 
-IC consists of:
-1. P(I): Probability that a firebrand produces successful ignition
-2. P(F/I): Probability that ignition results in reportable fire
+From Cohen & Deeming (1985), pages 12-13:
+- IC = 0.10 × P(I) × P(F/I)
 
-P(I) is scaled to be 100 at MC1=1.5% and 0 at MC1=25%.
+P(I) is the probability of ignition, scaled to be 100 at MC1=1.5% and 0 at MC1=25%.
+P(F/I) is the probability of a reportable fire given ignition.
+
+The heat of ignition (QIGN) equation is from page 13:
+QIGN = 144.5 - 0.266×T - 0.00058×T² - 0.01×T×MC1 + 18.54×(1-exp(-0.151×MC1)) + 6.4×MC1
+where T is in °C and MC1 is in percent.
 
 # Parameters
 - `TMPPRM`: Temperature at fuel-atmosphere interface (K)
@@ -1148,58 +1191,56 @@ P(I) is scaled to be 100 at MC1=1.5% and 0 at MC1=25%.
 - `SCM`: Spread component threshold for reportable fires (m/s)
 
 # Variables
-- `IC`: Ignition component (0-100)
+- `IC`: Ignition component (0-100, dimensionless)
 """
 @component function IgnitionComponent(; name=:IgnitionComponent)
     @constants begin
-        # Scaling factors for P(I) calculation
-        PNORM1 = 0.00232, [description = "P(I) scaling factor 1"]
-        PNORM2 = 0.99767, [description = "P(I) scaling factor 2"]
-        PNORM3 = 0.0000185, [description = "P(I) scaling factor 3"]
-        # Conversion from K to °C
-        K_to_C = 273.15, [description = "Kelvin to Celsius offset"]
+        # Scaling factors for P(I) calculation (page 12-13)
+        PNORM1 = 0.00232, [description = "P(I) scaling factor 1 (dimensionless)"]
+        PNORM2 = 0.99767, [description = "P(I) scaling factor 2 (dimensionless)"]
+        PNORM3 = 0.0000185, [description = "P(I) scaling factor 3 (dimensionless)"]
+        K_to_C = 273.15, [description = "Kelvin to Celsius offset (dimensionless numerical value)"]
     end
 
     @parameters begin
-        TMPPRM, [description = "Temperature at fuel-atmosphere interface (K)"]
+        TMPPRM, [description = "Temperature at fuel-atmosphere interface, in K (dimensionless numerical value)"]
         MC1, [description = "1-hour fuel moisture content (dimensionless)"]
-        SC, [description = "Spread component (m/s)"]
-        SCM, [description = "Spread component threshold for reportable fires (m/s)"]
+        SC, [description = "Spread component, in m/s (dimensionless numerical value)"]
+        SCM, [description = "Spread component threshold for reportable fires, in m/s (dimensionless numerical value)"]
     end
 
     @variables begin
-        QIGN(t), [description = "Heat of ignition (cal/g)"]
-        CHI(t), [description = "Intermediate variable"]
-        PI(t), [description = "Probability of ignition (0-100)"]
-        SCN(t), [description = "Normalized spread component"]
-        PFI(t), [description = "Probability of reportable fire given ignition"]
-        IC(t), [description = "Ignition component (0-100)"]
+        QIGN(t), [description = "Heat of ignition (cal/g) (dimensionless)"]
+        CHI(t), [description = "Intermediate variable (dimensionless)"]
+        PI(t), [description = "Probability of ignition 0-100 (dimensionless)"]
+        SCN(t), [description = "Normalized spread component (dimensionless)"]
+        PFI(t), [description = "Probability of reportable fire given ignition (dimensionless)"]
+        IC(t), [description = "Ignition component 0-100 (dimensionless)"]
     end
 
     # Convert temperature from K to °C for the empirical equation
     TMPPRM_C = TMPPRM - K_to_C
 
     eqs = [
-        # Heat of ignition (Eq. 57) - MC1 as percent (MC1*100), result in cal/g
-        # We keep this in cal/g for the empirical CHI calculation
+        # Heat of ignition (page 13) - MC1 as percent
         QIGN ~ 144.5 - 0.266 * TMPPRM_C - 0.00058 * TMPPRM_C^2 - 0.01 * TMPPRM_C * (MC1 * 100) + 18.54 * (1.0 - exp(-0.151 * (MC1 * 100))) + 6.4 * (MC1 * 100),
 
-        # Intermediate calculation
+        # Intermediate calculation (page 13)
         CHI ~ max(0.0, (344.0 - QIGN) / 10.0),
 
-        # Probability of ignition
+        # Probability of ignition (page 13)
         PI ~ ifelse(CHI^3.6 * PNORM3 <= PNORM1,
             0.0,
             max(0.0, min(100.0, (CHI^3.6 * PNORM3 - PNORM1) * 100.0 / PNORM2))
         ),
 
-        # Normalized spread component
+        # Normalized spread component (page 13): SCN = 100 × SC/SCM
         SCN ~ 100.0 * SC / max(1e-10, SCM),
 
-        # Probability of reportable fire given ignition
+        # Probability of reportable fire given ignition (page 13): P(F/I) = SCN^0.5
         PFI ~ sqrt(max(0.0, SCN)),
 
-        # Ignition component
+        # Ignition component (page 13): IC = 0.10 × P(I) × P(F/I)
         IC ~ 0.10 * PI * PFI
     ]
 
@@ -1215,24 +1256,31 @@ end
 
 Calculate the Human-Caused Fire Occurrence Index (MCOI).
 
+From Cohen & Deeming (1985), page 14:
+MCOI = 0.01 × MRISK × IC
+
+The man-caused fire occurrence index relates the ignition component to human-caused
+fire risk, which is typically derived from historical fire occurrence data.
+
 # Parameters
-- `MRISK`: Human-caused risk (0-100)
-- `IC`: Ignition component (0-100)
+- `MRISK`: Human-caused risk 0-100 (dimensionless)
+- `IC`: Ignition component 0-100 (dimensionless)
 
 # Variables
-- `MCOI`: Human-caused fire occurrence index
+- `MCOI`: Human-caused fire occurrence index 0-100 (dimensionless)
 """
 @component function HumanFireOccurrenceIndex(; name=:HumanFireOccurrenceIndex)
     @parameters begin
-        MRISK, [description = "Human-caused risk (0-100)"]
-        IC, [description = "Ignition component (0-100)"]
+        MRISK, [description = "Human-caused risk 0-100 (dimensionless)"]
+        IC, [description = "Ignition component 0-100 (dimensionless)"]
     end
 
     @variables begin
-        MCOI(t), [description = "Human-caused fire occurrence index"]
+        MCOI(t), [description = "Human-caused fire occurrence index 0-100 (dimensionless)"]
     end
 
     eqs = [
+        # Page 14: MCOI = 0.01 × MRISK × IC
         MCOI ~ 0.01 * MRISK * IC
     ]
 
@@ -1270,37 +1318,37 @@ Implements equations from pages 13-14 of Cohen & Deeming (1985).
 """
 @component function LightningFireOccurrenceIndex(; name=:LightningFireOccurrenceIndex)
     @constants begin
-        # Unit conversions
-        mph_to_ms = 0.44704, [description = "mph to m/s"]
-        mi_to_m = 1609.344, [description = "miles to meters"]
-        m_to_mi = 0.000621371, [description = "meters to miles"]
-        ms_to_mph = 2.23694, [description = "m/s to mph"]
+        # Unit conversions (dimensionless numerical conversion factors)
+        mph_to_ms = 0.44704, [description = "mph to m/s conversion (dimensionless)"]
+        mi_to_m = 1609.344, [description = "miles to meters conversion (dimensionless)"]
+        m_to_mi = 0.000621371, [description = "meters to miles conversion (dimensionless)"]
+        ms_to_mph = 2.23694, [description = "m/s to mph conversion (dimensionless)"]
     end
 
     @parameters begin
-        LAL = 1.0, [description = "NFDRS Lightning Activity Level (1-6)"]
-        IC, [description = "Ignition component (0-100)"]
+        LAL = 1.0, [description = "NFDRS Lightning Activity Level 1-6 (dimensionless)"]
+        IC, [description = "Ignition component 0-100 (dimensionless)"]
         MC1, [description = "1-hour fuel moisture content (dimensionless)"]
-        LRSF = 1.0, [description = "Lightning risk scaling factor"]
-        YLOI = 0.0, [description = "Previous day's LOI"]
-        STMSPD = 13.4112, [description = "Storm translational speed (m/s)"]  # 30 mph default
-        is_raining = 0.0, [description = "Flag: 1 if raining at observation time"]
-        is_lightning = 0.0, [description = "Flag: 1 if lightning occurring"]
+        LRSF = 1.0, [description = "Lightning risk scaling factor (dimensionless)"]
+        YLOI = 0.0, [description = "Previous day's LOI (dimensionless)"]
+        STMSPD = 13.4112, [description = "Storm translational speed, in m/s (dimensionless numerical value)"]  # 30 mph default
+        is_raining = 0.0, [description = "Flag: 1 if raining at observation time (dimensionless)"]
+        is_lightning = 0.0, [description = "Flag: 1 if lightning occurring (dimensionless)"]
     end
 
     @variables begin
-        CGRATE(t), [description = "Cloud-to-ground lightning discharge rate (strikes/min)"]
-        STMDIA(t), [description = "Width of rain-lightning corridor (m)"]
-        TOTWID(t), [description = "Total width of affected corridor (m)"]
-        LGTDUR(t), [description = "Duration of lightning at a point (min)"]
-        FINSID(t), [description = "Fraction of corridor with rain"]
-        FOTSID(t), [description = "Fraction of corridor without rain"]
-        RAIDUR(t), [description = "Rain duration at a point (s)"]
+        CGRATE(t), [description = "Cloud-to-ground lightning discharge rate, in strikes/min (dimensionless numerical value)"]
+        STMDIA(t), [description = "Width of rain-lightning corridor, in m (dimensionless numerical value)"]
+        TOTWID(t), [description = "Total width of affected corridor, in m (dimensionless numerical value)"]
+        LGTDUR(t), [description = "Duration of lightning at a point, in min (dimensionless numerical value)"]
+        FINSID(t), [description = "Fraction of corridor with rain (dimensionless)"]
+        FOTSID(t), [description = "Fraction of corridor without rain (dimensionless)"]
+        RAIDUR(t), [description = "Rain duration at a point, in s (dimensionless numerical value)"]
         FMF(t), [description = "1-hour fuel moisture inside rain area (dimensionless)"]
-        ICR(t), [description = "Ignition component inside rain area"]
-        ICBAR(t), [description = "Area-weighted average ignition component"]
-        LRISK(t), [description = "Lightning risk (0-100)"]
-        LOI(t), [description = "Lightning-caused fire occurrence index (0-100)"]
+        ICR(t), [description = "Ignition component inside rain area (dimensionless)"]
+        ICBAR(t), [description = "Area-weighted average ignition component (dimensionless)"]
+        LRISK(t), [description = "Lightning risk 0-100 (dimensionless)"]
+        LOI(t), [description = "Lightning-caused fire occurrence index 0-100 (dimensionless)"]
     end
 
     # Convert storm speed to mph for equations using original units
@@ -1400,28 +1448,33 @@ end
 
 Calculate the Fire Load Index (FLI).
 
-FLI combines the Burning Index with fire occurrence indexes.
+From Cohen & Deeming (1985), page 14:
+FLI = 0.71 × √(BI² + (LOI + MCOI)²)
+
+FLI combines the Burning Index with fire occurrence indexes to provide a
+comprehensive measure of the expected fire load.
 
 # Parameters
-- `BI`: Burning index
-- `LOI`: Lightning fire occurrence index
-- `MCOI`: Human-caused fire occurrence index
+- `BI`: Burning index 0-100 (dimensionless)
+- `LOI`: Lightning fire occurrence index 0-100 (dimensionless)
+- `MCOI`: Human-caused fire occurrence index 0-100 (dimensionless)
 
 # Variables
-- `FLI`: Fire load index
+- `FLI`: Fire load index 0-100 (dimensionless)
 """
 @component function FireLoadIndex(; name=:FireLoadIndex)
     @parameters begin
-        BI, [description = "Burning index"]
-        LOI = 0.0, [description = "Lightning fire occurrence index"]
-        MCOI = 0.0, [description = "Human-caused fire occurrence index"]
+        BI, [description = "Burning index 0-100 (dimensionless)"]
+        LOI = 0.0, [description = "Lightning fire occurrence index 0-100 (dimensionless)"]
+        MCOI = 0.0, [description = "Human-caused fire occurrence index 0-100 (dimensionless)"]
     end
 
     @variables begin
-        FLI(t), [description = "Fire load index"]
+        FLI(t), [description = "Fire load index 0-100 (dimensionless)"]
     end
 
     eqs = [
+        # Page 14: FLI = 0.71 × √(BI² + (LOI + MCOI)²)
         # BI and (LOI + MCOI) are each limited to 100
         FLI ~ 0.71 * sqrt(min(100.0, BI)^2 + min(100.0, LOI + MCOI)^2)
     ]
@@ -1585,7 +1638,7 @@ Convert fuel loading from tons/acre to kg/m² (SI units).
 
 The conversion factor is 0.2241702 (kg·acre)/(ton·m²).
 """
-fuel_loading_to_kg_per_sqm(tons_per_acre) = tons_per_acre * TONS_PER_ACRE_TO_KG_PER_M2
+fuel_loading_to_kg_per_sqm(tons_per_acre) = tons_per_acre * _TONS_PER_ACRE_TO_KG_PER_M2
 
 # Keep old function name for backward compatibility but mark as deprecated
 """

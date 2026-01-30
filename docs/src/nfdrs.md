@@ -6,7 +6,23 @@ The National Fire Danger Rating System (NFDRS) is a comprehensive system for ass
 
 **Reference**: Cohen, Jack D.; Deeming, John E. "The National Fire-Danger Rating System: basic equations." Gen. Tech. Rep. PSW-82. Berkeley, CA: Pacific Southwest Forest and Range Experiment Station, Forest Service, U.S. Department of Agriculture; 1985. 16 p.
 
-Note: The NFDRS equations use imperial units (°F, lb, ft, Btu, etc.) as originally published. All inputs and outputs are in these original units unless otherwise noted.
+## Unit Convention
+
+This implementation uses **SI units** throughout for compatibility with other EarthSciML components:
+
+| Quantity | SI Unit | Original NFDRS Unit |
+|----------|---------|---------------------|
+| Temperature | K (Kelvin) | °F (Fahrenheit) |
+| Fuel loading | kg/m² | tons/acre, lb/ft² |
+| Fuel bed depth | m | ft |
+| SAV ratio | m⁻¹ | ft⁻¹ |
+| Heat of combustion | J/kg | Btu/lb |
+| Wind speed | m/s | mph |
+| Rate of spread | m/s | ft/min |
+| Moisture content | dimensionless (0-1) | percent |
+| Density | kg/m³ | lb/ft³ |
+
+The original NFDRS equations use imperial units. All empirical coefficients have been converted to SI units, with conversion factors explicitly defined in the source code.
 
 ## Equilibrium Moisture Content
 
@@ -119,7 +135,7 @@ FireLoadIndex
 NFDRSFuelModel
 NFDRS_FUEL_MODELS
 get_fuel_model
-fuel_loading_to_lb_per_sqft
+fuel_loading_to_kg_per_sqm
 ```
 
 ### Available Fuel Models
@@ -130,16 +146,16 @@ The NFDRS includes 20 fuel models representing different vegetation types:
 using WildlandFire
 
 for (code, model) in sort(collect(NFDRS_FUEL_MODELS), by=x->x[1])
-    println("$code: $(model.description) (depth: $(model.DEPTH) ft)")
+    println("$code: $(model.description) (depth: $(round(model.DEPTH, digits=3)) m)")
 end
 ```
 
-### Fuel Model Parameters Table
+### Fuel Model Parameters Table (Original Units)
 
-The following table reproduces the fuel model parameters from the Appendix of Cohen & Deeming (1985), page 15.
+The following table reproduces the fuel model parameters from the Appendix of Cohen & Deeming (1985), page 15, in their **original imperial units** for reference. The implementation converts these to SI units automatically.
 
-| Model | Description | SG1 (ft⁻¹) | W1 (t/ac) | SG10 | W10 | Depth (ft) | MXD (%) | HD (Btu/lb) | SCM | WNDFC |
-|-------|-------------|------------|-----------|------|-----|------------|---------|-------------|-----|-------|
+| Model | Description | SG1 (ft⁻¹) | W1 (t/ac) | SG10 | W10 | Depth (ft) | MXD (%) | HD (Btu/lb) | SCM (ft/min) | WNDFC |
+|-------|-------------|------------|-----------|------|-----|------------|---------|-------------|--------------|-------|
 | A | Western grasses (annual) | 3000 | 0.20 | 109 | 0.0 | 0.80 | 15 | 8000 | 300 | 0.6 |
 | B | California chaparral | 700 | 3.50 | 109 | 4.0 | 4.50 | 15 | 9500 | 58 | 0.5 |
 | C | Pine-grass savanna | 2000 | 0.40 | 109 | 1.0 | 0.75 | 20 | 8000 | 32 | 0.4 |
@@ -162,12 +178,12 @@ The following table reproduces the fuel model parameters from the Appendix of Co
 | U | Western pines | 1750 | 1.50 | 109 | 1.0 | 0.50 | 20 | 8000 | 16 | 0.4 |
 
 Notes:
-- SG1, SG10: Surface-area-to-volume ratio (ft⁻¹)
-- W1, W10: Fuel loading (tons/acre)
-- MXD: Dead fuel moisture of extinction (percent)
-- HD: Heat of combustion (Btu/lb)
-- SCM: Spread component when all ignitions become reportable fires
-- WNDFC: Wind reduction factor (20-ft to midflame height)
+- SG1, SG10: Surface-area-to-volume ratio (ft⁻¹) → converted to m⁻¹ by multiplying by 3.28084
+- W1, W10: Fuel loading (tons/acre) → converted to kg/m² by multiplying by 0.2241702
+- MXD: Dead fuel moisture of extinction (percent) - unchanged
+- HD: Heat of combustion (Btu/lb) → converted to J/kg by multiplying by 2326.0
+- SCM: Spread component threshold (ft/min) → converted to m/s by multiplying by 0.00508
+- WNDFC: Wind reduction factor (dimensionless) - unchanged
 
 ## Analysis
 
@@ -184,7 +200,7 @@ sort!(models, by=m -> m.DEPTH)
 
 bar([string(m.name) for m in models], [m.DEPTH for m in models],
     xlabel = "Fuel Model",
-    ylabel = "Fuel Bed Depth (ft)",
+    ylabel = "Fuel Bed Depth (m)",
     title = "NFDRS Fuel Model Bed Depths",
     legend = false,
     rotation = 45)
@@ -328,7 +344,7 @@ dead_loading = [m.W1 + m.W10 + m.W100 for m in models]
 
 bar([string(m.name) for m in models], dead_loading,
     xlabel = "Fuel Model",
-    ylabel = "Dead Fuel Loading (tons/acre)",
+    ylabel = "Dead Fuel Loading (kg/m²)",
     title = "NFDRS Dead Fuel Loading by Model",
     legend = false,
     rotation = 45)
@@ -345,13 +361,13 @@ Different fuel models have varying heat content values:
 models = collect(values(NFDRS_FUEL_MODELS))
 sort!(models, by=m -> m.HD)
 
-bar([string(m.name) for m in models], [m.HD for m in models],
+bar([string(m.name) for m in models], [m.HD / 1e6 for m in models],
     xlabel = "Fuel Model",
-    ylabel = "Heat of Combustion (Btu/lb)",
+    ylabel = "Heat of Combustion (MJ/kg)",
     title = "NFDRS Dead Fuel Heat Content",
     legend = false,
     rotation = 45,
-    ylims = (7500, 10000))
+    ylims = (17, 23))
 savefig("heat_content.svg"); nothing # hide
 ```
 
