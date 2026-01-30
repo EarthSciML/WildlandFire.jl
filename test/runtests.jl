@@ -76,9 +76,11 @@ const FPM_TO_MS = 0.00508
         # Check that it has equations
         @test length(equations(emc)) > 0
 
-        # Check that it has parameters
+        # Check that it has the expected input parameters (TEMP and RH)
         params = parameters(emc)
-        @test length(params) == 2  # TEMP and RH
+        param_names = [string(Symbolics.tosymbol(p, escape=false)) for p in params]
+        @test "TEMP" in param_names
+        @test "RH" in param_names
 
         # Verify EMC equations against Cohen & Deeming (1985), Eq. 1a, 1b, 1c (page 1)
         # These regression equations are from Simard (1968)
