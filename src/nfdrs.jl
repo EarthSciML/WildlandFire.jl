@@ -1268,130 +1268,117 @@ FLI combines the Burning Index with fire occurrence indexes.
 end
 
 # =============================================================================
-# Fuel Model Data Structure
+# Fuel Model Data (Named Tuples for backward compatibility)
 # =============================================================================
 
 """
     NFDRSFuelModel
 
 Fuel model parameters for the National Fire Danger Rating System.
+Uses NamedTuple for lightweight, immutable storage of fuel model parameters.
 
 All fuel loadings in tons/acre, SAV ratios in ft⁻¹, depth in ft,
 moisture of extinction as percent, heat of combustion in Btu/lb.
 
-# Fields
-- `name::Symbol`: Fuel model identifier (A-U)
-- `description::String`: Fuel model description
-- `SG1::Float64`: 1-hour fuel SAV ratio (ft⁻¹)
-- `W1::Float64`: 1-hour fuel loading (tons/acre)
-- `SG10::Float64`: 10-hour fuel SAV ratio (ft⁻¹)
-- `W10::Float64`: 10-hour fuel loading (tons/acre)
-- `SG100::Float64`: 100-hour fuel SAV ratio (ft⁻¹)
-- `W100::Float64`: 100-hour fuel loading (tons/acre)
-- `SG1000::Float64`: 1000-hour fuel SAV ratio (ft⁻¹)
-- `W1000::Float64`: 1000-hour fuel loading (tons/acre)
-- `SGWOOD::Float64`: Woody fuel SAV ratio (ft⁻¹)
-- `WWOOD::Float64`: Woody fuel loading (tons/acre)
-- `SGHERB::Float64`: Herbaceous fuel SAV ratio (ft⁻¹)
-- `WHERB::Float64`: Herbaceous fuel loading (tons/acre)
-- `DEPTH::Float64`: Fuel bed depth (ft)
-- `MXD::Float64`: Dead fuel moisture of extinction (percent)
-- `HD::Float64`: Dead fuel heat of combustion (Btu/lb)
-- `HL::Float64`: Live fuel heat of combustion (Btu/lb)
-- `SCM::Float64`: Spread component threshold for all fires reportable
-- `WNDFC::Float64`: Wind reduction factor (20-ft to midflame)
+Parameters from Cohen & Deeming (1985), Appendix (page 15).
 """
-struct NFDRSFuelModel
-    name::Symbol
-    description::String
-    SG1::Float64
-    W1::Float64
-    SG10::Float64
-    W10::Float64
-    SG100::Float64
-    W100::Float64
-    SG1000::Float64
-    W1000::Float64
-    SGWOOD::Float64
-    WWOOD::Float64
-    SGHERB::Float64
-    WHERB::Float64
-    DEPTH::Float64
-    MXD::Float64
-    HD::Float64
-    HL::Float64
-    SCM::Float64
-    WNDFC::Float64
-end
+const NFDRSFuelModel = NamedTuple{(
+    :name, :description,
+    :SG1, :W1, :SG10, :W10, :SG100, :W100, :SG1000, :W1000,
+    :SGWOOD, :WWOOD, :SGHERB, :WHERB,
+    :DEPTH, :MXD, :HD, :HL, :SCM, :WNDFC
+), Tuple{Symbol, String, Float64, Float64, Float64, Float64, Float64, Float64,
+         Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64,
+         Float64, Float64, Float64, Float64}}
 
 """
     NFDRS_FUEL_MODELS
 
 Dictionary of all 20 NFDRS fuel models (A-U, excluding M).
 
-Parameters from Cohen & Deeming (1985), Appendix.
+Parameters from Cohen & Deeming (1985), Appendix (page 15).
 """
 const NFDRS_FUEL_MODELS = Dict{Symbol, NFDRSFuelModel}(
-    :A => NFDRSFuelModel(:A, "Western grasses (annual)",
-        3000.0, 0.20, 109.0, 0.0, 30.0, 0.0, 8.0, 0.0, 0.0, 0.0, 3000.0, 0.30,
-        0.80, 15.0, 8000.0, 8000.0, 300.0, 0.6),
-    :B => NFDRSFuelModel(:B, "California chaparral",
-        700.0, 3.50, 109.0, 4.00, 30.0, 0.50, 8.0, 0.0, 1250.0, 11.50, 0.0, 0.0,
-        4.50, 15.0, 9500.0, 9500.0, 58.0, 0.5),
-    :C => NFDRSFuelModel(:C, "Pine-grass savanna",
-        2000.0, 0.40, 109.0, 1.00, 30.0, 0.0, 8.0, 0.0, 1500.0, 0.50, 2500.0, 0.80,
-        0.75, 20.0, 8000.0, 8000.0, 32.0, 0.4),
-    :D => NFDRSFuelModel(:D, "Southern rough",
-        1250.0, 2.00, 109.0, 1.00, 30.0, 0.0, 8.0, 0.0, 1500.0, 3.00, 1500.0, 0.75,
-        2.00, 30.0, 9000.0, 9000.0, 25.0, 0.4),
-    :E => NFDRSFuelModel(:E, "Hardwood litter (winter)",
-        2000.0, 1.50, 109.0, 0.50, 30.0, 0.25, 8.0, 0.0, 1500.0, 0.50, 2000.0, 0.50,
-        0.40, 25.0, 8000.0, 8000.0, 25.0, 0.4),
-    :F => NFDRSFuelModel(:F, "Intermediate brush",
-        700.0, 2.50, 109.0, 2.00, 30.0, 1.50, 8.0, 0.0, 1250.0, 9.00, 0.0, 0.0,
-        4.50, 15.0, 9500.0, 9500.0, 24.0, 0.5),
-    :G => NFDRSFuelModel(:G, "Short needle (heavy dead)",
-        2000.0, 2.50, 109.0, 2.00, 30.0, 5.00, 8.0, 12.0, 1500.0, 0.50, 2000.0, 0.50,
-        1.00, 25.0, 8000.0, 8000.0, 30.0, 0.4),
-    :H => NFDRSFuelModel(:H, "Short needle (normal dead)",
-        2000.0, 1.50, 109.0, 1.00, 30.0, 2.00, 8.0, 2.00, 1500.0, 0.50, 2000.0, 0.50,
-        0.30, 20.0, 8000.0, 8000.0, 8.0, 0.4),
-    :I => NFDRSFuelModel(:I, "Heavy slash",
-        1500.0, 12.00, 109.0, 12.00, 30.0, 10.00, 8.0, 12.00, 0.0, 0.0, 0.0, 0.0,
-        2.00, 25.0, 8000.0, 8000.0, 65.0, 0.5),
-    :J => NFDRSFuelModel(:J, "Intermediate slash",
-        1500.0, 7.00, 109.0, 7.00, 30.0, 6.00, 8.0, 5.50, 0.0, 0.0, 0.0, 0.0,
-        1.30, 25.0, 8000.0, 8000.0, 44.0, 0.5),
-    :K => NFDRSFuelModel(:K, "Light slash",
-        1500.0, 2.50, 109.0, 2.50, 30.0, 2.00, 8.0, 2.50, 0.0, 0.0, 0.0, 0.0,
-        0.60, 25.0, 8000.0, 8000.0, 23.0, 0.5),
-    :L => NFDRSFuelModel(:L, "Western grasses (perennial)",
-        2000.0, 0.25, 109.0, 1.50, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2000.0, 0.50,
-        1.00, 15.0, 8000.0, 8000.0, 178.0, 0.6),
-    :N => NFDRSFuelModel(:N, "Sawgrass",
-        1600.0, 1.50, 109.0, 3.00, 0.0, 0.0, 0.0, 0.0, 1500.0, 2.00, 2000.0, 0.50,
-        3.00, 25.0, 8700.0, 8700.0, 167.0, 0.6),
-    :O => NFDRSFuelModel(:O, "High pocosin",
-        1500.0, 2.00, 109.0, 1.00, 30.0, 3.00, 8.0, 2.00, 1500.0, 7.00, 0.0, 0.0,
-        4.00, 30.0, 9000.0, 9000.0, 99.0, 0.5),
-    :P => NFDRSFuelModel(:P, "Southern pine plantation",
-        1750.0, 1.00, 109.0, 2.50, 30.0, 0.50, 0.0, 0.0, 1500.0, 0.50, 0.0, 0.0,
-        0.40, 30.0, 8000.0, 8000.0, 14.0, 0.4),
-    :Q => NFDRSFuelModel(:Q, "Alaskan black spruce",
-        1500.0, 2.00, 109.0, 0.50, 30.0, 2.00, 8.0, 1.00, 1200.0, 4.00, 1500.0, 0.50,
-        3.00, 25.0, 8000.0, 8000.0, 59.0, 0.4),
-    :R => NFDRSFuelModel(:R, "Hardwood litter (summer)",
-        1500.0, 0.50, 109.0, 0.50, 30.0, 0.50, 0.0, 0.0, 1500.0, 0.50, 2000.0, 0.50,
-        0.25, 25.0, 8000.0, 8000.0, 6.0, 0.4),
-    :S => NFDRSFuelModel(:S, "Tundra",
-        1500.0, 0.50, 109.0, 0.50, 30.0, 0.50, 8.0, 0.50, 1200.0, 0.50, 1500.0, 0.50,
-        0.40, 25.0, 8000.0, 8000.0, 17.0, 0.6),
-    :T => NFDRSFuelModel(:T, "Sagebrush-grass",
-        2500.0, 1.00, 109.0, 1.50, 0.0, 0.0, 0.0, 0.0, 1500.0, 2.50, 2000.0, 0.50,
-        1.25, 15.0, 8000.0, 8000.0, 73.0, 0.6),
-    :U => NFDRSFuelModel(:U, "Western pines",
-        1750.0, 1.50, 109.0, 1.00, 30.0, 0.50, 0.0, 0.0, 1500.0, 0.50, 2000.0, 0.50,
-        0.50, 20.0, 8000.0, 8000.0, 16.0, 0.4)
+    :A => (name=:A, description="Western grasses (annual)",
+        SG1=3000.0, W1=0.20, SG10=109.0, W10=0.0, SG100=30.0, W100=0.0, SG1000=8.0, W1000=0.0,
+        SGWOOD=0.0, WWOOD=0.0, SGHERB=3000.0, WHERB=0.30,
+        DEPTH=0.80, MXD=15.0, HD=8000.0, HL=8000.0, SCM=300.0, WNDFC=0.6),
+    :B => (name=:B, description="California chaparral",
+        SG1=700.0, W1=3.50, SG10=109.0, W10=4.00, SG100=30.0, W100=0.50, SG1000=8.0, W1000=0.0,
+        SGWOOD=1250.0, WWOOD=11.50, SGHERB=0.0, WHERB=0.0,
+        DEPTH=4.50, MXD=15.0, HD=9500.0, HL=9500.0, SCM=58.0, WNDFC=0.5),
+    :C => (name=:C, description="Pine-grass savanna",
+        SG1=2000.0, W1=0.40, SG10=109.0, W10=1.00, SG100=30.0, W100=0.0, SG1000=8.0, W1000=0.0,
+        SGWOOD=1500.0, WWOOD=0.50, SGHERB=2500.0, WHERB=0.80,
+        DEPTH=0.75, MXD=20.0, HD=8000.0, HL=8000.0, SCM=32.0, WNDFC=0.4),
+    :D => (name=:D, description="Southern rough",
+        SG1=1250.0, W1=2.00, SG10=109.0, W10=1.00, SG100=30.0, W100=0.0, SG1000=8.0, W1000=0.0,
+        SGWOOD=1500.0, WWOOD=3.00, SGHERB=1500.0, WHERB=0.75,
+        DEPTH=2.00, MXD=30.0, HD=9000.0, HL=9000.0, SCM=25.0, WNDFC=0.4),
+    :E => (name=:E, description="Hardwood litter (winter)",
+        SG1=2000.0, W1=1.50, SG10=109.0, W10=0.50, SG100=30.0, W100=0.25, SG1000=8.0, W1000=0.0,
+        SGWOOD=1500.0, WWOOD=0.50, SGHERB=2000.0, WHERB=0.50,
+        DEPTH=0.40, MXD=25.0, HD=8000.0, HL=8000.0, SCM=25.0, WNDFC=0.4),
+    :F => (name=:F, description="Intermediate brush",
+        SG1=700.0, W1=2.50, SG10=109.0, W10=2.00, SG100=30.0, W100=1.50, SG1000=8.0, W1000=0.0,
+        SGWOOD=1250.0, WWOOD=9.00, SGHERB=0.0, WHERB=0.0,
+        DEPTH=4.50, MXD=15.0, HD=9500.0, HL=9500.0, SCM=24.0, WNDFC=0.5),
+    :G => (name=:G, description="Short needle (heavy dead)",
+        SG1=2000.0, W1=2.50, SG10=109.0, W10=2.00, SG100=30.0, W100=5.00, SG1000=8.0, W1000=12.0,
+        SGWOOD=1500.0, WWOOD=0.50, SGHERB=2000.0, WHERB=0.50,
+        DEPTH=1.00, MXD=25.0, HD=8000.0, HL=8000.0, SCM=30.0, WNDFC=0.4),
+    :H => (name=:H, description="Short needle (normal dead)",
+        SG1=2000.0, W1=1.50, SG10=109.0, W10=1.00, SG100=30.0, W100=2.00, SG1000=8.0, W1000=2.00,
+        SGWOOD=1500.0, WWOOD=0.50, SGHERB=2000.0, WHERB=0.50,
+        DEPTH=0.30, MXD=20.0, HD=8000.0, HL=8000.0, SCM=8.0, WNDFC=0.4),
+    :I => (name=:I, description="Heavy slash",
+        SG1=1500.0, W1=12.00, SG10=109.0, W10=12.00, SG100=30.0, W100=10.00, SG1000=8.0, W1000=12.00,
+        SGWOOD=0.0, WWOOD=0.0, SGHERB=0.0, WHERB=0.0,
+        DEPTH=2.00, MXD=25.0, HD=8000.0, HL=8000.0, SCM=65.0, WNDFC=0.5),
+    :J => (name=:J, description="Intermediate slash",
+        SG1=1500.0, W1=7.00, SG10=109.0, W10=7.00, SG100=30.0, W100=6.00, SG1000=8.0, W1000=5.50,
+        SGWOOD=0.0, WWOOD=0.0, SGHERB=0.0, WHERB=0.0,
+        DEPTH=1.30, MXD=25.0, HD=8000.0, HL=8000.0, SCM=44.0, WNDFC=0.5),
+    :K => (name=:K, description="Light slash",
+        SG1=1500.0, W1=2.50, SG10=109.0, W10=2.50, SG100=30.0, W100=2.00, SG1000=8.0, W1000=2.50,
+        SGWOOD=0.0, WWOOD=0.0, SGHERB=0.0, WHERB=0.0,
+        DEPTH=0.60, MXD=25.0, HD=8000.0, HL=8000.0, SCM=23.0, WNDFC=0.5),
+    :L => (name=:L, description="Western grasses (perennial)",
+        SG1=2000.0, W1=0.25, SG10=109.0, W10=1.50, SG100=0.0, W100=0.0, SG1000=0.0, W1000=0.0,
+        SGWOOD=0.0, WWOOD=0.0, SGHERB=2000.0, WHERB=0.50,
+        DEPTH=1.00, MXD=15.0, HD=8000.0, HL=8000.0, SCM=178.0, WNDFC=0.6),
+    :N => (name=:N, description="Sawgrass",
+        SG1=1600.0, W1=1.50, SG10=109.0, W10=3.00, SG100=0.0, W100=0.0, SG1000=0.0, W1000=0.0,
+        SGWOOD=1500.0, WWOOD=2.00, SGHERB=2000.0, WHERB=0.50,
+        DEPTH=3.00, MXD=25.0, HD=8700.0, HL=8700.0, SCM=167.0, WNDFC=0.6),
+    :O => (name=:O, description="High pocosin",
+        SG1=1500.0, W1=2.00, SG10=109.0, W10=1.00, SG100=30.0, W100=3.00, SG1000=8.0, W1000=2.00,
+        SGWOOD=1500.0, WWOOD=7.00, SGHERB=0.0, WHERB=0.0,
+        DEPTH=4.00, MXD=30.0, HD=9000.0, HL=9000.0, SCM=99.0, WNDFC=0.5),
+    :P => (name=:P, description="Southern pine plantation",
+        SG1=1750.0, W1=1.00, SG10=109.0, W10=2.50, SG100=30.0, W100=0.50, SG1000=0.0, W1000=0.0,
+        SGWOOD=1500.0, WWOOD=0.50, SGHERB=0.0, WHERB=0.0,
+        DEPTH=0.40, MXD=30.0, HD=8000.0, HL=8000.0, SCM=14.0, WNDFC=0.4),
+    :Q => (name=:Q, description="Alaskan black spruce",
+        SG1=1500.0, W1=2.00, SG10=109.0, W10=0.50, SG100=30.0, W100=2.00, SG1000=8.0, W1000=1.00,
+        SGWOOD=1200.0, WWOOD=4.00, SGHERB=1500.0, WHERB=0.50,
+        DEPTH=3.00, MXD=25.0, HD=8000.0, HL=8000.0, SCM=59.0, WNDFC=0.4),
+    :R => (name=:R, description="Hardwood litter (summer)",
+        SG1=1500.0, W1=0.50, SG10=109.0, W10=0.50, SG100=30.0, W100=0.50, SG1000=0.0, W1000=0.0,
+        SGWOOD=1500.0, WWOOD=0.50, SGHERB=2000.0, WHERB=0.50,
+        DEPTH=0.25, MXD=25.0, HD=8000.0, HL=8000.0, SCM=6.0, WNDFC=0.4),
+    :S => (name=:S, description="Tundra",
+        SG1=1500.0, W1=0.50, SG10=109.0, W10=0.50, SG100=30.0, W100=0.50, SG1000=8.0, W1000=0.50,
+        SGWOOD=1200.0, WWOOD=0.50, SGHERB=1500.0, WHERB=0.50,
+        DEPTH=0.40, MXD=25.0, HD=8000.0, HL=8000.0, SCM=17.0, WNDFC=0.6),
+    :T => (name=:T, description="Sagebrush-grass",
+        SG1=2500.0, W1=1.00, SG10=109.0, W10=1.50, SG100=0.0, W100=0.0, SG1000=0.0, W1000=0.0,
+        SGWOOD=1500.0, WWOOD=2.50, SGHERB=2000.0, WHERB=0.50,
+        DEPTH=1.25, MXD=15.0, HD=8000.0, HL=8000.0, SCM=73.0, WNDFC=0.6),
+    :U => (name=:U, description="Western pines",
+        SG1=1750.0, W1=1.50, SG10=109.0, W10=1.00, SG100=30.0, W100=0.50, SG1000=0.0, W1000=0.0,
+        SGWOOD=1500.0, WWOOD=0.50, SGHERB=2000.0, WHERB=0.50,
+        DEPTH=0.50, MXD=20.0, HD=8000.0, HL=8000.0, SCM=16.0, WNDFC=0.4)
 )
 
 """
@@ -1399,9 +1386,13 @@ const NFDRS_FUEL_MODELS = Dict{Symbol, NFDRSFuelModel}(
 
 Get a fuel model by its symbol identifier (A-U).
 
+Returns a NamedTuple with all fuel model parameters from Cohen & Deeming (1985), Appendix.
+
 # Example
 ```julia
 fm = get_fuel_model(:A)  # Western grasses (annual)
+fm.SG1  # 3000.0 (ft⁻¹)
+fm.W1   # 0.20 (tons/acre)
 ```
 """
 function get_fuel_model(model::Symbol)
