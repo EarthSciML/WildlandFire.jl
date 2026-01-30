@@ -112,8 +112,8 @@ end
     # Packing ratio: β = ρb / ρp = 0.544 / 512.6 ≈ 0.001063
     @test β ≈ (w0_SI / δ_SI) / ρ_p_SI rtol=1e-4
 
-    # Optimum packing ratio (SI): βop = 9.189 * σ^(-0.8189)
-    β_op_expected = 9.189 * σ_SI^(-0.8189)
+    # Optimum packing ratio (SI): βop = 8.858 * σ^(-0.8189)
+    β_op_expected = 8.858 * σ_SI^(-0.8189)
     @test β_op ≈ β_op_expected rtol=1e-6
 
     # Effective heating number (SI): ε = exp(-452.7/σ)
@@ -399,8 +399,8 @@ end
     IB = sol[compiled_sys.IB]
     F_L = sol[compiled_sys.F_L]
 
-    # Verify flame length equation (SI): F_L = 0.003145 * IB^0.46
-    F_L_expected = 0.003145 * IB^0.46
+    # Verify flame length equation (SI): F_L = 0.00323 * IB^0.46
+    F_L_expected = 0.00323 * IB^0.46
     @test F_L ≈ F_L_expected rtol=1e-6
 
     # Flame length should be positive
@@ -408,7 +408,9 @@ end
 end
 
 @testitem "Residence Time Relationship" setup=[RothermelSetup] tags=[:rothermel] begin
-    # Verify residence time equation (SI): t_r = 7023.8 / σ
+    # Verify residence time equation (SI): t_r = 75590.6 / σ
+    # This matches the US equation: t_r = 384/σ (min) where σ in 1/ft
+    # Converted: 384 * 60 / 0.3048 = 75590.6 (s, σ in 1/m)
 
     sys = RothermelFireSpread()
     compiled_sys = mtkcompile(sys)
@@ -425,9 +427,15 @@ end
     sol = solve(prob)
 
     t_r = sol[compiled_sys.t_r]
-    t_r_expected = 7023.8 / σ_SI
+    t_r_expected = 75590.6 / σ_SI
 
     @test t_r ≈ t_r_expected rtol=1e-6
+
+    # Cross-validate with US equation
+    σ_US = 3500.0  # 1/ft
+    t_r_US_min = 384 / σ_US  # minutes
+    t_r_SI_s = t_r  # seconds
+    @test t_r_SI_s / 60 ≈ t_r_US_min rtol=1e-4  # Compare in minutes
 end
 
 @testitem "Heat Per Unit Area" setup=[RothermelSetup] tags=[:rothermel] begin

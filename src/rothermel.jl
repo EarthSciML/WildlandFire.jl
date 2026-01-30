@@ -83,17 +83,18 @@ sol = solve(prob)
     # complex dimensional relationships. We use dimensionless unit annotations
     # where appropriate since these are empirical calibration constants.
     @constants begin
-        # β_op = 3.348 * σ^(-0.8189) (US), converted to SI: 9.189 * σ^(-0.8189)
-        # Note: This is an empirical relationship; coefficient absorbs units
-        c_beta_op = 9.189, [description = "Optimum packing ratio coefficient (SI, empirical)", unit = u"1"]
+        # β_op = 3.348 * σ^(-0.8189) (US), converted to SI: 8.858 * σ^(-0.8189)
+        # Conversion: 3.348 * ft_to_m^(-0.8189) = 3.348 * 0.3048^(-0.8189) = 8.858
+        c_beta_op = 8.858, [description = "Optimum packing ratio coefficient (SI, empirical)", unit = u"1"]
 
         # Γ_max = σ^1.5 / (495 + 0.0594*σ^1.5) (US), converted to SI: σ^1.5 / (176502 + 3.564*σ^1.5)
         # Note: These coefficients are empirical and unit-absorbing
         c_Gamma_denom1 = 176502.0, [description = "Γ_max denominator constant 1 (SI, empirical)", unit = u"1"]
         c_Gamma_denom2 = 3.564, [description = "Γ_max denominator constant 2 (SI, empirical)", unit = u"1"]
 
-        # A = 133 * σ^(-0.7913) (US), converted to SI: 343.2 * σ^(-0.7913)
-        c_A = 343.2, [description = "Coefficient A constant (SI, empirical)", unit = u"1"]
+        # A = 133 * σ^(-0.7913) (US), converted to SI: 340.5 * σ^(-0.7913)
+        # Conversion: 133 * ft_to_m^(-0.7913) = 133 * 0.3048^(-0.7913) = 340.5
+        c_A = 340.5, [description = "Coefficient A constant (SI, empirical)", unit = u"1"]
 
         # Moisture damping polynomial coefficients (dimensionless) - Table 3
         c_etaM_1 = 2.59, [description = "Moisture damping coefficient 1 (dimensionless)", unit = u"1"]
@@ -112,9 +113,10 @@ sol = solve(prob)
         c_xi_4 = 0.376, [description = "ξ coefficient 4 (SI, empirical)", unit = u"1"]
 
         # Wind coefficients (SI) - Table 3
-        # C = 7.47 * exp(-0.133 * σ^0.55) (US), SI: 7.47 * exp(-0.0717 * σ^0.55)
+        # C = 7.47 * exp(-0.133 * σ^0.55) (US), SI: 7.47 * exp(-0.0692 * σ^0.55)
+        # Conversion: 0.133 * ft_to_m^0.55 = 0.133 * 0.3048^0.55 = 0.0692
         c_C_1 = 7.47, [description = "Wind coefficient C constant 1 (empirical)", unit = u"1"]
-        c_C_2 = 0.0717, [description = "Wind coefficient C constant 2 (SI, empirical)", unit = u"1"]
+        c_C_2 = 0.0692, [description = "Wind coefficient C constant 2 (SI, empirical)", unit = u"1"]
         # B = 0.02526 * σ^0.54 (US), SI: 0.01317 * σ^0.54
         c_B = 0.01317, [description = "Wind coefficient B constant (SI, empirical)", unit = u"1"]
         # E = 0.715 * exp(-3.59e-4 * σ) (US), SI: 0.715 * exp(-1.094e-4 * σ)
@@ -131,11 +133,13 @@ sol = solve(prob)
         c_Qig_1 = 581500.0, [description = "Heat of preignition constant 1 (SI)", unit = u"J/kg"]
         c_Qig_2 = 2595816.0, [description = "Heat of preignition constant 2 (SI)", unit = u"J/kg"]
 
-        # t_r = 384/σ (US min with σ in 1/ft), SI: 7023.8/σ (s) - Table 7
-        c_tr = 7023.8, [description = "Residence time coefficient (SI, empirical)", unit = u"1"]
+        # t_r = 384/σ (US min with σ in 1/ft), SI: 75590.6/σ (s) - Table 7
+        # Conversion: 384 * 60 / ft_to_m = 384 * 60 / 0.3048 = 75590.6
+        c_tr = 75590.6, [description = "Residence time coefficient (SI, empirical)", unit = u"1"]
 
-        # F_L = 0.45 * IB^0.46 (US ft with IB in Btu/ft/s), SI: 0.003145 * IB^0.46 - Table 7
-        c_FL = 0.003145, [description = "Flame length coefficient (SI, empirical)", unit = u"1"]
+        # F_L = 0.45 * IB^0.46 (US ft with IB in Btu/ft/s), SI: 0.00323 * IB^0.46 - Table 7
+        # Conversion: 0.45 * ft_to_m / (Btu_to_J / ft_to_m)^0.46 = 0.45 * 0.3048 / 3461.5^0.46 = 0.00323
+        c_FL = 0.00323, [description = "Flame length coefficient (SI, empirical)", unit = u"1"]
     end
 
     # Input parameters - fuel array properties (SI units)
