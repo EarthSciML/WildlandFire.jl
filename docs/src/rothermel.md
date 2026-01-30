@@ -28,17 +28,23 @@ calculations and output variables.
 
 ### Important Note on Units
 
-This implementation uses US customary units (ft, lb, Btu) internally, as the empirical
-coefficients in the Rothermel equations were calibrated in this unit system. Key conversions:
+This implementation uses SI units throughout. The original Rothermel equations were calibrated
+in US customary units (ft, lb, Btu), so all empirical coefficients have been converted to SI.
+Key conversions from the original formulation:
 
 | Quantity | US Customary | SI Equivalent |
 |----------|--------------|---------------|
-| Load | 1 ton/acre | 0.224 kg/m² |
 | Load | 1 lb/ft² | 4.88 kg/m² |
-| Wind speed | 1 mi/h | 26.82 m/min |
+| Load | 1 ton/acre | 0.224 kg/m² |
+| Wind speed | 1 mi/h | 0.447 m/s |
+| Wind speed | 1 ft/min | 0.00508 m/s |
 | Energy | 1 Btu | 1.055 kJ |
 | Length | 1 ft | 0.305 m |
 | Mass | 1 lb | 0.454 kg |
+| SAV ratio | 1 1/ft | 3.28 1/m |
+| Density | 1 lb/ft³ | 16.02 kg/m³ |
+| Heat content | 1 Btu/lb | 2326 J/kg |
+| Power flux | 1 Btu/ft²/min | 189.3 W/m² |
 
 ### State Variables
 
@@ -46,29 +52,29 @@ The model computes the following output variables:
 
 | Variable | Description | Units |
 |----------|-------------|-------|
-| `R` | Rate of spread | ft/min |
-| `R0` | No-wind no-slope rate of spread | ft/min |
-| `IR` | Reaction intensity | Btu/ft²/min |
-| `t_r` | Flame residence time | min |
-| `HA` | Heat per unit area | Btu/ft² |
-| `IB` | Fireline intensity (Byram) | Btu/ft/s |
-| `F_L` | Flame length (Byram) | ft |
+| `R` | Rate of spread | m/s |
+| `R0` | No-wind no-slope rate of spread | m/s |
+| `IR` | Reaction intensity | W/m² |
+| `t_r` | Flame residence time | s |
+| `HA` | Heat per unit area | J/m² |
+| `IB` | Fireline intensity (Byram) | W/m |
+| `F_L` | Flame length (Byram) | m |
 
 ### Parameters
 
 | Parameter | Description | Units |
 |-----------|-------------|-------|
-| `σ` | Surface-area-to-volume ratio | 1/ft |
-| `w0` | Oven-dry fuel load | lb/ft² |
-| `δ` | Fuel bed depth | ft |
+| `σ` | Surface-area-to-volume ratio | 1/m |
+| `w0` | Oven-dry fuel load | kg/m² |
+| `δ` | Fuel bed depth | m |
 | `Mx` | Dead fuel moisture of extinction | fraction |
 | `Mf` | Fuel moisture content | fraction |
-| `U` | Wind velocity at midflame height | ft/min |
+| `U` | Wind velocity at midflame height | m/s |
 | `tanϕ` | Slope steepness (rise/run) | dimensionless |
-| `h` | Low heat content | Btu/lb |
+| `h` | Low heat content | J/kg |
 | `S_T` | Total mineral content | fraction |
 | `S_e` | Effective mineral content | fraction |
-| `ρ_p` | Oven-dry particle density | lb/ft³ |
+| `ρ_p` | Oven-dry particle density | kg/m³ |
 
 ### Main Equations
 
@@ -101,29 +107,38 @@ using Plots
 sys = RothermelFireSpread()
 compiled_sys = mtkcompile(sys)
 
-# Fuel Model 1 parameters (short grass)
+# Unit conversion factors
+ft_to_m = 0.3048
+lb_to_kg = 0.453592
+lbft2_to_kgm2 = lb_to_kg / ft_to_m^2
+invft_to_invm = 1 / ft_to_m
+ftmin_to_ms = ft_to_m / 60.0
+
+# Fuel Model 1 parameters (short grass) converted to SI
+# Original US: σ = 3500 1/ft, w0 = 0.034 lb/ft², δ = 1.0 ft, Mx = 0.12
 base_params = Dict(
-    compiled_sys.σ => 3500.0,      # SAV ratio (1/ft)
-    compiled_sys.w0 => 0.034,      # Fuel load (lb/ft²)
-    compiled_sys.δ => 1.0,         # Fuel bed depth (ft)
-    compiled_sys.Mx => 0.12,       # Moisture of extinction
-    compiled_sys.Mf => 0.05,       # Fuel moisture content
-    compiled_sys.tanϕ => 0.0       # Flat terrain
+    compiled_sys.σ => 3500.0 * invft_to_invm,      # SAV ratio (1/m)
+    compiled_sys.w0 => 0.034 * lbft2_to_kgm2,      # Fuel load (kg/m²)
+    compiled_sys.δ => 1.0 * ft_to_m,               # Fuel bed depth (m)
+    compiled_sys.Mx => 0.12,                        # Moisture of extinction
+    compiled_sys.Mf => 0.05,                        # Fuel moisture content
+    compiled_sys.tanϕ => 0.0                        # Flat terrain
 )
 
 # Calculate spread rate for different wind speeds
-wind_speeds = 0:50:500  # ft/min (0 to ~6 mi/h)
+# Wind speeds from 0 to ~6 mi/h in m/s
+wind_speeds_ms = [U * ftmin_to_ms for U in 0:50:500]
 spread_rates = Float64[]
 
-for U in wind_speeds
+for U in wind_speeds_ms
     prob = NonlinearProblem(compiled_sys, [], merge(base_params, Dict(compiled_sys.U => U)))
     sol = solve(prob)
     push!(spread_rates, sol[compiled_sys.R])
 end
 
-# Plot results
-plot(wind_speeds ./ 88,  # Convert ft/min to mi/h
-     spread_rates,
+# Plot results (convert wind to mi/h and spread rate to ft/min for familiar units)
+plot(wind_speeds_ms ./ 0.447,  # Convert m/s to mi/h
+     spread_rates ./ ftmin_to_ms,  # Convert m/s to ft/min
      xlabel = "Wind Speed (mi/h)",
      ylabel = "Rate of Spread (ft/min)",
      title = "Fire Spread Rate vs Wind Speed\n(Fuel Model 1, Short Grass)",
@@ -142,15 +157,17 @@ savefig("wind_effect.png"); nothing # hide
 moisture_contents = 0.02:0.01:0.12  # 2% to 12% (extinction)
 spread_rates_moist = Float64[]
 
+U_wind = 220.0 * ftmin_to_ms  # 2.5 mi/h in m/s
+
 for Mf in moisture_contents
-    params = merge(base_params, Dict(compiled_sys.Mf => Mf, compiled_sys.U => 220.0))  # 2.5 mi/h wind
+    params = merge(base_params, Dict(compiled_sys.Mf => Mf, compiled_sys.U => U_wind))
     prob = NonlinearProblem(compiled_sys, [], params)
     sol = solve(prob)
     push!(spread_rates_moist, sol[compiled_sys.R])
 end
 
 plot(moisture_contents .* 100,
-     spread_rates_moist,
+     spread_rates_moist ./ ftmin_to_ms,
      xlabel = "Fuel Moisture Content (%)",
      ylabel = "Rate of Spread (ft/min)",
      title = "Fire Spread Rate vs Fuel Moisture\n(Fuel Model 1, 2.5 mi/h wind)",
@@ -168,14 +185,14 @@ savefig("moisture_effect.png"); nothing # hide
 # Calculate flame length for different wind speeds
 flame_lengths = Float64[]
 
-for U in wind_speeds
+for U in wind_speeds_ms
     prob = NonlinearProblem(compiled_sys, [], merge(base_params, Dict(compiled_sys.U => U)))
     sol = solve(prob)
     push!(flame_lengths, sol[compiled_sys.F_L])
 end
 
-plot(wind_speeds ./ 88,
-     flame_lengths,
+plot(wind_speeds_ms ./ 0.447,  # Convert m/s to mi/h
+     flame_lengths ./ ft_to_m,  # Convert m to ft
      xlabel = "Wind Speed (mi/h)",
      ylabel = "Flame Length (ft)",
      title = "Flame Length vs Wind Speed\n(Fuel Model 1, Short Grass)",
@@ -193,13 +210,14 @@ The Rothermel model uses standardized fuel model parameters. The 13 original fue
 40 Scott and Burgan fuel models define typical vegetation types. For Fuel Model 1 (short grass)
 used in the examples above:
 
-| Parameter | Value |
-|-----------|-------|
-| SAV ratio (σ) | 3,500 1/ft |
-| Fuel load (w0) | 0.034 lb/ft² (0.74 ton/acre) |
-| Fuel bed depth (δ) | 1.0 ft |
-| Moisture of extinction (Mx) | 0.12 (12%) |
-| Heat content (h) | 8,000 Btu/lb |
+| Parameter | US Customary | SI Value |
+|-----------|--------------|----------|
+| SAV ratio (σ) | 3,500 1/ft | 11,483 1/m |
+| Fuel load (w0) | 0.034 lb/ft² (0.74 ton/acre) | 0.166 kg/m² |
+| Fuel bed depth (δ) | 1.0 ft | 0.305 m |
+| Moisture of extinction (Mx) | 0.12 (12%) | 0.12 (12%) |
+| Heat content (h) | 8,000 Btu/lb | 18,608,000 J/kg |
+| Particle density (ρ_p) | 32 lb/ft³ | 512.6 kg/m³ |
 
 ## Related Models
 
@@ -224,8 +242,10 @@ M_{x,live} = \max\left(M_{x,dead}, 2.9 W \left(1 - \frac{M_{f,dead}}{M_{x,dead}}
 ### Wind Limit
 
 The `WindLimit` component calculates the maximum effective wind speed that can influence
-fire spread rate. The corrected equation (Andrews et al. 2013) is:
+fire spread rate. The corrected equation (Andrews et al. 2013) in SI units is:
 
 ```math
-U_{limit} = 96.8 \cdot I_R^{1/3}
+U_{limit} = 0.0857 \cdot I_R^{1/3}
 ```
+
+where ``U_{limit}`` is in m/s and ``I_R`` is in W/m².

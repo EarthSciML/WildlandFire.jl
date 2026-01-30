@@ -1,7 +1,7 @@
 name = "WildlandFire"
 uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-authors = ["EarthSciML authors and contributors"]
 version = "0.1.0"
+authors = ["EarthSciML authors and contributors"]
 
 [deps]
 DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
@@ -10,9 +10,13 @@ OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
 
 [compat]
 DynamicQuantities = "1"
-julia = "1.10"
 ModelingToolkit = "11"
+NonlinearSolve = "4.14.0"
 OrdinaryDiffEqDefault = "1"
+Symbolics = "7.11.0"
+TestItemRunner = "1.1.4"
+TestItems = "1.0.0"
+julia = "1.10"
 
 [extras]
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"

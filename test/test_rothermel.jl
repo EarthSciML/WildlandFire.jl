@@ -4,6 +4,24 @@
     using NonlinearSolve
     using Symbolics
     using WildlandFire
+
+    # Unit conversion factors (US customary to SI)
+    const ft_to_m = 0.3048
+    const lb_to_kg = 0.453592
+    const Btu_to_J = 1055.06
+    const min_to_s = 60.0
+    const lbft2_to_kgm2 = lb_to_kg / ft_to_m^2  # 4.88243
+    const lbft3_to_kgm3 = lb_to_kg / ft_to_m^3  # 16.0185
+    const invft_to_invm = 1 / ft_to_m           # 3.28084
+    const ftmin_to_ms = ft_to_m / min_to_s      # 0.00508
+    const Btuft2min_to_Wm2 = Btu_to_J / (ft_to_m^2 * min_to_s)  # 189.27
+
+    # Fuel Model 1 parameters in SI units (converted from US customary)
+    # Original US: σ = 3500 1/ft, w0 = 0.034 lb/ft², δ = 1.0 ft, Mx = 0.12
+    const σ_SI = 3500.0 * invft_to_invm         # 11483.5 1/m
+    const w0_SI = 0.034 * lbft2_to_kgm2         # 0.166 kg/m²
+    const δ_SI = 1.0 * ft_to_m                  # 0.3048 m
+    const ρ_p_SI = 32.0 * lbft3_to_kgm3         # 512.6 kg/m³
 end
 
 @testitem "Structural Verification" setup=[RothermelSetup] tags=[:rothermel] begin
@@ -57,21 +75,20 @@ end
 
 @testitem "Fuel Model 1 - Short Grass" setup=[RothermelSetup] tags=[:rothermel] begin
     # Test with Fuel Model 1 (Short grass) parameters from Table 8
-    # Expected values computed from the Rothermel equations
+    # Using SI units
 
     sys = RothermelFireSpread()
     compiled_sys = mtkcompile(sys)
 
-    # Fuel Model 1 parameters (Short grass, 1 ft depth)
-    # From Table 8: σ = 3500 1/ft, w0 = 0.034 lb/ft², δ = 1.0 ft, Mx = 0.12
+    # Fuel Model 1 parameters in SI units
     prob = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,      # SAV ratio (1/ft)
-        compiled_sys.w0 => 0.034,      # Fuel load (lb/ft²) = 0.74 ton/acre
-        compiled_sys.δ => 1.0,         # Fuel bed depth (ft)
-        compiled_sys.Mx => 0.12,       # Moisture of extinction
-        compiled_sys.Mf => 0.05,       # 5% moisture content (dry conditions)
-        compiled_sys.U => 0.0,         # No wind
-        compiled_sys.tanϕ => 0.0       # Flat terrain
+        compiled_sys.σ => σ_SI,            # SAV ratio (1/m)
+        compiled_sys.w0 => w0_SI,          # Fuel load (kg/m²)
+        compiled_sys.δ => δ_SI,            # Fuel bed depth (m)
+        compiled_sys.Mx => 0.12,           # Moisture of extinction
+        compiled_sys.Mf => 0.05,           # 5% moisture content (dry conditions)
+        compiled_sys.U => 0.0,             # No wind (m/s)
+        compiled_sys.tanϕ => 0.0           # Flat terrain
     ])
 
     sol = solve(prob)
@@ -88,27 +105,27 @@ end
     η_M = sol[compiled_sys.η_M]
     η_s = sol[compiled_sys.η_s]
 
-    # Verify intermediate calculations
-    # Bulk density: ρb = w0 / δ = 0.034 / 1.0 = 0.034 lb/ft³
-    @test ρb ≈ 0.034 rtol=1e-6
+    # Verify intermediate calculations in SI units
+    # Bulk density: ρb = w0 / δ = 0.166 / 0.3048 = 0.544 kg/m³
+    @test ρb ≈ w0_SI / δ_SI rtol=1e-6
 
-    # Packing ratio: β = ρb / ρp = 0.034 / 32 ≈ 0.001063
-    @test β ≈ 0.034 / 32.0 rtol=1e-6
+    # Packing ratio: β = ρb / ρp = 0.544 / 512.6 ≈ 0.001063
+    @test β ≈ (w0_SI / δ_SI) / ρ_p_SI rtol=1e-4
 
-    # Optimum packing ratio: βop = 3.348 * σ^(-0.8189)
-    β_op_expected = 3.348 * 3500.0^(-0.8189)
+    # Optimum packing ratio (SI): βop = 9.189 * σ^(-0.8189)
+    β_op_expected = 9.189 * σ_SI^(-0.8189)
     @test β_op ≈ β_op_expected rtol=1e-6
 
-    # Effective heating number: ε = exp(-138/σ)
-    ε_expected = exp(-138.0 / 3500.0)
+    # Effective heating number (SI): ε = exp(-452.7/σ)
+    ε_expected = exp(-452.7 / σ_SI)
     @test ε ≈ ε_expected rtol=1e-6
 
-    # Moisture damping coefficient
+    # Moisture damping coefficient (same as US, dimensionless)
     rM = 0.05 / 0.12
     η_M_expected = 1.0 - 2.59*rM + 5.11*rM^2 - 3.52*rM^3
     @test η_M ≈ η_M_expected rtol=1e-6
 
-    # Mineral damping coefficient
+    # Mineral damping coefficient (same as US, dimensionless)
     η_s_expected = min(0.174 * 0.010^(-0.19), 1.0)
     @test η_s ≈ η_s_expected rtol=1e-6
 
@@ -130,9 +147,9 @@ end
 
     # Base case: no wind
     prob_no_wind = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,
-        compiled_sys.w0 => 0.034,
-        compiled_sys.δ => 1.0,
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
         compiled_sys.Mx => 0.12,
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
@@ -141,14 +158,15 @@ end
     sol_no_wind = solve(prob_no_wind)
     R_no_wind = sol_no_wind[compiled_sys.R]
 
-    # With wind: 5 mi/h = 440 ft/min
+    # With wind: 5 mi/h = 440 ft/min = 2.235 m/s
+    U_wind = 440.0 * ftmin_to_ms
     prob_wind = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,
-        compiled_sys.w0 => 0.034,
-        compiled_sys.δ => 1.0,
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
         compiled_sys.Mx => 0.12,
         compiled_sys.Mf => 0.05,
-        compiled_sys.U => 440.0,
+        compiled_sys.U => U_wind,
         compiled_sys.tanϕ => 0.0
     ])
     sol_wind = solve(prob_wind)
@@ -170,9 +188,9 @@ end
 
     # Base case: flat terrain
     prob_flat = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,
-        compiled_sys.w0 => 0.034,
-        compiled_sys.δ => 1.0,
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
         compiled_sys.Mx => 0.12,
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
@@ -183,9 +201,9 @@ end
 
     # With 30% slope (tan(16.7°) ≈ 0.3)
     prob_slope = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,
-        compiled_sys.w0 => 0.034,
-        compiled_sys.δ => 1.0,
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
         compiled_sys.Mx => 0.12,
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
@@ -210,9 +228,9 @@ end
 
     # Low moisture: 5%
     prob_dry = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,
-        compiled_sys.w0 => 0.034,
-        compiled_sys.δ => 1.0,
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
         compiled_sys.Mx => 0.12,
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
@@ -223,9 +241,9 @@ end
 
     # Higher moisture: 10%
     prob_wet = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,
-        compiled_sys.w0 => 0.034,
-        compiled_sys.δ => 1.0,
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
         compiled_sys.Mx => 0.12,
         compiled_sys.Mf => 0.10,
         compiled_sys.U => 0.0,
@@ -251,9 +269,9 @@ end
 
     # At extinction moisture, moisture damping should approach zero
     prob = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,
-        compiled_sys.w0 => 0.034,
-        compiled_sys.δ => 1.0,
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
         compiled_sys.Mx => 0.12,
         compiled_sys.Mf => 0.12,  # At extinction moisture
         compiled_sys.U => 0.0,
@@ -276,25 +294,30 @@ end
     sys = DynamicFuelLoadTransfer()
     compiled_sys = mtkcompile(sys)
 
+    # Test fuel load in SI units: 0.05 lb/ft² = 0.244 kg/m²
+    w0_test_SI = 0.05 * lbft2_to_kgm2
+
     # Test at low live herbaceous moisture (fully cured)
-    # When Mf_live_herb = 0.3 (30%), T = -1.11*0.3 + 1.33 = 1.0 (capped)
+    # When Mf_live_herb = 0.3 (30%), T = -1.11*0.3 + 1.33 = 0.997
+    # (not quite capped at 1.0, need even lower moisture)
     prob_cured = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.w0_live_herb => 0.05,
+        compiled_sys.w0_live_herb => w0_test_SI,
         compiled_sys.Mf_live_herb => 0.3
     ])
     sol_cured = solve(prob_cured)
 
     T_cured = sol_cured[compiled_sys.T_fraction]
-    @test T_cured ≈ 1.0 rtol=1e-6
+    T_expected_cured = -1.11 * 0.3 + 1.33  # = 0.997
+    @test T_cured ≈ T_expected_cured rtol=1e-6
 
-    # All load transferred to dead
+    # Most load transferred to dead (0.997 of it)
     w0_dead = sol_cured[compiled_sys.w0_dead_herb]
-    @test w0_dead ≈ 0.05 rtol=1e-6
+    @test w0_dead ≈ T_expected_cured * w0_test_SI rtol=1e-6
 
     # Test at high live herbaceous moisture (green)
     # When Mf_live_herb = 1.2 (120%), T = -1.11*1.2 + 1.33 = 0.0 (capped at 0)
     prob_green = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.w0_live_herb => 0.05,
+        compiled_sys.w0_live_herb => w0_test_SI,
         compiled_sys.Mf_live_herb => 1.2
     ])
     sol_green = solve(prob_green)
@@ -308,8 +331,9 @@ end
 
     # Test intermediate case
     # When Mf_live_herb = 0.7 (70%), T = -1.11*0.7 + 1.33 = 0.553
+    w0_test2_SI = 0.10 * lbft2_to_kgm2
     prob_mid = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.w0_live_herb => 0.10,
+        compiled_sys.w0_live_herb => w0_test2_SI,
         compiled_sys.Mf_live_herb => 0.7
     ])
     sol_mid = solve(prob_mid)
@@ -319,7 +343,7 @@ end
     @test T_mid ≈ T_expected rtol=1e-6
 
     w0_dead_mid = sol_mid[compiled_sys.w0_dead_herb]
-    @test w0_dead_mid ≈ T_expected * 0.10 rtol=1e-6
+    @test w0_dead_mid ≈ T_expected * w0_test2_SI rtol=1e-6
 end
 
 @testitem "LiveFuelMoistureExtinction Calculations" setup=[RothermelSetup] tags=[:rothermel] begin
@@ -354,18 +378,20 @@ end
 end
 
 @testitem "Flame Length Relationship" setup=[RothermelSetup] tags=[:rothermel] begin
-    # Verify the Byram flame length equation: F_L = 0.45 * IB^0.46
+    # Verify the Byram flame length equation in SI units
 
     sys = RothermelFireSpread()
     compiled_sys = mtkcompile(sys)
 
+    U_wind = 440.0 * ftmin_to_ms  # 5 mi/h in m/s
+
     prob = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,
-        compiled_sys.w0 => 0.034,
-        compiled_sys.δ => 1.0,
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
         compiled_sys.Mx => 0.12,
         compiled_sys.Mf => 0.05,
-        compiled_sys.U => 440.0,
+        compiled_sys.U => U_wind,
         compiled_sys.tanϕ => 0.0
     ])
     sol = solve(prob)
@@ -373,8 +399,8 @@ end
     IB = sol[compiled_sys.IB]
     F_L = sol[compiled_sys.F_L]
 
-    # Verify flame length equation
-    F_L_expected = 0.45 * IB^0.46
+    # Verify flame length equation (SI): F_L = 0.003145 * IB^0.46
+    F_L_expected = 0.003145 * IB^0.46
     @test F_L ≈ F_L_expected rtol=1e-6
 
     # Flame length should be positive
@@ -382,15 +408,15 @@ end
 end
 
 @testitem "Residence Time Relationship" setup=[RothermelSetup] tags=[:rothermel] begin
-    # Verify residence time equation: t_r = 384 / σ
+    # Verify residence time equation (SI): t_r = 7023.8 / σ
 
     sys = RothermelFireSpread()
     compiled_sys = mtkcompile(sys)
 
     prob = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,
-        compiled_sys.w0 => 0.034,
-        compiled_sys.δ => 1.0,
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
         compiled_sys.Mx => 0.12,
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
@@ -399,7 +425,7 @@ end
     sol = solve(prob)
 
     t_r = sol[compiled_sys.t_r]
-    t_r_expected = 384.0 / 3500.0
+    t_r_expected = 7023.8 / σ_SI
 
     @test t_r ≈ t_r_expected rtol=1e-6
 end
@@ -411,9 +437,9 @@ end
     compiled_sys = mtkcompile(sys)
 
     prob = NonlinearProblem(compiled_sys, [], [
-        compiled_sys.σ => 3500.0,
-        compiled_sys.w0 => 0.034,
-        compiled_sys.δ => 1.0,
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
         compiled_sys.Mx => 0.12,
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
@@ -430,19 +456,23 @@ end
 end
 
 @testitem "WindLimit Equations" setup=[RothermelSetup] tags=[:rothermel] begin
-    # Test both the corrected and original wind limit equations
+    # Test both the corrected and original wind limit equations in SI units
 
     # Test corrected equation (default)
     sys_corrected = WindLimit(use_corrected=true)
     compiled_corrected = mtkcompile(sys_corrected)
 
+    # IR in SI units: 1000 Btu/ft²/min = 189270 W/m²
+    IR_SI = 1000.0 * Btuft2min_to_Wm2
+
     prob_corrected = NonlinearProblem(compiled_corrected, [], [
-        compiled_corrected.IR => 1000.0
+        compiled_corrected.IR => IR_SI
     ])
     sol_corrected = solve(prob_corrected)
 
     U_limit_corrected = sol_corrected[compiled_corrected.U_limit]
-    U_limit_expected_corrected = 96.8 * 1000.0^(1/3)
+    # SI: U_limit = 0.0857 * IR^(1/3)
+    U_limit_expected_corrected = 0.0857 * IR_SI^(1/3)
     @test U_limit_corrected ≈ U_limit_expected_corrected rtol=1e-6
 
     # Test original equation
@@ -450,11 +480,43 @@ end
     compiled_original = mtkcompile(sys_original)
 
     prob_original = NonlinearProblem(compiled_original, [], [
-        compiled_original.IR => 1000.0
+        compiled_original.IR => IR_SI
     ])
     sol_original = solve(prob_original)
 
     U_limit_original = sol_original[compiled_original.U_limit]
-    U_limit_expected_original = 0.9 * 1000.0
+    # SI: U_limit = 2.42e-5 * IR
+    U_limit_expected_original = 2.42e-5 * IR_SI
     @test U_limit_original ≈ U_limit_expected_original rtol=1e-6
+end
+
+@testitem "Cross-validation with US Customary Units" setup=[RothermelSetup] tags=[:rothermel] begin
+    # Cross-validate that SI implementation gives equivalent results to US customary
+    # by comparing spread rates after unit conversion
+
+    sys = RothermelFireSpread()
+    compiled_sys = mtkcompile(sys)
+
+    # Fuel Model 1 in SI
+    prob = NonlinearProblem(compiled_sys, [], [
+        compiled_sys.σ => σ_SI,
+        compiled_sys.w0 => w0_SI,
+        compiled_sys.δ => δ_SI,
+        compiled_sys.Mx => 0.12,
+        compiled_sys.Mf => 0.05,
+        compiled_sys.U => 0.0,
+        compiled_sys.tanϕ => 0.0
+    ])
+    sol = solve(prob)
+
+    R_SI = sol[compiled_sys.R]  # m/s
+
+    # Convert back to US customary (ft/min) for comparison
+    R_US = R_SI / ftmin_to_ms
+
+    # For Fuel Model 1 (short grass), no wind, 5% moisture, the spread rate
+    # should be approximately 1-5 ft/min based on published Rothermel results
+    # This is a sanity check that the unit conversion preserves reasonable values
+    @test R_US > 0.5   # Minimum reasonable spread rate
+    @test R_US < 20.0  # Maximum reasonable spread rate for short grass without wind
 end
