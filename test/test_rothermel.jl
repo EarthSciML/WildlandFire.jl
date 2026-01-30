@@ -81,7 +81,7 @@ end
     compiled_sys = mtkcompile(sys)
 
     # Fuel Model 1 parameters in SI units
-    prob = NonlinearProblem(compiled_sys, [], [
+    prob = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,            # SAV ratio (1/m)
         compiled_sys.w0 => w0_SI,          # Fuel load (kg/m²)
         compiled_sys.δ => δ_SI,            # Fuel bed depth (m)
@@ -89,7 +89,7 @@ end
         compiled_sys.Mf => 0.05,           # 5% moisture content (dry conditions)
         compiled_sys.U => 0.0,             # No wind (m/s)
         compiled_sys.tanϕ => 0.0           # Flat terrain
-    ])
+    ))
 
     sol = solve(prob)
 
@@ -146,7 +146,7 @@ end
     compiled_sys = mtkcompile(sys)
 
     # Base case: no wind
-    prob_no_wind = NonlinearProblem(compiled_sys, [], [
+    prob_no_wind = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -154,13 +154,13 @@ end
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
         compiled_sys.tanϕ => 0.0
-    ])
+    ))
     sol_no_wind = solve(prob_no_wind)
     R_no_wind = sol_no_wind[compiled_sys.R]
 
     # With wind: 5 mi/h = 440 ft/min = 2.235 m/s
     U_wind = 440.0 * ftmin_to_ms
-    prob_wind = NonlinearProblem(compiled_sys, [], [
+    prob_wind = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -168,7 +168,7 @@ end
         compiled_sys.Mf => 0.05,
         compiled_sys.U => U_wind,
         compiled_sys.tanϕ => 0.0
-    ])
+    ))
     sol_wind = solve(prob_wind)
     R_wind = sol_wind[compiled_sys.R]
 
@@ -187,7 +187,7 @@ end
     compiled_sys = mtkcompile(sys)
 
     # Base case: flat terrain
-    prob_flat = NonlinearProblem(compiled_sys, [], [
+    prob_flat = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -195,12 +195,12 @@ end
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
         compiled_sys.tanϕ => 0.0
-    ])
+    ))
     sol_flat = solve(prob_flat)
     R_flat = sol_flat[compiled_sys.R]
 
     # With 30% slope (tan(16.7°) ≈ 0.3)
-    prob_slope = NonlinearProblem(compiled_sys, [], [
+    prob_slope = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -208,7 +208,7 @@ end
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
         compiled_sys.tanϕ => 0.3
-    ])
+    ))
     sol_slope = solve(prob_slope)
     R_slope = sol_slope[compiled_sys.R]
 
@@ -227,7 +227,7 @@ end
     compiled_sys = mtkcompile(sys)
 
     # Low moisture: 5%
-    prob_dry = NonlinearProblem(compiled_sys, [], [
+    prob_dry = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -235,12 +235,12 @@ end
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
         compiled_sys.tanϕ => 0.0
-    ])
+    ))
     sol_dry = solve(prob_dry)
     R_dry = sol_dry[compiled_sys.R]
 
     # Higher moisture: 10%
-    prob_wet = NonlinearProblem(compiled_sys, [], [
+    prob_wet = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -248,7 +248,7 @@ end
         compiled_sys.Mf => 0.10,
         compiled_sys.U => 0.0,
         compiled_sys.tanϕ => 0.0
-    ])
+    ))
     sol_wet = solve(prob_wet)
     R_wet = sol_wet[compiled_sys.R]
 
@@ -268,7 +268,7 @@ end
     compiled_sys = mtkcompile(sys)
 
     # At extinction moisture, moisture damping should approach zero
-    prob = NonlinearProblem(compiled_sys, [], [
+    prob = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -276,7 +276,7 @@ end
         compiled_sys.Mf => 0.12,  # At extinction moisture
         compiled_sys.U => 0.0,
         compiled_sys.tanϕ => 0.0
-    ])
+    ))
     sol = solve(prob)
 
     # At extinction moisture, η_M should be approximately 0
@@ -300,10 +300,10 @@ end
     # Test at low live herbaceous moisture (fully cured)
     # When Mf_live_herb = 0.3 (30%), T = -1.11*0.3 + 1.33 = 0.997
     # (not quite capped at 1.0, need even lower moisture)
-    prob_cured = NonlinearProblem(compiled_sys, [], [
+    prob_cured = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.w0_live_herb => w0_test_SI,
         compiled_sys.Mf_live_herb => 0.3
-    ])
+    ))
     sol_cured = solve(prob_cured)
 
     T_cured = sol_cured[compiled_sys.T_fraction]
@@ -316,10 +316,10 @@ end
 
     # Test at high live herbaceous moisture (green)
     # When Mf_live_herb = 1.2 (120%), T = -1.11*1.2 + 1.33 = 0.0 (capped at 0)
-    prob_green = NonlinearProblem(compiled_sys, [], [
+    prob_green = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.w0_live_herb => w0_test_SI,
         compiled_sys.Mf_live_herb => 1.2
-    ])
+    ))
     sol_green = solve(prob_green)
 
     T_green = sol_green[compiled_sys.T_fraction]
@@ -332,10 +332,10 @@ end
     # Test intermediate case
     # When Mf_live_herb = 0.7 (70%), T = -1.11*0.7 + 1.33 = 0.553
     w0_test2_SI = 0.10 * lbft2_to_kgm2
-    prob_mid = NonlinearProblem(compiled_sys, [], [
+    prob_mid = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.w0_live_herb => w0_test2_SI,
         compiled_sys.Mf_live_herb => 0.7
-    ])
+    ))
     sol_mid = solve(prob_mid)
 
     T_mid = sol_mid[compiled_sys.T_fraction]
@@ -353,11 +353,11 @@ end
     # Test live fuel moisture of extinction calculation
     # Mx_live = 2.9*W*(1 - Mf_dead/Mx_dead) - 0.226 (min = Mx_dead)
 
-    prob = NonlinearProblem(compiled_sys, [], [
+    prob = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.Mx_dead => 0.25,
         compiled_sys.W_ratio => 1.5,
         compiled_sys.Mf_dead => 0.10
-    ])
+    ))
     sol = solve(prob)
 
     Mx_live = sol[compiled_sys.Mx_live]
@@ -365,11 +365,11 @@ end
     @test Mx_live ≈ Mx_live_expected rtol=1e-6
 
     # Test minimum constraint
-    prob_low = NonlinearProblem(compiled_sys, [], [
+    prob_low = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.Mx_dead => 0.25,
         compiled_sys.W_ratio => 0.1,  # Low ratio should result in low Mx_live
         compiled_sys.Mf_dead => 0.20
-    ])
+    ))
     sol_low = solve(prob_low)
 
     Mx_live_low = sol_low[compiled_sys.Mx_live]
@@ -385,7 +385,7 @@ end
 
     U_wind = 440.0 * ftmin_to_ms  # 5 mi/h in m/s
 
-    prob = NonlinearProblem(compiled_sys, [], [
+    prob = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -393,7 +393,7 @@ end
         compiled_sys.Mf => 0.05,
         compiled_sys.U => U_wind,
         compiled_sys.tanϕ => 0.0
-    ])
+    ))
     sol = solve(prob)
 
     IB = sol[compiled_sys.IB]
@@ -415,7 +415,7 @@ end
     sys = RothermelFireSpread()
     compiled_sys = mtkcompile(sys)
 
-    prob = NonlinearProblem(compiled_sys, [], [
+    prob = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -423,7 +423,7 @@ end
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
         compiled_sys.tanϕ => 0.0
-    ])
+    ))
     sol = solve(prob)
 
     t_r = sol[compiled_sys.t_r]
@@ -444,7 +444,7 @@ end
     sys = RothermelFireSpread()
     compiled_sys = mtkcompile(sys)
 
-    prob = NonlinearProblem(compiled_sys, [], [
+    prob = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -452,7 +452,7 @@ end
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
         compiled_sys.tanϕ => 0.0
-    ])
+    ))
     sol = solve(prob)
 
     IR = sol[compiled_sys.IR]
@@ -473,9 +473,9 @@ end
     # IR in SI units: 1000 Btu/ft²/min = 189270 W/m²
     IR_SI = 1000.0 * Btuft2min_to_Wm2
 
-    prob_corrected = NonlinearProblem(compiled_corrected, [], [
+    prob_corrected = NonlinearProblem(compiled_corrected, Dict(
         compiled_corrected.IR => IR_SI
-    ])
+    ))
     sol_corrected = solve(prob_corrected)
 
     U_limit_corrected = sol_corrected[compiled_corrected.U_limit]
@@ -487,9 +487,9 @@ end
     sys_original = WindLimit(use_corrected=false)
     compiled_original = mtkcompile(sys_original)
 
-    prob_original = NonlinearProblem(compiled_original, [], [
+    prob_original = NonlinearProblem(compiled_original, Dict(
         compiled_original.IR => IR_SI
-    ])
+    ))
     sol_original = solve(prob_original)
 
     U_limit_original = sol_original[compiled_original.U_limit]
@@ -506,7 +506,7 @@ end
     compiled_sys = mtkcompile(sys)
 
     # Fuel Model 1 in SI
-    prob = NonlinearProblem(compiled_sys, [], [
+    prob = NonlinearProblem(compiled_sys, Dict(
         compiled_sys.σ => σ_SI,
         compiled_sys.w0 => w0_SI,
         compiled_sys.δ => δ_SI,
@@ -514,7 +514,7 @@ end
         compiled_sys.Mf => 0.05,
         compiled_sys.U => 0.0,
         compiled_sys.tanϕ => 0.0
-    ])
+    ))
     sol = solve(prob)
 
     R_SI = sol[compiled_sys.R]  # m/s

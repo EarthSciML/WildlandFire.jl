@@ -55,7 +55,7 @@ compiled_sys = mtkcompile(sys)
 
 # Set parameters for fuel model 1 (short grass) in SI units
 # Note: This is an algebraic system, so we use NonlinearProblem
-prob = NonlinearProblem(compiled_sys, [], [
+prob = NonlinearProblem(compiled_sys, Dict(
     compiled_sys.σ => 11483.0,     # SAV ratio (1/m), converted from 3500 1/ft
     compiled_sys.w0 => 0.166,      # Fuel load (kg/m²), converted from 0.034 lb/ft²
     compiled_sys.δ => 0.3048,      # Fuel bed depth (m), converted from 1.0 ft
@@ -63,7 +63,7 @@ prob = NonlinearProblem(compiled_sys, [], [
     compiled_sys.Mf => 0.05,       # Fuel moisture content (fraction)
     compiled_sys.U => 2.235,       # Wind speed (m/s), converted from 5 mi/h
     compiled_sys.tanϕ => 0.0       # Slope (flat)
-])
+))
 sol = solve(prob)
 ```
 """

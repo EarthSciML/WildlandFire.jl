@@ -133,7 +133,7 @@ wind_speeds_ms = [U * ftmin_to_ms for U in 0:50:500]
 spread_rates = Float64[]
 
 for U in wind_speeds_ms
-    prob = NonlinearProblem(compiled_sys, [], merge(base_params, Dict(compiled_sys.U => U)))
+    prob = NonlinearProblem(compiled_sys, merge(base_params, Dict(compiled_sys.U => U)))
     sol = solve(prob)
     push!(spread_rates, sol[compiled_sys.R])
 end
@@ -163,7 +163,7 @@ U_wind = 220.0 * ftmin_to_ms  # 2.5 mi/h in m/s
 
 for Mf in moisture_contents
     params = merge(base_params, Dict(compiled_sys.Mf => Mf, compiled_sys.U => U_wind))
-    prob = NonlinearProblem(compiled_sys, [], params)
+    prob = NonlinearProblem(compiled_sys, params)
     sol = solve(prob)
     push!(spread_rates_moist, sol[compiled_sys.R])
 end
@@ -188,7 +188,7 @@ savefig("moisture_effect.png"); nothing # hide
 flame_lengths = Float64[]
 
 for U in wind_speeds_ms
-    prob = NonlinearProblem(compiled_sys, [], merge(base_params, Dict(compiled_sys.U => U)))
+    prob = NonlinearProblem(compiled_sys, merge(base_params, Dict(compiled_sys.U => U)))
     sol = solve(prob)
     push!(flame_lengths, sol[compiled_sys.F_L])
 end
