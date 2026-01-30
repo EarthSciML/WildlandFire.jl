@@ -4,6 +4,13 @@ using ModelingToolkit
 using ModelingToolkit: mtkcompile
 using OrdinaryDiffEqDefault
 
+# Unit conversion factors for tests (matching nfdrs.jl)
+const FT_TO_M = 0.3048
+const M_TO_FT = 1.0 / FT_TO_M
+const TONS_PER_ACRE_TO_KG_PER_M2 = 0.2241702
+const BTU_PER_LB_TO_J_PER_KG = 2326.0
+const FPM_TO_MS = 0.00508
+
 @testset "WildlandFire.jl" begin
     @testset "NFDRS Fuel Models" begin
         # Test that all fuel models are available
@@ -27,19 +34,20 @@ using OrdinaryDiffEqDefault
         @test model_a.DEPTH > 0
 
         # Verify specific fuel model values from Appendix (Cohen & Deeming 1985, p. 15)
-        @test model_a.SG1 == 3000.0   # Western grasses SAV ratio
-        @test model_a.W1 == 0.20      # 1-hr loading (tons/acre)
-        @test model_a.DEPTH == 0.80   # Fuel bed depth (ft)
-        @test model_a.MXD == 15.0     # Dead fuel moisture of extinction (%)
-        @test model_a.HD == 8000.0    # Heat of combustion (Btu/lb)
-        @test model_a.SCM == 300.0    # Spread component threshold
-        @test model_a.WNDFC == 0.6    # Wind reduction factor
+        # Values are now in SI units
+        @test model_a.SG1 ≈ 3000.0 * M_TO_FT atol=0.1  # m⁻¹ (3000 ft⁻¹ converted)
+        @test model_a.W1 ≈ 0.20 * TONS_PER_ACRE_TO_KG_PER_M2 atol=1e-6  # kg/m²
+        @test model_a.DEPTH ≈ 0.80 * FT_TO_M atol=1e-6  # m
+        @test model_a.MXD == 15.0     # Dead fuel moisture of extinction (%) - unchanged
+        @test model_a.HD ≈ 8000.0 * BTU_PER_LB_TO_J_PER_KG atol=1.0  # J/kg
+        @test model_a.SCM ≈ 300.0 * FPM_TO_MS atol=1e-6  # m/s
+        @test model_a.WNDFC == 0.6    # Wind reduction factor - dimensionless, unchanged
 
         # Test California chaparral (Model B)
         model_b = get_fuel_model(:B)
-        @test model_b.SG1 == 700.0
-        @test model_b.WWOOD == 11.50  # Heavy woody load
-        @test model_b.HD == 9500.0    # Higher heat content for chaparral
+        @test model_b.SG1 ≈ 700.0 * M_TO_FT atol=0.1
+        @test model_b.WWOOD ≈ 11.50 * TONS_PER_ACRE_TO_KG_PER_M2 atol=1e-5  # Heavy woody load
+        @test model_b.HD ≈ 9500.0 * BTU_PER_LB_TO_J_PER_KG atol=1.0  # Higher heat content for chaparral
     end
 
     @testset "Component Creation" begin
@@ -152,11 +160,14 @@ using OrdinaryDiffEqDefault
     end
 
     @testset "Fuel Loading Conversion" begin
-        # Test conversion from tons/acre to lb/ft² (page 9)
-        # Factor: 0.0459137 (lb·acre)/(ton·ft²)
+        # Test new SI conversion function (tons/acre to kg/m²)
+        @test WildlandFire.fuel_loading_to_kg_per_sqm(1.0) ≈ TONS_PER_ACRE_TO_KG_PER_M2 atol=1e-6
+
+        # Test deprecated conversion (tons/acre to lb/ft²) still works for backward compatibility
         @test WildlandFire.fuel_loading_to_lb_per_sqft(1.0) ≈ 0.0459137 atol=1e-6
 
-        # Verify: 0.20 tons/acre (Model A) = 0.00918 lb/ft²
+        # Verify: 0.20 tons/acre (Model A) converts correctly
+        @test WildlandFire.fuel_loading_to_kg_per_sqm(0.20) ≈ 0.20 * TONS_PER_ACRE_TO_KG_PER_M2 atol=1e-6
         @test WildlandFire.fuel_loading_to_lb_per_sqft(0.20) ≈ 0.00918274 atol=1e-6
     end
 
@@ -191,14 +202,14 @@ using OrdinaryDiffEqDefault
         # Verify EMC equations against Cohen & Deeming (1985), Eq. 1a, 1b, 1c (page 1)
         # These regression equations are from Simard (1968)
 
-        # Manual calculation functions matching the paper
-        function emc_manual(temp, rh_pct)
+        # Manual calculation functions matching the paper (uses °F and RH as percent)
+        function emc_manual(temp_F, rh_pct)
             if rh_pct < 10
-                return 0.03229 + 0.281073 * rh_pct - 0.000578 * temp * rh_pct
+                return 0.03229 + 0.281073 * rh_pct - 0.000578 * temp_F * rh_pct
             elseif rh_pct < 50
-                return 2.22749 + 0.160107 * rh_pct - 0.014784 * temp
+                return 2.22749 + 0.160107 * rh_pct - 0.014784 * temp_F
             else
-                return 21.0606 + 0.005565 * rh_pct^2 - 0.00035 * rh_pct * temp - 0.483199 * rh_pct
+                return 21.0606 + 0.005565 * rh_pct^2 - 0.00035 * rh_pct * temp_F - 0.483199 * rh_pct
             end
         end
 
@@ -232,7 +243,7 @@ using OrdinaryDiffEqDefault
 
     @testset "Numerical Validation - Burning Index" begin
         # Verify BI = 3.01 * (SC * ERC)^0.46 (page 12)
-        # Example: SC=50, ERC=20 -> BI = 3.01 * (50*20)^0.46 = 3.01 * 1000^0.46
+        # Example: SC=50 ft/min, ERC=20 -> BI = 3.01 * (50*20)^0.46 = 3.01 * 1000^0.46
         # 1000^0.46 ≈ 23.99, so BI ≈ 72.2
         @test 3.01 * (50 * 20)^0.46 ≈ 72.2 atol=1.0
 
