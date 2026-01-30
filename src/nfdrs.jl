@@ -34,9 +34,15 @@ The original NFDRS equations use imperial units. The empirical coefficients are 
 in their original form internally, with unit conversions performed within the equations.
 All parameters and variables expect SI units at the interface level.
 
-Note: ModelingToolkit unit annotations are not used because the internal equation
-structure requires mixing SI and imperial units during intermediate calculations.
-Parameter descriptions indicate the expected SI unit (e.g., "Temperature in K").
+## Unit Annotations
+
+Note: ModelingToolkit unit annotations (`[unit = u"XXX"]`) are not used in this module
+because the NFDRS equations contain empirical coefficients calibrated for imperial units.
+When ModelingToolkit enforces dimensional analysis, these mixed-unit calculations fail
+validation. Instead, units are documented in parameter/variable descriptions, and the
+implementation maintains SI units at the interface while handling conversions internally.
+Future work could refactor these equations to use symbolic unit conversion constants
+that would allow proper ModelingToolkit unit checking.
 """
 
 # t and D are imported in the main WildlandFire module
