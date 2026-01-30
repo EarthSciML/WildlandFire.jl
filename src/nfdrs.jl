@@ -189,10 +189,13 @@ end
 """
     HundredHourFuelMoisture(; name=:HundredHourFuelMoisture)
 
-Calculate 100-hour timelag fuel moisture content as an ODE.
+Calculate 100-hour timelag fuel moisture content using daily discrete update.
 
 Uses weighted 24-hour average EMC (EMCBAR) based on hours of daylight.
-The moisture content responds to the boundary condition with a time constant.
+The moisture content responds to the boundary condition with a response coefficient.
+
+Based on Eq. from page 5 of Cohen & Deeming (1985):
+    MC100 = YMC100 + (BNDRYH - YMC100) * (1.0 - 0.87 * exp(-0.24))
 
 # Parameters
 - `EMCMIN`: EMC at max temp/min RH (fraction)
@@ -200,9 +203,12 @@ The moisture content responds to the boundary condition with a time constant.
 - `PPTDUR`: Duration of precipitation (hours)
 - `LAT`: Station latitude (degrees)
 - `JDATE`: Julian day of year (1-366)
+- `YMC100`: Previous day's MC100 value (fraction)
 
 # Variables
 - `MC100`: 100-hour fuel moisture content (fraction)
+- `EMCBAR`: Weighted 24-hour average EMC (fraction)
+- `BNDRYH`: Weighted 24-hour average boundary condition (fraction)
 """
 @component function HundredHourFuelMoisture(; name=:HundredHourFuelMoisture)
     @parameters begin
@@ -211,10 +217,13 @@ The moisture content responds to the boundary condition with a time constant.
         PPTDUR = 0.0, [description = "Duration of precipitation (hours)"]
         LAT = 40.0, [description = "Station latitude (degrees)"]
         JDATE = 180.0, [description = "Julian day of year (1-366)"]
+        YMC100, [description = "Previous day's MC100 value (fraction)"]
     end
 
     @variables begin
         MC100(t), [description = "100-hour fuel moisture content (fraction)"]
+        EMCBAR(t), [description = "Weighted 24-hour average EMC (fraction)"]
+        BNDRYH(t), [description = "Weighted 24-hour average boundary condition (fraction)"]
     end
 
     # Daylength calculation
@@ -225,22 +234,20 @@ The moisture content responds to the boundary condition with a time constant.
     tan_product_clamped = max(-0.99, min(0.99, tan_product))
     DAYLIT = 24.0 * (1.0 - acos(tan_product_clamped) / 3.1416)
 
-    # Weighted 24-hour average EMC
-    EMCBAR = (DAYLIT * EMCMIN + (24.0 - DAYLIT) * EMCMAX) / 24.0
-
-    # Weighted 24-hour average boundary condition (Eq. from page 5)
-    # Note: The precipitation term uses percent moisture, so we convert EMCBAR to percent
-    # and then convert the result back to fraction
-    BNDRYH = ((24.0 - PPTDUR) * EMCBAR + PPTDUR * (0.5 * PPTDUR + 41.0) / 100.0) / 24.0
-
     # Response coefficient: (1.0 - 0.87 * exp(-0.24)) ≈ 0.1836
     response_coef = 1.0 - 0.87 * exp(-0.24)
 
     eqs = [
-        # 100-hour fuel moisture differential equation
-        # Daily update: MC100_new = MC100 + (BNDRYH - MC100) * response_coef
-        # As continuous ODE approximation
-        D(MC100) ~ (BNDRYH - MC100) * response_coef
+        # Weighted 24-hour average EMC
+        EMCBAR ~ (DAYLIT * EMCMIN + (24.0 - DAYLIT) * EMCMAX) / 24.0,
+
+        # Weighted 24-hour average boundary condition (Eq. from page 5)
+        # Note: The precipitation term uses percent moisture, so we convert appropriately
+        BNDRYH ~ ((24.0 - PPTDUR) * EMCBAR + PPTDUR * (0.5 * PPTDUR + 41.0) / 100.0) / 24.0,
+
+        # 100-hour fuel moisture daily update equation
+        # MC100 = YMC100 + (BNDRYH - YMC100) * response_coef
+        MC100 ~ YMC100 + (BNDRYH - YMC100) * response_coef
     ]
 
     return System(eqs, t; name)
@@ -253,36 +260,50 @@ end
 """
     ThousandHourFuelMoisture(; name=:ThousandHourFuelMoisture)
 
-Calculate 1000-hour timelag fuel moisture content.
+Calculate 1000-hour timelag fuel moisture content using daily discrete update.
 
 Uses 7-day running average of boundary conditions (BDYBAR).
-Due to the long time constant, this is computed as an ODE.
+Based on Eq. from page 5 of Cohen & Deeming (1985):
+    MC1000 = PM1000 + (BDYBAR - PM1000) * (1.0 - 0.82 * exp(-0.168))
+
+Note: In the original NFDRS, BNDRYT is calculated daily but BDYBAR and MC1000
+are calculated only every seventh day. This implementation calculates daily
+with the running average provided as a parameter.
 
 # Parameters
 - `EMCBAR`: Weighted 24-hour average EMC (fraction)
 - `PPTDUR`: Duration of precipitation (hours)
 - `BDYBAR`: 7-day running average boundary condition (fraction)
+- `PM1000`: Previous MC1000 value (fraction) - MC1000 from 7 days ago in original NFDRS
 
 # Variables
 - `MC1000`: 1000-hour fuel moisture content (fraction)
+- `BNDRYT`: Weighted 24-hour average boundary condition for 1000-hr (fraction)
 """
 @component function ThousandHourFuelMoisture(; name=:ThousandHourFuelMoisture)
     @parameters begin
         EMCBAR, [description = "Weighted 24-hour average EMC (fraction)"]
         PPTDUR = 0.0, [description = "Duration of precipitation (hours)"]
         BDYBAR, [description = "7-day running average boundary condition (fraction)"]
+        PM1000, [description = "Previous MC1000 value (fraction)"]
     end
 
     @variables begin
         MC1000(t), [description = "1000-hour fuel moisture content (fraction)"]
+        BNDRYT(t), [description = "Weighted 24-hour average boundary condition (fraction)"]
     end
 
     # Response coefficient: (1.0 - 0.82 * exp(-0.168)) ≈ 0.1532
     response_coef = 1.0 - 0.82 * exp(-0.168)
 
     eqs = [
-        # 1000-hour fuel moisture differential equation
-        D(MC1000) ~ (BDYBAR - MC1000) * response_coef
+        # Weighted 24-hour average boundary condition for 1000-hr (Eq. from page 5)
+        # Uses different coefficients than 100-hr
+        BNDRYT ~ ((24.0 - PPTDUR) * EMCBAR + PPTDUR * (2.7 * PPTDUR + 76.0) / 100.0) / 24.0,
+
+        # 1000-hour fuel moisture daily update equation
+        # MC1000 = PM1000 + (BDYBAR - PM1000) * response_coef
+        MC1000 ~ PM1000 + (BDYBAR - PM1000) * response_coef
     ]
 
     return System(eqs, t; name)

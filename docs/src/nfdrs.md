@@ -69,6 +69,18 @@ FuelLoadingTransfer
 
 ## Fire Behavior Indices
 
+### Spread Component
+
+```@docs
+SpreadComponent
+```
+
+### Energy Release Component
+
+```@docs
+EnergyReleaseComponent
+```
+
 ### Burning Index
 
 ```@docs
@@ -107,6 +119,7 @@ FireLoadIndex
 NFDRSFuelModel
 NFDRS_FUEL_MODELS
 get_fuel_model
+fuel_loading_to_lb_per_sqft
 ```
 
 ### Available Fuel Models
