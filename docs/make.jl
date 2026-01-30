@@ -6,7 +6,6 @@ makedocs(;
     authors="EarthSciML authors and contributors",
     sitename="WildlandFire.jl",
     remotes=nothing,  # Disable remote source links (not in git repo)
-    warnonly=true,    # Allow build to complete with warnings instead of errors
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://wildlandfire.earthsci.dev",

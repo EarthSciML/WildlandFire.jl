@@ -54,9 +54,10 @@ using WildlandFire
 
 sys = RothermelFireSpread()
 vars = unknowns(sys)
+units = [ModelingToolkit.get_unit(v) for v in vars]
 DataFrame(
     :Name => [string(Symbolics.tosymbol(v, escape = false)) for v in vars],
-    :Units => [string(ModelingToolkit.get_unit(v)) for v in vars],
+    :Units => [isnothing(u) ? "dimensionless" : string(u) for u in units],
     :Description => [ModelingToolkit.getdescription(v) for v in vars]
 )
 ```
@@ -65,9 +66,10 @@ DataFrame(
 
 ```@example rothermel_impl
 params = parameters(sys)
+punits = [ModelingToolkit.get_unit(p) for p in params]
 DataFrame(
     :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params],
-    :Units => [string(ModelingToolkit.get_unit(p)) for p in params],
+    :Units => [isnothing(u) ? "dimensionless" : string(u) for u in punits],
     :Description => [ModelingToolkit.getdescription(p) for p in params]
 )
 ```
