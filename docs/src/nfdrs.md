@@ -199,6 +199,7 @@ NFDRSFuelModel
 NFDRS_FUEL_MODELS
 get_fuel_model
 fuel_loading_to_kg_per_sqm
+fuel_loading_to_lb_per_sqft
 ```
 
 ### Available Fuel Models

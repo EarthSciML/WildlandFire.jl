@@ -55,6 +55,23 @@ end
     @test model_b.SG1 ≈ 700.0 * M_TO_FT atol=0.1
     @test model_b.WWOOD ≈ 11.50 * TONS_PER_ACRE_TO_KG_PER_M2 atol=1e-5  # Heavy woody load
     @test model_b.HD ≈ 9500.0 * BTU_PER_LB_TO_J_PER_KG atol=1.0  # Higher heat content for chaparral
+
+    # Test Western grasses perennial (Model L) - page 15 Appendix
+    # Model L is a grass model with no 10-hr, 100-hr, or 1000-hr fuels
+    model_l = get_fuel_model(:L)
+    @test model_l.SG1 ≈ 2000.0 * M_TO_FT atol=0.1
+    @test model_l.W1 ≈ 0.25 * TONS_PER_ACRE_TO_KG_PER_M2 atol=1e-6
+    @test model_l.W10 == 0.0  # No 10-hr fuel loading (---- in table)
+    @test model_l.W100 == 0.0  # No 100-hr fuel loading
+    @test model_l.W1000 == 0.0  # No 1000-hr fuel loading
+    @test model_l.WHERB ≈ 0.50 * TONS_PER_ACRE_TO_KG_PER_M2 atol=1e-6
+    @test model_l.DEPTH ≈ 1.00 * FT_TO_M atol=1e-6
+    @test model_l.MXD == 15.0
+
+    # Test Short needle heavy dead (Model G) - has 1000-hr fuels
+    model_g = get_fuel_model(:G)
+    @test model_g.W1000 ≈ 12.0 * TONS_PER_ACRE_TO_KG_PER_M2 atol=1e-5  # Heavy 1000-hr load
+    @test model_g.MXD == 25.0
 end
 
 @testitem "Component Creation" setup=[NFDRSSetup] tags=[:nfdrs] begin
@@ -425,4 +442,316 @@ end
     var_names = [string(Symbolics.tosymbol(v, escape=false)) for v in vars]
     @test "MC1000" in var_names
     @test "BNDRYT" in var_names
+end
+
+@testitem "HundredHourFuelMoisture Implementation" setup=[NFDRSSetup] tags=[:nfdrs] begin
+    # Test the 100-hour fuel moisture response equation from Cohen & Deeming (1985), page 5
+    # MC100 = YMC100 + (BNDRYH - YMC100) * (1.0 - 0.87 * exp(-0.24))
+    fm100 = HundredHourFuelMoisture()
+    fm100_compiled = mtkcompile(fm100)
+
+    # Test case: YMC100 = 15%, dry conditions
+    # EMCMIN = 5%, EMCMAX = 15%, no precipitation, latitude 40°N, mid-summer
+    EMCMIN_test = 0.05
+    EMCMAX_test = 0.15
+    YMC100_test = 0.15
+    LAT_rad = 40.0 * π / 180.0
+    JDATE_test = 180.0  # Mid-summer
+
+    prob = ODEProblem(fm100_compiled,
+        Dict(fm100_compiled.EMCMIN => EMCMIN_test,
+             fm100_compiled.EMCMAX => EMCMAX_test,
+             fm100_compiled.PPTDUR => 0.0,
+             fm100_compiled.LAT => LAT_rad,
+             fm100_compiled.JDATE => JDATE_test,
+             fm100_compiled.YMC100 => YMC100_test),
+        (0.0, 1.0))
+    sol = solve(prob)
+
+    # Calculate expected EMCBAR from daylength (page 4-5)
+    DECL = 0.41008 * sin((JDATE_test - 82) * 0.01745)
+    DAYLIT = 24.0 * (1.0 - acos(tan(LAT_rad) * tan(DECL)) / 3.1416)
+    expected_EMCBAR = (DAYLIT * EMCMIN_test + (24.0 - DAYLIT) * EMCMAX_test) / 24.0
+
+    @test sol[fm100_compiled.EMCBAR][end] ≈ expected_EMCBAR atol=0.01
+
+    # BNDRYH with no precipitation should equal EMCBAR
+    @test sol[fm100_compiled.BNDRYH][end] ≈ expected_EMCBAR atol=0.01
+
+    # MC100 response coefficient is (1.0 - 0.87 * exp(-0.24)) ≈ 0.177
+    response_coef = 1.0 - 0.87 * exp(-0.24)
+    expected_MC100 = YMC100_test + (expected_EMCBAR - YMC100_test) * response_coef
+    @test sol[fm100_compiled.MC100][end] ≈ expected_MC100 atol=0.01
+end
+
+@testitem "ThousandHourFuelMoisture Implementation" setup=[NFDRSSetup] tags=[:nfdrs] begin
+    # Test the 1000-hour fuel moisture response equation from Cohen & Deeming (1985), page 5
+    # MC1000 = PM1000 + (BDYBAR - PM1000) * (1.0 - 0.82 * exp(-0.168))
+    fm1000 = ThousandHourFuelMoisture()
+    fm1000_compiled = mtkcompile(fm1000)
+
+    # Test case: PM1000 = 20%, BDYBAR = 15%, no precipitation
+    EMCBAR_test = 0.10
+    BDYBAR_test = 0.15
+    PM1000_test = 0.20
+
+    prob = ODEProblem(fm1000_compiled,
+        Dict(fm1000_compiled.EMCBAR => EMCBAR_test,
+             fm1000_compiled.PPTDUR => 0.0,
+             fm1000_compiled.BDYBAR => BDYBAR_test,
+             fm1000_compiled.PM1000 => PM1000_test),
+        (0.0, 1.0))
+    sol = solve(prob)
+
+    # BNDRYT with no precipitation should equal EMCBAR
+    @test sol[fm1000_compiled.BNDRYT][end] ≈ EMCBAR_test atol=0.01
+
+    # MC1000 response coefficient is (1.0 - 0.82 * exp(-0.168)) ≈ 0.306
+    response_coef = 1.0 - 0.82 * exp(-0.168)
+    expected_MC1000 = PM1000_test + (BDYBAR_test - PM1000_test) * response_coef
+    @test sol[fm1000_compiled.MC1000][end] ≈ expected_MC1000 atol=0.01
+end
+
+@testitem "SpreadComponent Fuel Model A" setup=[NFDRSSetup] tags=[:nfdrs] begin
+    # Test SpreadComponent with Fuel Model A (Western grasses, annual)
+    # From Cohen & Deeming (1985), Appendix, page 15
+    sc = SpreadComponent()
+    sc_compiled = mtkcompile(sc)
+
+    # Get Fuel Model A parameters (already in SI units)
+    fm = get_fuel_model(:A)
+
+    # Test conditions: dry conditions (MC1=5%, MC10=8%, MC100=10%)
+    # Herbaceous cured (MCHERB=30%), no wind, slope class 1
+    prob = ODEProblem(sc_compiled,
+        Dict(
+            # Fuel loadings (W1P includes transferred herbaceous in cured conditions)
+            sc_compiled.W1P => fm.W1 + fm.WHERB,  # Fully cured
+            sc_compiled.W10 => fm.W10,
+            sc_compiled.W100 => fm.W100,
+            sc_compiled.WHERBP => 0.0,  # All transferred when cured
+            sc_compiled.WWOOD => fm.WWOOD,
+            # SAV ratios
+            sc_compiled.SG1 => fm.SG1,
+            sc_compiled.SG10 => fm.SG10,
+            sc_compiled.SG100 => fm.SG100,
+            sc_compiled.SGHERB => fm.SGHERB,
+            sc_compiled.SGWOOD => fm.SGWOOD,
+            # Moisture contents
+            sc_compiled.MC1 => 0.05,
+            sc_compiled.MC10 => 0.08,
+            sc_compiled.MC100 => 0.10,
+            sc_compiled.MCHERB => 0.30,
+            sc_compiled.MCWOOD => 0.60,
+            # Other parameters
+            sc_compiled.MXD => fm.MXD,
+            sc_compiled.HD => fm.HD,
+            sc_compiled.HL => fm.HL,
+            sc_compiled.DEPTH => fm.DEPTH,
+            sc_compiled.WS => 0.0,  # No wind
+            sc_compiled.WNDFC => fm.WNDFC,
+            sc_compiled.slope_class => 1.0,
+            sc_compiled.fuels_wet => 0.0),
+        (0.0, 1.0))
+    sol = solve(prob)
+
+    # Verify that the model produces physically reasonable results
+    # With no wind and slope class 1, ROS should be relatively low
+    @test sol[sc_compiled.SC][end] > 0.0  # Fire spreads
+    @test sol[sc_compiled.IR][end] > 0.0  # Positive reaction intensity
+
+    # Test with wind
+    prob_wind = ODEProblem(sc_compiled,
+        Dict(
+            sc_compiled.W1P => fm.W1 + fm.WHERB,
+            sc_compiled.W10 => fm.W10,
+            sc_compiled.W100 => fm.W100,
+            sc_compiled.WHERBP => 0.0,
+            sc_compiled.WWOOD => fm.WWOOD,
+            sc_compiled.SG1 => fm.SG1,
+            sc_compiled.SG10 => fm.SG10,
+            sc_compiled.SG100 => fm.SG100,
+            sc_compiled.SGHERB => fm.SGHERB,
+            sc_compiled.SGWOOD => fm.SGWOOD,
+            sc_compiled.MC1 => 0.05,
+            sc_compiled.MC10 => 0.08,
+            sc_compiled.MC100 => 0.10,
+            sc_compiled.MCHERB => 0.30,
+            sc_compiled.MCWOOD => 0.60,
+            sc_compiled.MXD => fm.MXD,
+            sc_compiled.HD => fm.HD,
+            sc_compiled.HL => fm.HL,
+            sc_compiled.DEPTH => fm.DEPTH,
+            sc_compiled.WS => 4.47,  # 10 mph in m/s
+            sc_compiled.WNDFC => fm.WNDFC,
+            sc_compiled.slope_class => 1.0,
+            sc_compiled.fuels_wet => 0.0),
+        (0.0, 1.0))
+    sol_wind = solve(prob_wind)
+
+    # With wind, SC should be higher than without wind
+    @test sol_wind[sc_compiled.SC][end] > sol[sc_compiled.SC][end]
+
+    # Test wet conditions (fuels covered with snow/ice)
+    prob_wet = ODEProblem(sc_compiled,
+        Dict(
+            sc_compiled.W1P => fm.W1 + fm.WHERB,
+            sc_compiled.W10 => fm.W10,
+            sc_compiled.W100 => fm.W100,
+            sc_compiled.WHERBP => 0.0,
+            sc_compiled.WWOOD => fm.WWOOD,
+            sc_compiled.SG1 => fm.SG1,
+            sc_compiled.SG10 => fm.SG10,
+            sc_compiled.SG100 => fm.SG100,
+            sc_compiled.SGHERB => fm.SGHERB,
+            sc_compiled.SGWOOD => fm.SGWOOD,
+            sc_compiled.MC1 => 0.05,
+            sc_compiled.MC10 => 0.08,
+            sc_compiled.MC100 => 0.10,
+            sc_compiled.MCHERB => 0.30,
+            sc_compiled.MCWOOD => 0.60,
+            sc_compiled.MXD => fm.MXD,
+            sc_compiled.HD => fm.HD,
+            sc_compiled.HL => fm.HL,
+            sc_compiled.DEPTH => fm.DEPTH,
+            sc_compiled.WS => 4.47,
+            sc_compiled.WNDFC => fm.WNDFC,
+            sc_compiled.slope_class => 1.0,
+            sc_compiled.fuels_wet => 1.0),  # Fuels wet
+        (0.0, 1.0))
+    sol_wet = solve(prob_wet)
+
+    # Wet conditions should result in zero spread (page 5)
+    @test sol_wet[sc_compiled.SC][end] ≈ 0.0 atol=1e-10
+end
+
+@testitem "EnergyReleaseComponent Fuel Model G" setup=[NFDRSSetup] tags=[:nfdrs] begin
+    # Test EnergyReleaseComponent with Fuel Model G (Short needle heavy dead)
+    # This model has 1000-hr fuel loading which affects ERC differently than SC
+    erc = EnergyReleaseComponent()
+    erc_compiled = mtkcompile(erc)
+
+    # Get Fuel Model G parameters
+    fm = get_fuel_model(:G)
+
+    # Test conditions matching fuel model G
+    prob = ODEProblem(erc_compiled,
+        Dict(
+            # Fuel loadings
+            erc_compiled.W1P => fm.W1,
+            erc_compiled.W10 => fm.W10,
+            erc_compiled.W100 => fm.W100,
+            erc_compiled.W1000 => fm.W1000,  # Model G has 12 tons/acre 1000-hr fuel
+            erc_compiled.WHERBP => fm.WHERB,
+            erc_compiled.WWOOD => fm.WWOOD,
+            # SAV ratios
+            erc_compiled.SG1 => fm.SG1,
+            erc_compiled.SG10 => fm.SG10,
+            erc_compiled.SG100 => fm.SG100,
+            erc_compiled.SG1000 => 8.0 * 3.28084,  # 8 ft⁻¹ converted to m⁻¹
+            erc_compiled.SGHERB => fm.SGHERB,
+            erc_compiled.SGWOOD => fm.SGWOOD,
+            # Moisture contents
+            erc_compiled.MC1 => 0.05,
+            erc_compiled.MC10 => 0.08,
+            erc_compiled.MC100 => 0.10,
+            erc_compiled.MC1000 => 0.15,
+            erc_compiled.MCHERB => 1.20,
+            erc_compiled.MCWOOD => 1.00,
+            # Other parameters
+            erc_compiled.MXD => fm.MXD,
+            erc_compiled.MXL => fm.MXD,  # Use MXD as lower bound for MXL
+            erc_compiled.HD => fm.HD,
+            erc_compiled.HL => fm.HL,
+            erc_compiled.DEPTH => fm.DEPTH),
+        (0.0, 1.0))
+    sol = solve(prob)
+
+    # Verify that ERC is positive and reasonable
+    @test sol[erc_compiled.ERC][end] > 0.0
+    @test sol[erc_compiled.IRE][end] > 0.0
+
+    # ERC should scale with fuel loading changes
+    prob_low_fuel = ODEProblem(erc_compiled,
+        Dict(
+            erc_compiled.W1P => fm.W1 * 0.5,  # Half the fuel
+            erc_compiled.W10 => fm.W10 * 0.5,
+            erc_compiled.W100 => fm.W100 * 0.5,
+            erc_compiled.W1000 => fm.W1000 * 0.5,
+            erc_compiled.WHERBP => fm.WHERB * 0.5,
+            erc_compiled.WWOOD => fm.WWOOD * 0.5,
+            erc_compiled.SG1 => fm.SG1,
+            erc_compiled.SG10 => fm.SG10,
+            erc_compiled.SG100 => fm.SG100,
+            erc_compiled.SG1000 => 8.0 * 3.28084,
+            erc_compiled.SGHERB => fm.SGHERB,
+            erc_compiled.SGWOOD => fm.SGWOOD,
+            erc_compiled.MC1 => 0.05,
+            erc_compiled.MC10 => 0.08,
+            erc_compiled.MC100 => 0.10,
+            erc_compiled.MC1000 => 0.15,
+            erc_compiled.MCHERB => 1.20,
+            erc_compiled.MCWOOD => 1.00,
+            erc_compiled.MXD => fm.MXD,
+            erc_compiled.MXL => fm.MXD,
+            erc_compiled.HD => fm.HD,
+            erc_compiled.HL => fm.HL,
+            erc_compiled.DEPTH => fm.DEPTH * 0.5),  # Reduce depth proportionally
+        (0.0, 1.0))
+    sol_low = solve(prob_low_fuel)
+
+    # Lower fuel should result in lower ERC
+    @test sol_low[erc_compiled.ERC][end] < sol[erc_compiled.ERC][end]
+end
+
+@testitem "IgnitionComponent Implementation" setup=[NFDRSSetup] tags=[:nfdrs] begin
+    # Test IgnitionComponent equations from Cohen & Deeming (1985), pages 12-13
+    ic = IgnitionComponent()
+    ic_compiled = mtkcompile(ic)
+
+    # Test case 1: Very dry conditions (MC1 = 3%)
+    # At MC1 = 3%, ignition probability should be high
+    temp_K = (85.0 + 459.67) * 5 / 9  # 85°F in K (hot conditions)
+    prob_dry = ODEProblem(ic_compiled,
+        Dict(ic_compiled.TMPPRM => temp_K,
+             ic_compiled.MC1 => 0.03,
+             ic_compiled.SC => 0.50,  # m/s
+             ic_compiled.SCM => 1.52),  # m/s (300 ft/min)
+        (0.0, 1.0))
+    sol_dry = solve(prob_dry)
+
+    # At 3% MC, P(I) should be relatively high
+    @test sol_dry[ic_compiled.PI][end] > 50.0
+
+    # Test case 2: Wet conditions (MC1 = 20%)
+    # At MC1 = 20%, ignition probability should be low
+    prob_wet = ODEProblem(ic_compiled,
+        Dict(ic_compiled.TMPPRM => temp_K,
+             ic_compiled.MC1 => 0.20,
+             ic_compiled.SC => 0.50,
+             ic_compiled.SCM => 1.52),
+        (0.0, 1.0))
+    sol_wet = solve(prob_wet)
+
+    # At 20% MC, P(I) should be lower
+    @test sol_wet[ic_compiled.PI][end] < sol_dry[ic_compiled.PI][end]
+
+    # Test case 3: At MC1 = 25%, P(I) should be near zero (page 12)
+    prob_very_wet = ODEProblem(ic_compiled,
+        Dict(ic_compiled.TMPPRM => temp_K,
+             ic_compiled.MC1 => 0.25,
+             ic_compiled.SC => 0.50,
+             ic_compiled.SCM => 1.52),
+        (0.0, 1.0))
+    sol_very_wet = solve(prob_very_wet)
+
+    # At 25% MC, P(I) should be approximately 0 (page 12)
+    @test sol_very_wet[ic_compiled.PI][end] < 10.0
+
+    # Verify IC = 0.10 × P(I) × P(F/I) (page 13)
+    PI = sol_dry[ic_compiled.PI][end]
+    SCN = sol_dry[ic_compiled.SCN][end]
+    PFI = sqrt(max(0.0, SCN))
+    expected_IC = 0.10 * PI * PFI
+    @test sol_dry[ic_compiled.IC][end] ≈ expected_IC atol=1.0
 end

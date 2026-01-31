@@ -80,6 +80,12 @@ Pages = ["nfdrs.md", "rothermel.md"]
 Depth = 2
 ```
 
+## Module Documentation
+
+```@docs
+WildlandFire.WildlandFire
+```
+
 ## Index
 
 ```@index
