@@ -231,7 +231,7 @@ The following table reproduces the fuel model parameters from the Appendix of Co
 | I | Heavy slash | 1500 | 12.0 | 109 | 12.0 | 2.00 | 25 | 8000 | 65 | 0.5 |
 | J | Intermediate slash | 1500 | 7.00 | 109 | 7.0 | 1.30 | 25 | 8000 | 44 | 0.5 |
 | K | Light slash | 1500 | 2.50 | 109 | 2.5 | 0.60 | 25 | 8000 | 23 | 0.5 |
-| L | Western grasses (perennial) | 2000 | 0.25 | 109 | 1.5 | 1.00 | 15 | 8000 | 178 | 0.6 |
+| L | Western grasses (perennial) | 2000 | 0.25 | 109 | 0.0 | 1.00 | 15 | 8000 | 178 | 0.6 |
 | N | Sawgrass | 1600 | 1.50 | 109 | 3.0 | 3.00 | 25 | 8700 | 167 | 0.6 |
 | O | High pocosin | 1500 | 2.00 | 109 | 1.0 | 4.00 | 30 | 9000 | 99 | 0.5 |
 | P | Southern pine plantation | 1750 | 1.00 | 109 | 2.5 | 0.40 | 30 | 8000 | 14 | 0.4 |
