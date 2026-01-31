@@ -6,7 +6,15 @@ The National Fire Danger Rating System (NFDRS) is a comprehensive system for ass
 
 **Reference**: Cohen, Jack D.; Deeming, John E. "The National Fire-Danger Rating System: basic equations." Gen. Tech. Rep. PSW-82. Berkeley, CA: Pacific Southwest Forest and Range Experiment Station, Forest Service, U.S. Department of Agriculture; 1985. 16 p.
 
-## Unit Convention
+```@docs
+EquilibriumMoistureContent
+```
+
+## Implementation
+
+This section demonstrates the structure of the NFDRS ModelingToolkit.jl components.
+
+### Unit Convention
 
 This implementation uses **SI units** throughout for compatibility with other EarthSciML components:
 
@@ -24,18 +32,45 @@ This implementation uses **SI units** throughout for compatibility with other Ea
 
 The original NFDRS equations use imperial units. All empirical coefficients have been converted to SI units, with conversion factors explicitly defined in the source code.
 
-## Equilibrium Moisture Content
+### Equilibrium Moisture Content System
 
-```@docs
-EquilibriumMoistureContent
+The EMC component calculates equilibrium moisture content using regression equations (Eq. 1a, 1b, 1c from Cohen & Deeming 1985):
+
+```@example implementation
+using WildlandFire
+using ModelingToolkit
+using DataFrames
+using Symbolics
+using DynamicQuantities
+
+emc = EquilibriumMoistureContent()
+
+# Parameters
+params = parameters(emc)
+DataFrame(
+    :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params],
+    :Units => [string(dimension(ModelingToolkit.get_unit(p))) for p in params],
+    :Description => [ModelingToolkit.getdescription(p) for p in params]
+)
+```
+
+```@example implementation
+# Variables
+vars = unknowns(emc)
+DataFrame(
+    :Name => [string(Symbolics.tosymbol(v, escape = false)) for v in vars],
+    :Units => [string(dimension(ModelingToolkit.get_unit(v))) for v in vars],
+    :Description => [ModelingToolkit.getdescription(v) for v in vars]
+)
 ```
 
 ### Equations
 
-The EMC is calculated using regression equations (Eq. 1a, 1b, 1c from Cohen & Deeming 1985) based on relative humidity ranges:
-- RH < 10%: Linear approximation
-- 10% ≤ RH < 50%: Intermediate range equation
-- RH ≥ 50%: High humidity equation
+The EMC equations (Eq. 1a, 1b, 1c from Cohen & Deeming 1985):
+
+```@example implementation
+equations(emc)
+```
 
 ## Dead Fuel Moisture Models
 
@@ -87,8 +122,22 @@ FuelLoadingTransfer
 
 ### Spread Component
 
+The Spread Component is the most complex subsystem, implementing Rothermel's fire spread model:
+
 ```@docs
 SpreadComponent
+```
+
+```@example implementation
+sc = SpreadComponent()
+
+# Parameters with units
+params = parameters(sc)
+DataFrame(
+    :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params],
+    :Units => [string(dimension(ModelingToolkit.get_unit(p))) for p in params],
+    :Description => [ModelingToolkit.getdescription(p) for p in params]
+)
 ```
 
 ### Energy Release Component
@@ -101,6 +150,13 @@ EnergyReleaseComponent
 
 ```@docs
 BurningIndex
+```
+
+The Burning Index equation (page 12):
+
+```@example implementation
+bi = BurningIndex()
+equations(bi)
 ```
 
 ### Ignition Component
@@ -127,6 +183,13 @@ LightningFireOccurrenceIndex
 
 ```@docs
 FireLoadIndex
+```
+
+The Fire Load Index equation (page 14):
+
+```@example implementation
+fli = FireLoadIndex()
+equations(fli)
 ```
 
 ## Fuel Models
@@ -187,110 +250,17 @@ Notes:
 
 ## Analysis
 
-### Fuel Model Comparison
+This section validates the implementation against expected values from Cohen & Deeming (1985) and demonstrates the behavior of the NFDRS components.
 
-Different fuel models have varying fuel bed depths and loadings, affecting fire behavior:
+### EMC Validation (Eq. 1a, 1b, 1c, page 1)
 
-```@example fuel_comparison
-using WildlandFire
-using Plots
-
-models = collect(values(NFDRS_FUEL_MODELS))
-sort!(models, by=m -> m.DEPTH)
-
-bar([string(m.name) for m in models], [m.DEPTH for m in models],
-    xlabel = "Fuel Model",
-    ylabel = "Fuel Bed Depth (m)",
-    title = "NFDRS Fuel Model Bed Depths",
-    legend = false,
-    rotation = 45)
-savefig("fuel_depths.svg"); nothing # hide
-```
-
-![Fuel Bed Depths](fuel_depths.svg)
-
-## Implementation
-
-This section demonstrates the structure of the NFDRS ModelingToolkit.jl components.
-
-### Equilibrium Moisture Content System
-
-```@example implementation
-using WildlandFire
-using ModelingToolkit
-using DataFrames
-using Symbolics
-using DynamicQuantities
-
-emc = EquilibriumMoistureContent()
-
-# Parameters
-params = parameters(emc)
-DataFrame(
-    :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params],
-    :Description => [ModelingToolkit.getdescription(p) for p in params]
-)
-```
-
-```@example implementation
-# Variables
-vars = unknowns(emc)
-DataFrame(
-    :Name => [string(Symbolics.tosymbol(v, escape = false)) for v in vars],
-    :Description => [ModelingToolkit.getdescription(v) for v in vars]
-)
-```
-
-### Spread Component System
-
-The Spread Component is the most complex subsystem, implementing Rothermel's fire spread model:
-
-```@example implementation
-sc = SpreadComponent()
-
-# Parameters
-params = parameters(sc)
-DataFrame(
-    :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params],
-    :Description => [ModelingToolkit.getdescription(p) for p in params]
-)
-```
-
-### Equations
-
-The EMC equations (Eq. 1a, 1b, 1c from Cohen & Deeming 1985):
-
-```@example implementation
-emc = EquilibriumMoistureContent()
-equations(emc)
-```
-
-The Burning Index equation (page 12):
-
-```@example implementation
-bi = BurningIndex()
-equations(bi)
-```
-
-The Fire Load Index equation (page 14):
-
-```@example implementation
-fli = FireLoadIndex()
-equations(fli)
-```
-
-### Numerical Validation
-
-The following examples verify the implementation by running the actual ModelingToolkit components with known input values from Cohen & Deeming (1985).
-
-#### EMC Equations (Eq. 1a, 1b, 1c)
-
-The implementation uses SI units (temperature in Kelvin, RH as fraction 0-1).
+The equilibrium moisture content equations calculate EMC based on temperature and relative humidity. The implementation uses SI units (temperature in Kelvin, RH as fraction 0-1).
 
 ```@example validation
 using WildlandFire
 using ModelingToolkit
 using OrdinaryDiffEqDefault
+using Plots
 
 # Create and compile the EMC system
 emc_sys = EquilibriumMoistureContent()
@@ -309,62 +279,159 @@ function compute_emc(temp_f, rh_pct)
     return sol[compiled_emc.EMC][end] * 100  # Convert fraction to %
 end
 
-# Test case 1: Low RH (Eq. 1a: RH < 10%)
-# At RH=5%, TEMP=70°F: EMC ≈ 1.2%
-println("EMC at RH=5%, T=70°F: $(round(compute_emc(70.0, 5.0), digits=2))%")
-
-# Test case 2: Mid RH (Eq. 1b: 10% <= RH < 50%)
-# At RH=30%, TEMP=70°F: EMC ≈ 6.0%
-println("EMC at RH=30%, T=70°F: $(round(compute_emc(70.0, 30.0), digits=2))%")
-
-# Test case 3: High RH (Eq. 1c: RH >= 50%)
-# At RH=80%, TEMP=70°F: EMC ≈ 16.1%
-println("EMC at RH=80%, T=70°F: $(round(compute_emc(70.0, 80.0), digits=2))%")
+# Test cases from Cohen & Deeming (1985)
+println("EMC Validation at T=70°F:")
+println("  RH=5% (Eq. 1a):  EMC = $(round(compute_emc(70.0, 5.0), digits=2))%")
+println("  RH=30% (Eq. 1b): EMC = $(round(compute_emc(70.0, 30.0), digits=2))%")
+println("  RH=80% (Eq. 1c): EMC = $(round(compute_emc(70.0, 80.0), digits=2))%")
 ```
 
-#### Burning Index (page 12)
+The following plot shows EMC as a function of relative humidity at 70°F, demonstrating the three humidity regimes:
+
+```@example validation
+rh_range = 1:99
+emc_values = [compute_emc(70.0, rh) for rh in rh_range]
+
+p = plot(rh_range, emc_values,
+    xlabel = "Relative Humidity (%)",
+    ylabel = "EMC (%)",
+    title = "Equilibrium Moisture Content at 70°F",
+    legend = false,
+    linewidth = 2)
+
+# Mark the regime boundaries
+vline!(p, [10, 50], linestyle=:dash, color=:gray, label="")
+annotate!(p, [(5, 15, text("Eq. 1a", 8)),
+              (30, 15, text("Eq. 1b", 8)),
+              (75, 15, text("Eq. 1c", 8))])
+p
+```
+
+### EMC Temperature Sensitivity
+
+EMC decreases with increasing temperature at constant humidity:
+
+```@example validation
+temps_f = 40:10:100
+rh_values = [30, 50, 70]
+
+p = plot(xlabel = "Temperature (°F)",
+         ylabel = "EMC (%)",
+         title = "EMC Temperature Sensitivity",
+         legend = :topright)
+
+for rh in rh_values
+    emc_vals = [compute_emc(t, rh) for t in temps_f]
+    plot!(p, temps_f, emc_vals, label="RH=$rh%", linewidth=2)
+end
+p
+```
+
+### Burning Index Validation (page 12)
+
+The Burning Index (BI) is calculated from the Spread Component and Energy Release Component:
+
+BI = 3.01 × (SC × ERC)^0.46
+
+where SC is in ft/min for the original equation.
 
 ```@example validation
 using WildlandFire
 using ModelingToolkit
 using OrdinaryDiffEqDefault
+using Plots
 
-# Create and compile the Burning Index system
 bi_sys = BurningIndex()
 compiled_bi = mtkcompile(bi_sys)
 
-# SC=50, ERC=20 -> BI ≈ 60
-prob = ODEProblem(compiled_bi,
-    Dict(compiled_bi.SC => 50.0, compiled_bi.ERC => 20.0),
-    (0.0, 1.0))
-sol = solve(prob)
-bi_result = sol[compiled_bi.BI][end]
-println("BI at SC=50, ERC=20: $(round(bi_result, digits=1))")
+# Conversion factor: m/s to ft/min
+FPM_TO_MS = 0.00508
+
+# Calculate BI for various SC and ERC combinations
+function compute_bi(sc_fpm, erc)
+    sc_ms = sc_fpm * FPM_TO_MS
+    prob = ODEProblem(compiled_bi,
+        Dict(compiled_bi.SC => sc_ms, compiled_bi.ERC => erc, compiled_bi.fuels_wet => 0.0),
+        (0.0, 1.0))
+    sol = solve(prob)
+    return sol[compiled_bi.BI][end]
+end
+
+# Validate at SC=50 ft/min, ERC=20
+expected_bi = 3.01 * (50.0 * 20.0)^0.46
+computed_bi = compute_bi(50.0, 20.0)
+println("BI Validation:")
+println("  SC=50 ft/min, ERC=20")
+println("  Expected: $(round(expected_bi, digits=1))")
+println("  Computed: $(round(computed_bi, digits=1))")
 ```
 
-#### Fire Load Index (page 14)
+BI contour plot showing the relationship between SC, ERC, and fire behavior intensity:
+
+```@example validation
+sc_range = 10:10:100
+erc_range = 5:5:50
+bi_matrix = [compute_bi(sc, erc) for erc in erc_range, sc in sc_range]
+
+contourf(sc_range, erc_range, bi_matrix,
+    xlabel = "Spread Component (ft/min)",
+    ylabel = "Energy Release Component",
+    title = "Burning Index",
+    colorbar_title = "BI",
+    levels = 10)
+```
+
+### Fire Load Index Validation (page 14)
+
+The Fire Load Index combines the Burning Index with fire occurrence indices:
+
+FLI = 0.71 × √(BI² + (LOI + MCOI)²)
 
 ```@example validation
 using WildlandFire
 using ModelingToolkit
 using OrdinaryDiffEqDefault
 
-# Create and compile the Fire Load Index system
 fli_sys = FireLoadIndex()
 compiled_fli = mtkcompile(fli_sys)
 
-# BI=50, LOI=30, MCOI=20
+# Test case from Cohen & Deeming (1985)
 prob = ODEProblem(compiled_fli,
     Dict(compiled_fli.BI => 50.0, compiled_fli.LOI => 30.0, compiled_fli.MCOI => 20.0),
     (0.0, 1.0))
 sol = solve(prob)
-fli_result = sol[compiled_fli.FLI][end]
-println("FLI at BI=50, LOI=30, MCOI=20: $(round(fli_result, digits=1))")
+computed_fli = sol[compiled_fli.FLI][end]
+expected_fli = 0.71 * sqrt(50.0^2 + (30.0 + 20.0)^2)
+
+println("FLI Validation:")
+println("  BI=50, LOI=30, MCOI=20")
+println("  Expected: $(round(expected_fli, digits=1))")
+println("  Computed: $(round(computed_fli, digits=1))")
 ```
 
-### Fuel Loading Comparison
+### Fuel Model Comparison
 
-Comparison of fuel loadings across different NFDRS fuel models:
+Different fuel models have varying fuel bed depths and loadings, affecting fire behavior:
+
+```@example fuel_comparison
+using WildlandFire
+using Plots
+
+models = collect(values(NFDRS_FUEL_MODELS))
+sort!(models, by=m -> m.DEPTH)
+
+p = bar([string(m.name) for m in models], [m.DEPTH for m in models],
+    xlabel = "Fuel Model",
+    ylabel = "Fuel Bed Depth (m)",
+    title = "NFDRS Fuel Model Bed Depths (Cohen & Deeming 1985, Appendix)",
+    legend = false,
+    rotation = 45)
+p
+```
+
+### Dead Fuel Loading Comparison
+
+Comparison of total dead fuel loadings (1-hr + 10-hr + 100-hr) across different NFDRS fuel models:
 
 ```@example fuel_analysis
 using WildlandFire
@@ -376,33 +443,64 @@ sort!(models, by=m -> m.W1 + m.W10 + m.W100)
 # Total dead fuel loading (1-hr + 10-hr + 100-hr)
 dead_loading = [m.W1 + m.W10 + m.W100 for m in models]
 
-bar([string(m.name) for m in models], dead_loading,
+p = bar([string(m.name) for m in models], dead_loading,
     xlabel = "Fuel Model",
     ylabel = "Dead Fuel Loading (kg/m²)",
     title = "NFDRS Dead Fuel Loading by Model",
     legend = false,
     rotation = 45)
-savefig("dead_fuel_loading.svg"); nothing # hide
+p
 ```
-
-![Dead Fuel Loading](dead_fuel_loading.svg)
 
 ### Heat Content Comparison
 
-Different fuel models have varying heat content values:
+Different fuel models have varying heat content values reflecting their chemical composition:
 
 ```@example fuel_analysis
 models = collect(values(NFDRS_FUEL_MODELS))
 sort!(models, by=m -> m.HD)
 
-bar([string(m.name) for m in models], [m.HD / 1e6 for m in models],
+p = bar([string(m.name) for m in models], [m.HD / 1e6 for m in models],
     xlabel = "Fuel Model",
     ylabel = "Heat of Combustion (MJ/kg)",
     title = "NFDRS Dead Fuel Heat Content",
     legend = false,
     rotation = 45,
     ylims = (17, 23))
-savefig("heat_content.svg"); nothing # hide
+p
 ```
 
-![Heat Content](heat_content.svg)
+### Fuel Loading Transfer
+
+The fuel loading transfer model (Eq. 5-8) calculates the fraction of herbaceous fuel that behaves as dead fuel based on the herbaceous moisture content:
+
+```@example fuel_transfer
+using WildlandFire
+using ModelingToolkit
+using OrdinaryDiffEqDefault
+using Plots
+
+flt_sys = FuelLoadingTransfer()
+compiled_flt = mtkcompile(flt_sys)
+
+# Calculate FCTCUR across the moisture range
+function compute_fctcur(mcherb_frac)
+    prob = ODEProblem(compiled_flt,
+        Dict(compiled_flt.MCHERB => mcherb_frac,
+             compiled_flt.W1 => 0.05,
+             compiled_flt.WHERB => 0.02),
+        (0.0, 1.0))
+    sol = solve(prob)
+    return sol[compiled_flt.FCTCUR][end]
+end
+
+mcherb_range = 0.30:0.01:1.30
+fctcur_values = [compute_fctcur(mc) for mc in mcherb_range]
+
+plot(mcherb_range .* 100, fctcur_values .* 100,
+    xlabel = "Herbaceous Moisture Content (%)",
+    ylabel = "Fraction Transferred to Dead (%)",
+    title = "Fuel Loading Transfer (Eq. 5)",
+    legend = false,
+    linewidth = 2)
+```
