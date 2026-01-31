@@ -67,7 +67,7 @@ prob = NonlinearProblem(compiled_sys, Dict(
 sol = solve(prob)
 ```
 """
-@component function RothermelFireSpread(; name=:RothermelFireSpread)
+@component function RothermelFireSpread(; name = :RothermelFireSpread)
     # Reference values for non-dimensionalization of quantities raised to non-integer powers
     # Following CLAUDE.md guidance: divide by reference, raise to power, multiply back
     @constants begin
@@ -152,7 +152,7 @@ sol = solve(prob)
         Mx, [description = "Dead fuel moisture of extinction (dimensionless)", unit = u"1"]
         h = 18608000.0, [description = "Low heat content (8000 Btu/lb)", unit = u"J/kg"]
         S_T = 0.0555, [description = "Total mineral content (dimensionless)", unit = u"1"]
-        S_e = 0.010, [description = "Effective mineral content (dimensionless)", unit = u"1"]
+        S_e = 0.01, [description = "Effective mineral content (dimensionless)", unit = u"1"]
         ρ_p = 512.6, [description = "Oven-dry particle density (32 lb/ft³)", unit = u"kg/m^3"]
     end
 
@@ -227,7 +227,7 @@ sol = solve(prob)
 
         # Damping coefficients - Table 3, Andrews (2018)
         rM ~ min(Mf / Mx, one),                             # Eq. rM, Moisture ratio (capped at 1.0)
-        η_M ~ one - c_etaM_1*rM + c_etaM_2*rM^2 - c_etaM_3*rM^3, # Eq. ηM, Moisture damping coefficient
+        η_M ~ one - c_etaM_1 * rM + c_etaM_2 * rM^2 - c_etaM_3 * rM^3, # Eq. ηM, Moisture damping coefficient
         η_s ~ min(c_etas * S_e^(-0.19), one),               # Eq. ηs, Mineral damping coefficient (capped at 1.0)
 
         # Reaction intensity - Table 3, Andrews (2018)
@@ -292,7 +292,7 @@ Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associate
 developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins,
 CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. 121 p.
 """
-@component function DynamicFuelLoadTransfer(; name=:DynamicFuelLoadTransfer)
+@component function DynamicFuelLoadTransfer(; name = :DynamicFuelLoadTransfer)
     @constants begin
         # Transfer fraction coefficients (dimensionless) - Table 6c, Andrews (2018)
         c_T_1 = -1.11, [description = "Transfer fraction coefficient 1 (dimensionless)", unit = u"1"]
@@ -339,7 +339,7 @@ Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associate
 developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins,
 CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. 121 p.
 """
-@component function LiveFuelMoistureExtinction(; name=:LiveFuelMoistureExtinction)
+@component function LiveFuelMoistureExtinction(; name = :LiveFuelMoistureExtinction)
     @constants begin
         # Coefficients for Mx_live calculation (dimensionless) - Table 6b, Andrews (2018)
         c_Mx_1 = 2.9, [description = "Live Mx coefficient 1 (dimensionless)", unit = u"1"]
@@ -381,7 +381,7 @@ Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associate
 developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins,
 CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. 121 p.
 """
-@component function EffectiveMidflameWindSpeed(; name=:EffectiveMidflameWindSpeed)
+@component function EffectiveMidflameWindSpeed(; name = :EffectiveMidflameWindSpeed)
     @constants begin
         one = 1.0, [description = "One constant for calculation", unit = u"1"]
     end
@@ -411,7 +411,7 @@ CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Stat
 
         # Effective midflame wind speed - Eq. UE, Table 7, Andrews (2018)
         # UE = [(φE * (β/βop)^E) / C]^(1/B)
-        UE ~ UE_ref * (φE * β_ratio^E_coeff / C_coeff)^(one/B_coeff),
+        UE ~ UE_ref * (φE * β_ratio^E_coeff / C_coeff)^(one / B_coeff),
     ]
 
     return System(eqs, t; name)
@@ -436,7 +436,7 @@ Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associate
 developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins,
 CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. 121 p.
 """
-@component function WindLimit(; name=:WindLimit, use_corrected=true)
+@component function WindLimit(; name = :WindLimit, use_corrected = true)
     # Wind limit coefficients converted to SI - Table 7, Andrews (2018)
     # Original: U_limit (ft/min) = 96.8 * IR^(1/3) where IR is in Btu/ft²/min
     # or U_limit = 0.9 * IR
@@ -466,7 +466,7 @@ CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Stat
     if use_corrected
         # Corrected equation (Andrews et al. 2013) - Eq. Ulimit, Table 7, Andrews (2018)
         eqs = [
-            U_limit ~ c_Ulim_corr * (IR / IR_ref)^(1.0/3.0),
+            U_limit ~ c_Ulim_corr * (IR / IR_ref)^(1.0 / 3.0),
         ]
     else
         # Original equation - Eq. Ulimit (original), Table 7, Andrews (2018)

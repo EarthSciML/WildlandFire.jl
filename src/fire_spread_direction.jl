@@ -51,7 +51,7 @@ prob = NonlinearProblem(compiled_sys, Dict(
 sol = solve(prob)
 ```
 """
-@component function FireSpreadDirection(; name=:FireSpreadDirection)
+@component function FireSpreadDirection(; name = :FireSpreadDirection)
     @constants begin
         one = 1.0, [description = "Dimensionless one for unit balancing", unit = u"1"]
         zero_rad = 0.0, [description = "Zero angle", unit = u"rad"]
@@ -60,7 +60,7 @@ sol = solve(prob)
         # Since 1 m/s = 2.23694 mi/h: Z = 1 + 0.25 * 2.23694 * U_E = 1 + 0.559 * U_E (U_E in m/s)
         c_Z = 0.559235, [description = "Length-to-width ratio coefficient (SI)", unit = u"s/m"]
         U_ref = 1.0, [description = "Reference wind speed", unit = u"m/s"]
-        D_min = 1e-10, [description = "Minimum distance to avoid division by zero", unit = u"m"]
+        D_min = 1.0e-10, [description = "Minimum distance to avoid division by zero", unit = u"m"]
     end
 
     # Input parameters from RothermelFireSpread
@@ -176,7 +176,7 @@ prob = NonlinearProblem(compiled_sys, Dict(
 sol = solve(prob)
 ```
 """
-@component function EllipticalFireSpread(; name=:EllipticalFireSpread)
+@component function EllipticalFireSpread(; name = :EllipticalFireSpread)
     @constants begin
         one = 1.0, [description = "Dimensionless one for unit balancing", unit = u"1"]
         two = 2.0, [description = "Dimensionless two", unit = u"1"]
@@ -266,7 +266,7 @@ Table 26, pages 89-91.
 Catchpole, E. A.; deMestre, N. J.; Gill, A. M. 1982. Intensity of fire at its perimeter.
 Australian Forest Research. 12: 47–54.
 """
-@component function FirePerimeterSpread(; name=:FirePerimeterSpread)
+@component function FirePerimeterSpread(; name = :FirePerimeterSpread)
     @constants begin
         one = 1.0, [description = "Dimensionless one", unit = u"1"]
     end
@@ -298,8 +298,10 @@ Australian Forest Research. 12: 47–54.
     eqs = [
         # Intermediate angle θ - Eq. [5] in Catchpole et al. (1982), Table 26 Andrews (2018)
         # cos(θ) = [h·cos(γ)·(h²cos²γ + (f² - g²)sin²γ)^0.5 - f·g·sin²γ] / (h²cos²γ + f²sin²γ)
-        cos_θ ~ (h * cos(γ) * sqrt(h^2 * cos(γ)^2 + (f^2 - g^2) * sin(γ)^2)
-                 - f * g * sin(γ)^2) / (h^2 * cos(γ)^2 + f^2 * sin(γ)^2),
+        cos_θ ~ (
+            h * cos(γ) * sqrt(h^2 * cos(γ)^2 + (f^2 - g^2) * sin(γ)^2)
+                - f * g * sin(γ)^2
+        ) / (h^2 * cos(γ)^2 + f^2 * sin(γ)^2),
 
         # Calculate sin_θ from cos_θ
         sin_θ ~ sqrt(one - cos_θ^2),
