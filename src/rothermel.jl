@@ -68,16 +68,6 @@ sol = solve(prob)
 ```
 """
 @component function RothermelFireSpread(; name=:RothermelFireSpread)
-    # Physical constants for fuel particles (Table 3, Andrews 2018) - converted to SI
-    # Note: The Rothermel model is a semi-empirical model with coefficients calibrated
-    # in US customary units. All coefficients have been converted to SI.
-    @constants begin
-        h_default = 18608000.0, [description = "Low heat content (8000 Btu/lb converted to J/kg)", unit = u"J/kg"]
-        S_T_default = 0.0555, [description = "Total mineral content (dimensionless)", unit = u"1"]
-        S_e_default = 0.010, [description = "Effective mineral content (dimensionless)", unit = u"1"]
-        ρ_p_default = 512.6, [description = "Oven-dry particle density (32 lb/ft³ converted to kg/m³)", unit = u"kg/m^3"]
-    end
-
     # Reference values for non-dimensionalization of quantities raised to non-integer powers
     # Following CLAUDE.md guidance: divide by reference, raise to power, multiply back
     @constants begin
@@ -154,15 +144,16 @@ sol = solve(prob)
     end
 
     # Input parameters - fuel array properties (SI units)
+    # Note: Default values use literal numbers for Julia LTS compatibility
     @parameters begin
         σ, [description = "Surface-area-to-volume ratio", unit = u"1/m"]
         w0, [description = "Oven-dry fuel load", unit = u"kg/m^2"]
         δ, [description = "Fuel bed depth", unit = u"m"]
         Mx, [description = "Dead fuel moisture of extinction (dimensionless)", unit = u"1"]
-        h = h_default, [description = "Low heat content", unit = u"J/kg"]
-        S_T = S_T_default, [description = "Total mineral content (dimensionless)", unit = u"1"]
-        S_e = S_e_default, [description = "Effective mineral content (dimensionless)", unit = u"1"]
-        ρ_p = ρ_p_default, [description = "Oven-dry particle density", unit = u"kg/m^3"]
+        h = 18608000.0, [description = "Low heat content (8000 Btu/lb)", unit = u"J/kg"]
+        S_T = 0.0555, [description = "Total mineral content (dimensionless)", unit = u"1"]
+        S_e = 0.010, [description = "Effective mineral content (dimensionless)", unit = u"1"]
+        ρ_p = 512.6, [description = "Oven-dry particle density (32 lb/ft³)", unit = u"kg/m^3"]
     end
 
     # Environmental parameters (SI units)
