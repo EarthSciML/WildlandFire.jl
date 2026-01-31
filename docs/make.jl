@@ -14,6 +14,8 @@ makedocs(;
         assets=String[],
     ),
     pages=[
+        "Home" => "index.md",
+        "Fire Spread Direction" => "fire_spread_direction.md",
     ],
 )
 
