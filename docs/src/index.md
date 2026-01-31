@@ -1,5 +1,9 @@
 # WildlandFire.jl
 
+```@meta
+CurrentModule = WildlandFire
+```
+
 WildlandFire.jl provides ModelingToolkit.jl-based equation systems for wildland fire behavior
 modeling. The package is part of the [EarthSciML](https://github.com/EarthSciML) ecosystem.
 
@@ -9,6 +13,11 @@ modeling. The package is part of the [EarthSciML](https://github.com/EarthSciML)
 - **Dynamic Fuel Load Transfer**: Load transfer from live to dead herbaceous fuel based on curing
 - **Live Fuel Moisture of Extinction**: Calculation of live fuel extinction moisture
 - **Related Fire Behavior Models**: Flame length, fireline intensity, residence time
+- **National Fire Danger Rating System (NFDRS)**: Fuel moisture and fire danger assessment
+  - Fuel Moisture Models: Dead fuel moisture (1-hr, 10-hr, 100-hr, 1000-hr timelag classes) and live fuel moisture (herbaceous and woody)
+  - Fire Behavior Indices: Spread Component, Energy Release Component, Burning Index
+  - Fire Occurrence Indices: Ignition Component, Human-Caused Fire Occurrence Index, Fire Load Index
+  - Fuel Model Database: All 20 NFDRS fuel models (A-U, excluding M) with vegetation-specific parameters
 
 ## Installation
 
@@ -18,6 +27,8 @@ Pkg.add(url="https://github.com/EarthSciML/WildlandFire.jl")
 ```
 
 ## Quick Start
+
+### Rothermel Fire Spread
 
 ```julia
 using WildlandFire
@@ -46,11 +57,33 @@ println("Rate of spread: ", sol[compiled_sys.R], " m/s")
 println("Flame length: ", sol[compiled_sys.F_L], " m")
 ```
 
+### NFDRS Fire Danger Rating
+
+```julia
+using WildlandFire
+using ModelingToolkit
+
+# Create an equilibrium moisture content model
+emc = EquilibriumMoistureContent()
+
+# Get fuel model parameters
+fuel_model_a = get_fuel_model(:A)  # Western grasses (annual)
+
+# Create a burning index model
+bi = BurningIndex()
+```
+
 ## Contents
 
 ```@contents
-Pages = ["rothermel.md"]
+Pages = ["nfdrs.md", "rothermel.md"]
 Depth = 2
+```
+
+## Module Documentation
+
+```@docs
+WildlandFire.WildlandFire
 ```
 
 ## Index
