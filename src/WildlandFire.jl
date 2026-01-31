@@ -2,6 +2,7 @@
     WildlandFire
 
 Wildland fire modeling components for EarthSciML, including:
+- Rothermel surface fire spread model
 - National Fire Danger Rating System (NFDRS) fuel moisture and fire behavior models
 """
 module WildlandFire
@@ -11,7 +12,8 @@ using ModelingToolkit
 using ModelingToolkit: t, D
 using OrdinaryDiffEqDefault
 
-# Include NFDRS implementation
+# Include implementations
+include("rothermel.jl")
 include("nfdrs.jl")
 
 # Export NFDRS components
@@ -28,5 +30,8 @@ export FireLoadIndex
 # Export fuel model utilities
 export NFDRSFuelModel, NFDRS_FUEL_MODELS, get_fuel_model
 export fuel_loading_to_kg_per_sqm, fuel_loading_to_lb_per_sqft  # latter deprecated
+
+# Export Rothermel model
+export RothermelFireSpread
 
 end # module
