@@ -57,8 +57,8 @@ sol = solve(prob)
         zero_rad = 0.0, [description = "Zero angle", unit = u"rad"]
         # Conversion factor for length-to-width ratio equation
         # Z = 1 + 0.25*U_E where U_E is in mi/h
-        # In SI: Z = 1 + 0.25 * U_E * 60 / 1609.34 = 1 + 0.00932 * U_E (U_E in m/s)
-        c_Z = 0.00932, [description = "Length-to-width ratio coefficient (SI)", unit = u"s/m"]
+        # Since 1 m/s = 2.23694 mi/h: Z = 1 + 0.25 * 2.23694 * U_E = 1 + 0.559 * U_E (U_E in m/s)
+        c_Z = 0.559235, [description = "Length-to-width ratio coefficient (SI)", unit = u"s/m"]
         U_ref = 1.0, [description = "Reference wind speed", unit = u"m/s"]
         D_min = 1e-10, [description = "Minimum distance to avoid division by zero", unit = u"m"]
     end
