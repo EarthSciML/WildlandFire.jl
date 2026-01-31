@@ -11,11 +11,7 @@ OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
 [compat]
 DynamicQuantities = "1"
 ModelingToolkit = "11"
-NonlinearSolve = "4.14.0"
 OrdinaryDiffEqDefault = "1"
-Symbolics = "7.11.0"
-TestItemRunner = "1.1.4"
-TestItems = "1.0.0"
 julia = "1.10"
 
 [extras]
