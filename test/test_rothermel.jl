@@ -498,6 +498,53 @@ end
     @test U_limit_original ≈ U_limit_expected_original rtol=1e-6
 end
 
+@testitem "EffectiveMidflameWindSpeed Calculations" setup=[RothermelSetup] tags=[:rothermel] begin
+    # Test the effective midflame wind speed calculation
+    # This component converts combined wind and slope factors back to an equivalent wind speed
+
+    sys = EffectiveMidflameWindSpeed()
+    compiled_sys = mtkcompile(sys)
+
+    # Test with typical values from a fire spread calculation
+    # C = 7.47, B = 0.15, E = 0.5, β_ratio = 0.5, φw = 10.0, φs = 2.0
+    prob = NonlinearProblem(compiled_sys, Dict(
+        compiled_sys.C_coeff => 7.47,
+        compiled_sys.B_coeff => 0.15,
+        compiled_sys.E_coeff => 0.5,
+        compiled_sys.β_ratio => 0.5,
+        compiled_sys.φw => 10.0,
+        compiled_sys.φs => 2.0
+    ))
+    sol = solve(prob)
+
+    # Combined factor should be sum of wind and slope factors
+    φE = sol[compiled_sys.φE]
+    @test φE ≈ 12.0 rtol=1e-6
+
+    # Effective wind speed should be positive
+    UE = sol[compiled_sys.UE]
+    @test UE > 0
+
+    # Test the inverse relationship: UE = [(φE * β_ratio^E) / C]^(1/B)
+    UE_expected = (φE * 0.5^0.5 / 7.47)^(1/0.15)
+    @test UE ≈ UE_expected rtol=1e-6
+
+    # Test with no slope factor
+    prob_no_slope = NonlinearProblem(compiled_sys, Dict(
+        compiled_sys.C_coeff => 7.47,
+        compiled_sys.B_coeff => 0.15,
+        compiled_sys.E_coeff => 0.5,
+        compiled_sys.β_ratio => 0.5,
+        compiled_sys.φw => 10.0,
+        compiled_sys.φs => 0.0
+    ))
+    sol_no_slope = solve(prob_no_slope)
+
+    UE_no_slope = sol_no_slope[compiled_sys.UE]
+    # With less combined factor, effective wind should be lower
+    @test UE_no_slope < UE
+end
+
 @testitem "Cross-validation with US Customary Units" setup=[RothermelSetup] tags=[:rothermel] begin
     # Cross-validate that SI implementation gives equivalent results to US customary
     # by comparing spread rates after unit conversion
