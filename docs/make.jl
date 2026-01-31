@@ -14,6 +14,7 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "NFDRS" => "nfdrs.md",
         "Rothermel Fire Spread Model" => "rothermel.md",
         "Fire Spread Direction" => "fire_spread_direction.md",
     ],

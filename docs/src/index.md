@@ -1,5 +1,9 @@
 # WildlandFire.jl
 
+```@meta
+CurrentModule = WildlandFire
+```
+
 WildlandFire.jl provides ModelingToolkit.jl-based equation systems for wildland fire behavior
 modeling. The package is part of the [EarthSciML](https://github.com/EarthSciML) ecosystem.
 
@@ -12,6 +16,11 @@ modeling. The package is part of the [EarthSciML](https://github.com/EarthSciML)
 - **Fire Spread Direction**: Vector addition for calculating direction of maximum spread when wind is not aligned with slope
 - **Elliptical Fire Spread**: Fire shape calculations from a single ignition point
 - **Fire Perimeter Spread**: Rate of spread normal to the fire perimeter
+- **National Fire Danger Rating System (NFDRS)**: Fuel moisture and fire danger assessment
+  - Fuel Moisture Models: Dead fuel moisture (1-hr, 10-hr, 100-hr, 1000-hr timelag classes) and live fuel moisture (herbaceous and woody)
+  - Fire Behavior Indices: Spread Component, Energy Release Component, Burning Index
+  - Fire Occurrence Indices: Ignition Component, Human-Caused Fire Occurrence Index, Fire Load Index
+  - Fuel Model Database: All 20 NFDRS fuel models (A-U, excluding M) with vegetation-specific parameters
 
 ## Installation
 
@@ -21,6 +30,8 @@ Pkg.add(url="https://github.com/EarthSciML/WildlandFire.jl")
 ```
 
 ## Quick Start
+
+### Rothermel Fire Spread
 
 ```julia
 using WildlandFire
@@ -49,11 +60,33 @@ println("Rate of spread: ", sol[compiled_sys.R], " m/s")
 println("Flame length: ", sol[compiled_sys.F_L], " m")
 ```
 
+### NFDRS Fire Danger Rating
+
+```julia
+using WildlandFire
+using ModelingToolkit
+
+# Create an equilibrium moisture content model
+emc = EquilibriumMoistureContent()
+
+# Get fuel model parameters
+fuel_model_a = get_fuel_model(:A)  # Western grasses (annual)
+
+# Create a burning index model
+bi = BurningIndex()
+```
+
 ## Contents
 
 ```@contents
-Pages = ["rothermel.md", "fire_spread_direction.md"]
+Pages = ["nfdrs.md", "rothermel.md", "fire_spread_direction.md"]
 Depth = 2
+```
+
+## Module Documentation
+
+```@docs
+WildlandFire.WildlandFire
 ```
 
 ## Index
