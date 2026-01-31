@@ -1,47 +1,62 @@
 # WildlandFire.jl
 
-WildlandFire.jl provides ModelingToolkit.jl-based implementations of wildland fire behavior models for use in Earth science simulations.
-
-## Overview
-
-This package implements the Rothermel surface fire spread model and associated developments as described in:
-
-> Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associated developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins, CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. 121 p.
+WildlandFire.jl provides ModelingToolkit.jl-based equation systems for wildland fire behavior
+modeling. The package is part of the [EarthSciML](https://github.com/EarthSciML) ecosystem.
 
 ## Features
 
-- **Rothermel Fire Spread Model**: Core fire spread rate calculations including wind and slope effects
+- **Rothermel Surface Fire Spread Model**: Semi-empirical model for predicting fire spread rates
+- **Dynamic Fuel Load Transfer**: Load transfer from live to dead herbaceous fuel based on curing
+- **Live Fuel Moisture of Extinction**: Calculation of live fuel extinction moisture
+- **Related Fire Behavior Models**: Flame length, fireline intensity, residence time
 - **Fire Spread Direction**: Vector addition for calculating direction of maximum spread when wind is not aligned with slope
 - **Elliptical Fire Spread**: Fire shape calculations from a single ignition point
 - **Fire Perimeter Spread**: Rate of spread normal to the fire perimeter
 
+## Installation
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/EarthSciML/WildlandFire.jl")
+```
+
 ## Quick Start
 
 ```julia
-using WildlandFire, ModelingToolkit, OrdinaryDiffEqDefault
+using WildlandFire
+using ModelingToolkit
+using NonlinearSolve
 
-# Create a fire spread direction system
-sys = FireSpreadDirection()
+# Create the Rothermel fire spread system
+sys = RothermelFireSpread()
 compiled_sys = mtkcompile(sys)
 
-# Set up problem with cross-slope wind
+# Set parameters for short grass (Fuel Model 1) in SI units
+# Original US values: σ=3500 1/ft, w0=0.034 lb/ft², δ=1.0 ft, U=440 ft/min (5 mi/h)
 prob = NonlinearProblem(compiled_sys, Dict(
-    compiled_sys.R0 => 0.01,      # No-wind no-slope rate of spread (m/s)
-    compiled_sys.φw => 5.0,        # Wind factor
-    compiled_sys.φs => 2.0,        # Slope factor
-    compiled_sys.ω => π/4,         # Wind direction 45° from upslope
-    compiled_sys.β_ratio => 0.5,
-    compiled_sys.C_coeff => 7.47,
-    compiled_sys.B_coeff => 0.5,
-    compiled_sys.E_coeff => 0.5,
-    compiled_sys.elapsed_time => 60.0
+    compiled_sys.σ => 11483.5,     # SAV ratio (1/m), converted from 3500 1/ft
+    compiled_sys.w0 => 0.166,      # Fuel load (kg/m²), converted from 0.034 lb/ft²
+    compiled_sys.δ => 0.3048,      # Fuel bed depth (m), converted from 1.0 ft
+    compiled_sys.Mx => 0.12,       # Moisture of extinction (dimensionless)
+    compiled_sys.Mf => 0.05,       # Fuel moisture content (dimensionless)
+    compiled_sys.U => 2.235,       # Wind speed (m/s), converted from 5 mi/h
+    compiled_sys.tanϕ => 0.0       # Flat terrain
 ))
-
 sol = solve(prob)
+
+# Get results in SI units
+println("Rate of spread: ", sol[compiled_sys.R], " m/s")
+println("Flame length: ", sol[compiled_sys.F_L], " m")
 ```
 
-## Documentation Contents
+## Contents
 
 ```@contents
-Pages = ["fire_spread_direction.md"]
+Pages = ["rothermel.md", "fire_spread_direction.md"]
+Depth = 2
+```
+
+## Index
+
+```@index
 ```

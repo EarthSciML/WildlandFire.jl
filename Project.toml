@@ -11,14 +11,21 @@ OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
 [compat]
 DynamicQuantities = "1"
 ModelingToolkit = "11"
+NonlinearSolve = "4.14.0"
 OrdinaryDiffEqDefault = "1"
+Symbolics = "7.11.0"
+TestItemRunner = "1.1.4"
+TestItems = "1.0.0"
 julia = "1.10"
 
 [extras]
+NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
+TestItems = "1c621080-faea-4a02-84b6-bbd5e436b8fe"
 
 [targets]
-test = ["Test", "Plots", "SciMLBase", "TestItemRunner"]
+test = ["NonlinearSolve", "Plots", "SciMLBase", "Symbolics", "Test", "TestItemRunner", "TestItems"]
