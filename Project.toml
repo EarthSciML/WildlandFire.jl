@@ -12,7 +12,13 @@ OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
 julia = "1.10"
 DynamicQuantities = "1.5"
 ModelingToolkit = "11.9"
+NonlinearSolve = "4"
 OrdinaryDiffEqDefault = "1.12"
+Plots = "1.40"
+SciMLBase = "2.50"
+Symbolics = "6"
+TestItemRunner = "1"
+TestItems = "1"
 
 [extras]
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
