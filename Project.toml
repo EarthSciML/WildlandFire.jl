@@ -9,8 +9,8 @@ OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
 
 [compat]
 julia = "1.10"
-ModelingToolkit = "11"
-OrdinaryDiffEqDefault = "1"
+ModelingToolkit = "11.9"
+OrdinaryDiffEqDefault = "1.12"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
