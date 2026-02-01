@@ -14,6 +14,7 @@ using OrdinaryDiffEqDefault
 
 # Include implementations
 include("rothermel.jl")
+include("fire_spread_direction.jl")
 include("nfdrs.jl")
 
 # Export NFDRS components

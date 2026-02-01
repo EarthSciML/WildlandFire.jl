@@ -76,7 +76,7 @@ Implements Equations 1a, 1b, 1c from Cohen & Deeming (1985), page 1.
 # Variables
 - `EMC`: Equilibrium moisture content (dimensionless)
 """
-@component function EquilibriumMoistureContent(; name=:EquilibriumMoistureContent)
+@component function EquilibriumMoistureContent(; name = :EquilibriumMoistureContent)
     @constants begin
         # Unit reference constants for proper dimensional analysis
         K_ref = 1.0, [description = "Reference temperature for non-dimensionalization", unit = u"K"]
@@ -100,16 +100,18 @@ Implements Equations 1a, 1b, 1c from Cohen & Deeming (1985), page 1.
 
     eqs = [
         # EMC equations based on RH ranges (Eq. 1a, 1b, 1c)
-        EMC ~ ifelse(RH < 0.10,
+        EMC ~ ifelse(
+            RH < 0.1,
             # Eq. 1a: RH < 10%
             (0.03229 + 0.281073 * RH_pct - 0.000578 * TEMP_F * RH_pct) / 100,
-            ifelse(RH < 0.50,
+            ifelse(
+                RH < 0.5,
                 # Eq. 1b: 10% <= RH < 50%
                 (2.22749 + 0.160107 * RH_pct - 0.014784 * TEMP_F) / 100,
                 # Eq. 1c: RH >= 50%
                 (21.0606 + 0.005565 * RH_pct^2 - 0.00035 * RH_pct * TEMP_F - 0.483199 * RH_pct) / 100
             )
-        )
+        ),
     ]
 
     return System(eqs, t; name)
@@ -141,7 +143,7 @@ From Cohen & Deeming (1985), page 3:
 # Variables
 - `MC1`: 1-hour fuel moisture content (dimensionless)
 """
-@component function OneHourFuelMoisture(; name=:OneHourFuelMoisture)
+@component function OneHourFuelMoisture(; name = :OneHourFuelMoisture)
     @parameters begin
         EMCPRM, [description = "EMC at fuel-atmosphere interface (dimensionless)", unit = u"1"]
         MC10, [description = "10-hour fuel moisture content (dimensionless)", unit = u"1"]
@@ -155,13 +157,15 @@ From Cohen & Deeming (1985), page 3:
 
     eqs = [
         # Page 3-4: MC1 calculation based on conditions
-        MC1 ~ ifelse(is_raining > 0.5,
+        MC1 ~ ifelse(
+            is_raining > 0.5,
             0.35,  # 35% if raining (page 4)
-            ifelse(use_fuel_sticks > 0.5,
+            ifelse(
+                use_fuel_sticks > 0.5,
                 (4.0 * EMCPRM + MC10) / 5.0,  # With fuel sticks (page 3)
                 1.03 * EMCPRM  # Without fuel sticks (page 3)
             )
-        )
+        ),
     ]
 
     return System(eqs, t; name)
@@ -194,7 +198,7 @@ From Cohen & Deeming (1985), page 4:
 # Variables
 - `MC10`: 10-hour fuel moisture content (dimensionless)
 """
-@component function TenHourFuelMoisture(; name=:TenHourFuelMoisture)
+@component function TenHourFuelMoisture(; name = :TenHourFuelMoisture)
     @constants begin
         kg_ref = 1.0, [description = "Reference mass for non-dimensionalization", unit = u"kg"]
         kg_to_g = 1000.0, [description = "Kilograms to grams conversion (dimensionless)", unit = u"1"]
@@ -224,12 +228,13 @@ From Cohen & Deeming (1985), page 4:
 
     eqs = [
         # Page 4: MC10 calculation
-        MC10 ~ ifelse(use_fuel_sticks > 0.5,
+        MC10 ~ ifelse(
+            use_fuel_sticks > 0.5,
             # With fuel sticks (age corrected)
             (AA * CC + BB * CC * WT_diff) / 100.0,  # Convert to fraction
             # Without fuel sticks
             1.28 * EMCPRM
-        )
+        ),
     ]
 
     return System(eqs, t; name)
@@ -265,7 +270,7 @@ From Cohen & Deeming (1985), page 4-5:
 - `EMCBAR`: Weighted 24-hour average EMC (dimensionless)
 - `BNDRYH`: Weighted 24-hour average boundary condition (dimensionless)
 """
-@component function HundredHourFuelMoisture(; name=:HundredHourFuelMoisture)
+@component function HundredHourFuelMoisture(; name = :HundredHourFuelMoisture)
     @constants begin
         s_ref = 1.0, [description = "Reference time for non-dimensionalization", unit = u"s"]
         rad_ref = 1.0, [description = "Reference angle for non-dimensionalization", unit = u"rad"]
@@ -306,7 +311,7 @@ From Cohen & Deeming (1985), page 4-5:
         BNDRYH ~ ((24.0 - PPTDUR_hr) * EMCBAR + PPTDUR_hr * (0.5 * PPTDUR_hr + 41.0) / 100.0) / 24.0,
 
         # 100-hour fuel moisture daily update equation (page 5)
-        MC100 ~ YMC100 + (BNDRYH - YMC100) * response_coef
+        MC100 ~ YMC100 + (BNDRYH - YMC100) * response_coef,
     ]
 
     return System(eqs, t; name)
@@ -340,7 +345,7 @@ with the running average provided as a parameter.
 - `MC1000`: 1000-hour fuel moisture content (dimensionless)
 - `BNDRYT`: Weighted 24-hour average boundary condition for 1000-hr (dimensionless)
 """
-@component function ThousandHourFuelMoisture(; name=:ThousandHourFuelMoisture)
+@component function ThousandHourFuelMoisture(; name = :ThousandHourFuelMoisture)
     @constants begin
         s_ref = 1.0, [description = "Reference time for non-dimensionalization", unit = u"s"]
         hr_to_s = 3600.0, [description = "Hours to seconds conversion (dimensionless)", unit = u"1"]
@@ -367,7 +372,7 @@ with the running average provided as a parameter.
         BNDRYT ~ ((24.0 - PPTDUR_hr) * EMCBAR + PPTDUR_hr * (2.7 * PPTDUR_hr + 76.0) / 100.0) / 24.0,
 
         # 1000-hour fuel moisture daily update equation (page 5)
-        MC1000 ~ PM1000 + (BDYBAR - PM1000) * response_coef
+        MC1000 ~ PM1000 + (BDYBAR - PM1000) * response_coef,
     ]
 
     return System(eqs, t; name)
@@ -412,7 +417,7 @@ Climate-dependent parameters (page 7):
 # Variables
 - `MCHERB`: Herbaceous fuel moisture content (dimensionless)
 """
-@component function HerbaceousFuelMoisture(; name=:HerbaceousFuelMoisture)
+@component function HerbaceousFuelMoisture(; name = :HerbaceousFuelMoisture)
     @parameters begin
         X1000, [description = "Modified 1000-hr moisture (dimensionless)", unit = u"1"]
         MC1, [description = "1-hour fuel moisture content (dimensionless)", unit = u"1"]
@@ -431,28 +436,52 @@ Climate-dependent parameters (page 7):
     X1000_pct = X1000 * 100
 
     # Greenup parameters (page 7)
-    HERBGA = ifelse(CLIMAT < 1.5, -70.0,
-             ifelse(CLIMAT < 2.5, -100.0,
-             ifelse(CLIMAT < 3.5, -137.5, -185.0)))
-    HERBGB = ifelse(CLIMAT < 1.5, 12.8,
-             ifelse(CLIMAT < 2.5, 14.0,
-             ifelse(CLIMAT < 3.5, 15.5, 17.4)))
+    HERBGA = ifelse(
+        CLIMAT < 1.5, -70.0,
+        ifelse(
+            CLIMAT < 2.5, -100.0,
+            ifelse(CLIMAT < 3.5, -137.5, -185.0)
+        )
+    )
+    HERBGB = ifelse(
+        CLIMAT < 1.5, 12.8,
+        ifelse(
+            CLIMAT < 2.5, 14.0,
+            ifelse(CLIMAT < 3.5, 15.5, 17.4)
+        )
+    )
 
     # Transition parameters for annuals (page 8)
-    ANNTA = ifelse(CLIMAT < 1.5, -150.5,
-            ifelse(CLIMAT < 2.5, -187.7,
-            ifelse(CLIMAT < 3.5, -245.2, -305.2)))
-    ANNTB = ifelse(CLIMAT < 1.5, 18.4,
-            ifelse(CLIMAT < 2.5, 19.6,
-            ifelse(CLIMAT < 3.5, 22.0, 24.3)))
+    ANNTA = ifelse(
+        CLIMAT < 1.5, -150.5,
+        ifelse(
+            CLIMAT < 2.5, -187.7,
+            ifelse(CLIMAT < 3.5, -245.2, -305.2)
+        )
+    )
+    ANNTB = ifelse(
+        CLIMAT < 1.5, 18.4,
+        ifelse(
+            CLIMAT < 2.5, 19.6,
+            ifelse(CLIMAT < 3.5, 22.0, 24.3)
+        )
+    )
 
     # Transition parameters for perennials (page 8)
-    PERTA = ifelse(CLIMAT < 1.5, 11.2,
-            ifelse(CLIMAT < 2.5, -10.3,
-            ifelse(CLIMAT < 3.5, -42.7, -93.5)))
-    PERTB = ifelse(CLIMAT < 1.5, 7.4,
-            ifelse(CLIMAT < 2.5, 8.3,
-            ifelse(CLIMAT < 3.5, 9.8, 12.2)))
+    PERTA = ifelse(
+        CLIMAT < 1.5, 11.2,
+        ifelse(
+            CLIMAT < 2.5, -10.3,
+            ifelse(CLIMAT < 3.5, -42.7, -93.5)
+        )
+    )
+    PERTB = ifelse(
+        CLIMAT < 1.5, 7.4,
+        ifelse(
+            CLIMAT < 2.5, 8.3,
+            ifelse(CLIMAT < 3.5, 9.8, 12.2)
+        )
+    )
 
     # Greenup fraction (Eq. 4, page 7)
     GREN = min(1.0, GRNDAY / (7.0 * CLIMAT))
@@ -462,24 +491,28 @@ Climate-dependent parameters (page 7):
 
     eqs = [
         # MCHERB calculation based on stage (pages 6-8)
-        MCHERB ~ ifelse(is_cured > 0.5,
+        MCHERB ~ ifelse(
+            is_cured > 0.5,
             # Cured/frozen stage (page 8)
-            ifelse(is_annual > 0.5, MC1, max(0.30, min(1.50, (PERTA + PERTB * X1000_pct) / 100.0))),
-            ifelse(is_greenup > 0.5,
+            ifelse(is_annual > 0.5, MC1, max(0.3, min(1.5, (PERTA + PERTB * X1000_pct) / 100.0))),
+            ifelse(
+                is_greenup > 0.5,
                 # Greenup stage (page 7): phase from 0.30 to MCHRBP
-                0.30 + (max(0.30, MCHRBP) - 0.30) * GREN,
+                0.3 + (max(0.3, MCHRBP) - 0.3) * GREN,
                 # Green or transition stage
-                ifelse(MCHRBP > 1.20,
+                ifelse(
+                    MCHRBP > 1.2,
                     # Green stage (page 7): MCHERB > 120%
-                    min(2.50, MCHRBP),
+                    min(2.5, MCHRBP),
                     # Transition stage (page 8): 30% < MCHERB < 120%
-                    ifelse(is_annual > 0.5,
-                        max(0.30, min(1.50, (ANNTA + ANNTB * X1000_pct) / 100.0)),
-                        max(0.30, min(1.50, (PERTA + PERTB * X1000_pct) / 100.0))
+                    ifelse(
+                        is_annual > 0.5,
+                        max(0.3, min(1.5, (ANNTA + ANNTB * X1000_pct) / 100.0)),
+                        max(0.3, min(1.5, (PERTA + PERTB * X1000_pct) / 100.0))
                     )
                 )
             )
-        )
+        ),
     ]
 
     return System(eqs, t; name)
@@ -520,7 +553,7 @@ Climate-dependent parameters (page 8):
 # Variables
 - `MCWOOD`: Woody fuel moisture content (dimensionless)
 """
-@component function WoodyFuelMoisture(; name=:WoodyFuelMoisture)
+@component function WoodyFuelMoisture(; name = :WoodyFuelMoisture)
     @parameters begin
         MC1000, [description = "1000-hour fuel moisture content (dimensionless)", unit = u"1"]
         CLIMAT = 2.0, [description = "NFDRS climate class 1-4 (dimensionless)", unit = u"1"]
@@ -537,17 +570,29 @@ Climate-dependent parameters (page 8):
     MC1000_pct = MC1000 * 100
 
     # PREGRN values by climate class (page 8)
-    PREGRN = ifelse(CLIMAT < 1.5, 0.50,
-             ifelse(CLIMAT < 2.5, 0.60,
-             ifelse(CLIMAT < 3.5, 0.70, 0.80)))
+    PREGRN = ifelse(
+        CLIMAT < 1.5, 0.5,
+        ifelse(
+            CLIMAT < 2.5, 0.6,
+            ifelse(CLIMAT < 3.5, 0.7, 0.8)
+        )
+    )
 
     # WOODGA and WOODGB by climate class (page 8)
-    WOODGA = ifelse(CLIMAT < 1.5, 12.5,
-             ifelse(CLIMAT < 2.5, -5.0,
-             ifelse(CLIMAT < 3.5, -22.5, -45.0)))
-    WOODGB = ifelse(CLIMAT < 1.5, 7.5,
-             ifelse(CLIMAT < 2.5, 8.2,
-             ifelse(CLIMAT < 3.5, 8.9, 9.8)))
+    WOODGA = ifelse(
+        CLIMAT < 1.5, 12.5,
+        ifelse(
+            CLIMAT < 2.5, -5.0,
+            ifelse(CLIMAT < 3.5, -22.5, -45.0)
+        )
+    )
+    WOODGB = ifelse(
+        CLIMAT < 1.5, 7.5,
+        ifelse(
+            CLIMAT < 2.5, 8.2,
+            ifelse(CLIMAT < 3.5, 8.9, 9.8)
+        )
+    )
 
     # Greenup fraction (page 9)
     GREN = min(1.0, GRNDAY / (7.0 * CLIMAT))
@@ -557,16 +602,18 @@ Climate-dependent parameters (page 8):
 
     eqs = [
         # MCWOOD calculation (pages 8-9)
-        MCWOOD ~ ifelse(is_frozen > 0.5,
+        MCWOOD ~ ifelse(
+            is_frozen > 0.5,
             # Frozen/dormant stage (page 9)
             PREGRN,
-            ifelse(is_greenup > 0.5,
+            ifelse(
+                is_greenup > 0.5,
                 # Greenup stage (page 9)
                 PREGRN + (max(PREGRN, MCWODP) - PREGRN) * GREN,
                 # Green stage (page 9)
                 max(PREGRN, min(2.0, MCWODP))
             )
-        )
+        ),
     ]
 
     return System(eqs, t; name)
@@ -599,7 +646,7 @@ Implements Equations 5, 6, 7, 8 from Cohen & Deeming (1985), page 7:
 - `W1P`: Effective 1-hour fuel loading (kg/m²)
 - `WHERBP`: Remaining herbaceous loading (kg/m²)
 """
-@component function FuelLoadingTransfer(; name=:FuelLoadingTransfer)
+@component function FuelLoadingTransfer(; name = :FuelLoadingTransfer)
     @parameters begin
         MCHERB, [description = "Herbaceous fuel moisture content (dimensionless)", unit = u"1"]
         W1, [description = "Base 1-hour fuel loading", unit = u"kg/m^2"]
@@ -627,7 +674,7 @@ Implements Equations 5, 6, 7, 8 from Cohen & Deeming (1985), page 7:
         W1P ~ W1 + WHERBC,
 
         # Eq. 8 (page 7): Remaining herbaceous loading
-        WHERBP ~ WHERB - WHERBC
+        WHERBP ~ WHERB - WHERBC,
     ]
 
     return System(eqs, t; name)
@@ -675,7 +722,7 @@ Other parameters:
 - `ROS`: Rate of spread (m/s)
 - `IR`: Reaction intensity (W/m²)
 """
-@component function SpreadComponent(; name=:SpreadComponent)
+@component function SpreadComponent(; name = :SpreadComponent)
     @constants begin
         # Unit reference constants for non-dimensionalization
         W_ref = 1.0, [description = "Reference fuel loading for non-dimensionalization", unit = u"kg/m^2"]
@@ -793,9 +840,9 @@ Other parameters:
     SALIVE = SAHERB + SAWOOD
 
     # Weighting factors (avoid division by zero)
-    SADEAD_safe = max(1e-10, SADEAD)
-    SALIVE_safe = max(1e-10, SALIVE)
-    SATOT_safe = max(1e-10, SADEAD + SALIVE)
+    SADEAD_safe = max(1.0e-10, SADEAD)
+    SALIVE_safe = max(1.0e-10, SALIVE)
+    SATOT_safe = max(1.0e-10, SADEAD + SALIVE)
 
     F1 = SA1 / SADEAD_safe
     F10 = SA10 / SADEAD_safe
@@ -827,7 +874,7 @@ Other parameters:
     # Maximum and optimum reaction velocity
     GMAMX = SGBRT_safe^1.5 / (495.0 + 0.0594 * SGBRT_safe^1.5)
     AD = 133.0 * SGBRT_safe^(-0.7913)
-    ratio = BETBAR / max(1e-10, BETOP)
+    ratio = BETBAR / max(1.0e-10, BETOP)
     GMAOP = GMAMX * ratio^AD * exp(AD * (1.0 - ratio))
 
     # No-wind propagating flux ratio
@@ -844,12 +891,14 @@ Other parameters:
     HNLIVE = HNHERB + HNWOOD
 
     # Weighted dead fuel moisture for MXL (convert to percent for MXD comparison)
-    MCLFE_pct = ifelse(HNDEAD > 1e-10,
+    MCLFE_pct = ifelse(
+        HNDEAD > 1.0e-10,
         (MC1 * 100 * HN1 + MC10 * 100 * HN10 + MC100 * 100 * HN100) / HNDEAD,
-        MC1 * 100)
+        MC1 * 100
+    )
 
     # Live fuel moisture of extinction (MXL in percent, matching MXD)
-    WRAT = ifelse(HNLIVE > 1e-10, HNDEAD / HNLIVE, 0.0)
+    WRAT = ifelse(HNLIVE > 1.0e-10, HNDEAD / HNLIVE, 0.0)
     MXL_calc = (2.9 * WRAT * (1.0 - MCLFE_pct / MXD) - 0.226) * 100.0
     MXL = max(MXD, MXL_calc)
 
@@ -875,10 +924,16 @@ Other parameters:
     UFACT = C * ratio^(-E)
 
     # Slope effect (SLPFCT by slope class)
-    SLPFCT = ifelse(slope_class < 1.5, 0.267,
-             ifelse(slope_class < 2.5, 0.533,
-             ifelse(slope_class < 3.5, 1.068,
-             ifelse(slope_class < 4.5, 2.134, 4.273))))
+    SLPFCT = ifelse(
+        slope_class < 1.5, 0.267,
+        ifelse(
+            slope_class < 2.5, 0.533,
+            ifelse(
+                slope_class < 3.5, 1.068,
+                ifelse(slope_class < 4.5, 2.134, 4.273)
+            )
+        )
+    )
 
     # Calculate reaction intensity for wind limit check (in Btu/ft²/min)
     IR_calc_imp = GMAOP * (WDEADN * HD_imp * ETASD * ETAMD + WLIVEN * HL_imp * ETASL * ETAML)
@@ -898,11 +953,15 @@ Other parameters:
 
     # Heat sink calculation (Eq. from page 11) - in imperial units
     HTSINK = RHOBED * (
-        FDEAD * (F1 * exp(-138.0/max(1.0,SG1_imp)) * (250.0 + 11.16 * MC1 * 100) +
-                 F10 * exp(-138.0/max(1.0,SG10_imp)) * (250.0 + 11.16 * MC10 * 100) +
-                 F100 * exp(-138.0/max(1.0,SG100_imp)) * (250.0 + 11.16 * MC100 * 100)) +
-        FLIVE * (FHERB * exp(-138.0/max(1.0,SGHERB_imp)) * (250.0 + 11.16 * MCHERB * 100) +
-                 FWOOD * exp(-138.0/max(1.0,SGWOOD_imp)) * (250.0 + 11.16 * MCWOOD * 100))
+        FDEAD * (
+            F1 * exp(-138.0 / max(1.0, SG1_imp)) * (250.0 + 11.16 * MC1 * 100) +
+                F10 * exp(-138.0 / max(1.0, SG10_imp)) * (250.0 + 11.16 * MC10 * 100) +
+                F100 * exp(-138.0 / max(1.0, SG100_imp)) * (250.0 + 11.16 * MC100 * 100)
+        ) +
+            FLIVE * (
+            FHERB * exp(-138.0 / max(1.0, SGHERB_imp)) * (250.0 + 11.16 * MCHERB * 100) +
+                FWOOD * exp(-138.0 / max(1.0, SGWOOD_imp)) * (250.0 + 11.16 * MCWOOD * 100)
+        )
     )
 
     # Rate of spread in ft/min (imperial, page 11)
@@ -916,7 +975,7 @@ Other parameters:
         ROS ~ ifelse(fuels_wet > 0.5, V_zero, ROS_imp * fpm_to_ms * V_ref),
 
         # Spread component (same as ROS in SI)
-        SC ~ ROS
+        SC ~ ROS,
     ]
 
     return System(eqs, t; name)
@@ -949,7 +1008,7 @@ Same as SpreadComponent, plus:
 - `ERC`: Energy release component (dimensionless)
 - `IRE`: Loading-weighted reaction intensity (W/m²)
 """
-@component function EnergyReleaseComponent(; name=:EnergyReleaseComponent)
+@component function EnergyReleaseComponent(; name = :EnergyReleaseComponent)
     @constants begin
         # Unit reference constants for non-dimensionalization
         W_ref = 1.0, [description = "Reference fuel loading for non-dimensionalization", unit = u"kg/m^2"]
@@ -1042,9 +1101,9 @@ Same as SpreadComponent, plus:
     WTOT = WTOTD + WTOTL
 
     # Loading-based weighting factors
-    WTOTD_safe = max(1e-10, WTOTD)
-    WTOTL_safe = max(1e-10, WTOTL)
-    WTOT_safe = max(1e-10, WTOT)
+    WTOTD_safe = max(1.0e-10, WTOTD)
+    WTOTL_safe = max(1.0e-10, WTOTL)
+    WTOT_safe = max(1.0e-10, WTOT)
 
     F1E = W1P_imp / WTOTD_safe
     F10E = W10_imp / WTOTD_safe
@@ -1074,9 +1133,9 @@ Same as SpreadComponent, plus:
     SAWOOD = (WWOOD_imp / RHOL_imp) * SGWOOD_imp
     SADEAD = SA1 + SA10 + SA100
     SALIVE = SAHERB + SAWOOD
-    SADEAD_safe = max(1e-10, SADEAD)
-    SALIVE_safe = max(1e-10, SALIVE)
-    SATOT_safe = max(1e-10, SADEAD + SALIVE)
+    SADEAD_safe = max(1.0e-10, SADEAD)
+    SALIVE_safe = max(1.0e-10, SALIVE)
+    SATOT_safe = max(1.0e-10, SADEAD + SALIVE)
     F1 = SA1 / SADEAD_safe
     F10 = SA10 / SADEAD_safe
     F100 = SA100 / SADEAD_safe
@@ -1098,7 +1157,7 @@ Same as SpreadComponent, plus:
     # Reaction velocity (loading weighted)
     GMAMXE = SGBRTE_safe^1.5 / (495.0 + 0.0594 * SGBRTE_safe^1.5)
     ADE = 133.0 * SGBRTE_safe^(-0.7913)
-    ratio = BETBAR / max(1e-10, BETOPE)
+    ratio = BETBAR / max(1.0e-10, BETOPE)
     GMAOPE = GMAMXE * ratio^ADE * exp(ADE * (1.0 - ratio))
 
     # Weighted moisture contents (loading weighted, as fractions)
@@ -1120,8 +1179,10 @@ Same as SpreadComponent, plus:
     TAU = 384.0 / SGBRT_safe
 
     # Loading-weighted reaction intensity (Btu/ft²/min, page 12)
-    IRE_imp = GMAOPE * (FDEADE * WDEDNE * HD_imp * ETASD * ETAMDE +
-                        FLIVEE * WLIVNE * HL_imp * ETASL * ETAMLE)
+    IRE_imp = GMAOPE * (
+        FDEADE * WDEDNE * HD_imp * ETASD * ETAMDE +
+            FLIVEE * WLIVNE * HL_imp * ETASL * ETAMLE
+    )
 
     eqs = [
         # Loading-weighted reaction intensity (W/m² - re-dimensionalize)
@@ -1129,7 +1190,7 @@ Same as SpreadComponent, plus:
 
         # Energy Release Component (dimensionless index)
         # 0.04 scaling factor applied to Btu/ft² (IRE_imp * TAU)
-        ERC ~ 0.04 * IRE_imp * TAU
+        ERC ~ 0.04 * IRE_imp * TAU,
     ]
 
     return System(eqs, t; name)
@@ -1161,7 +1222,7 @@ From Cohen & Deeming (1985), page 12:
 # Variables
 - `BI`: Burning index (dimensionless)
 """
-@component function BurningIndex(; name=:BurningIndex)
+@component function BurningIndex(; name = :BurningIndex)
     @constants begin
         # Reference velocity for non-dimensionalization
         V_ref = 1.0, [description = "Reference velocity for non-dimensionalization", unit = u"m/s"]
@@ -1187,7 +1248,7 @@ From Cohen & Deeming (1985), page 12:
     eqs = [
         # BI = 3.01 × (SC × ERC)^0.46 (page 12)
         # The 3.01 coefficient is calibrated for SC in ft/min
-        BI ~ ifelse(fuels_wet > 0.5, 0.0, 3.01 * (max(0.0, SC_fpm * ERC))^0.46)
+        BI ~ ifelse(fuels_wet > 0.5, 0.0, 3.01 * (max(0.0, SC_fpm * ERC))^0.46),
     ]
 
     return System(eqs, t; name)
@@ -1221,7 +1282,7 @@ where T is in °C and MC1 is in percent.
 # Variables
 - `IC`: Ignition component (0-100, dimensionless)
 """
-@component function IgnitionComponent(; name=:IgnitionComponent)
+@component function IgnitionComponent(; name = :IgnitionComponent)
     @constants begin
         # Reference units for non-dimensionalization
         K_ref = 1.0, [description = "Reference temperature for non-dimensionalization", unit = u"K"]
@@ -1264,19 +1325,20 @@ where T is in °C and MC1 is in percent.
         CHI ~ max(0.0, (344.0 - QIGN) / 10.0),
 
         # Probability of ignition (page 13)
-        PI ~ ifelse(CHI^3.6 * PNORM3 <= PNORM1,
+        PI ~ ifelse(
+            CHI^3.6 * PNORM3 <= PNORM1,
             0.0,
             max(0.0, min(100.0, (CHI^3.6 * PNORM3 - PNORM1) * 100.0 / PNORM2))
         ),
 
         # Normalized spread component (page 13): SCN = 100 × SC/SCM
-        SCN ~ 100.0 * SC_nd / max(1e-10, SCM_nd),
+        SCN ~ 100.0 * SC_nd / max(1.0e-10, SCM_nd),
 
         # Probability of reportable fire given ignition (page 13): P(F/I) = SCN^0.5
         PFI ~ sqrt(max(0.0, SCN)),
 
         # Ignition component (page 13): IC = 0.10 × P(I) × P(F/I)
-        IC ~ 0.10 * PI * PFI
+        IC ~ 0.1 * PI * PFI,
     ]
 
     return System(eqs, t; name)
@@ -1304,7 +1366,7 @@ fire risk, which is typically derived from historical fire occurrence data.
 # Variables
 - `MCOI`: Human-caused fire occurrence index 0-100 (dimensionless)
 """
-@component function HumanFireOccurrenceIndex(; name=:HumanFireOccurrenceIndex)
+@component function HumanFireOccurrenceIndex(; name = :HumanFireOccurrenceIndex)
     @parameters begin
         MRISK, [description = "Human-caused risk 0-100 (dimensionless)", unit = u"1"]
         IC, [description = "Ignition component 0-100 (dimensionless)", unit = u"1"]
@@ -1316,7 +1378,7 @@ fire risk, which is typically derived from historical fire occurrence data.
 
     eqs = [
         # Page 14: MCOI = 0.01 × MRISK × IC
-        MCOI ~ 0.01 * MRISK * IC
+        MCOI ~ 0.01 * MRISK * IC,
     ]
 
     return System(eqs, t; name)
@@ -1351,7 +1413,7 @@ Implements equations from pages 13-14 of Cohen & Deeming (1985).
 - `LOI`: Lightning-caused fire occurrence index (0-100)
 - `LRISK`: Lightning risk
 """
-@component function LightningFireOccurrenceIndex(; name=:LightningFireOccurrenceIndex)
+@component function LightningFireOccurrenceIndex(; name = :LightningFireOccurrenceIndex)
     @constants begin
         # Reference units for non-dimensionalization
         V_ref = 1.0, [description = "Reference velocity for non-dimensionalization", unit = u"m/s"]
@@ -1403,40 +1465,68 @@ Implements equations from pages 13-14 of Cohen & Deeming (1985).
 
     eqs = [
         # Cloud-to-ground lightning discharge rate by LAL
-        CGRATE ~ ifelse(LAL < 1.5, 0.0,
-                 ifelse(LAL < 2.5, 12.5,
-                 ifelse(LAL < 3.5, 25.0,
-                 ifelse(LAL < 4.5, 50.0,
-                 ifelse(LAL < 5.5, 100.0, 100.0))))),
+        CGRATE ~ ifelse(
+            LAL < 1.5, 0.0,
+            ifelse(
+                LAL < 2.5, 12.5,
+                ifelse(
+                    LAL < 3.5, 25.0,
+                    ifelse(
+                        LAL < 4.5, 50.0,
+                        ifelse(LAL < 5.5, 100.0, 100.0)
+                    )
+                )
+            )
+        ),
 
         # Storm corridor dimensions by LAL (convert miles to meters and re-dimensionalize)
-        STMDIA ~ ifelse(LAL < 1.5, L_zero,
-                 ifelse(LAL < 2.5, 3.0 * mi_to_m * L_ref,
-                 ifelse(LAL < 3.5, 4.0 * mi_to_m * L_ref,
-                 ifelse(LAL < 4.5, 5.0 * mi_to_m * L_ref,
-                 ifelse(LAL < 5.5, 7.0 * mi_to_m * L_ref, 7.0 * mi_to_m * L_ref))))),
+        STMDIA ~ ifelse(
+            LAL < 1.5, L_zero,
+            ifelse(
+                LAL < 2.5, 3.0 * mi_to_m * L_ref,
+                ifelse(
+                    LAL < 3.5, 4.0 * mi_to_m * L_ref,
+                    ifelse(
+                        LAL < 4.5, 5.0 * mi_to_m * L_ref,
+                        ifelse(LAL < 5.5, 7.0 * mi_to_m * L_ref, 7.0 * mi_to_m * L_ref)
+                    )
+                )
+            )
+        ),
 
-        TOTWID ~ ifelse(LAL < 1.5, L_zero,
-                 ifelse(LAL < 2.5, 7.0 * mi_to_m * L_ref,
-                 ifelse(LAL < 3.5, 8.0 * mi_to_m * L_ref,
-                 ifelse(LAL < 4.5, 9.0 * mi_to_m * L_ref,
-                 ifelse(LAL < 5.5, 11.0 * mi_to_m * L_ref, 11.0 * mi_to_m * L_ref))))),
+        TOTWID ~ ifelse(
+            LAL < 1.5, L_zero,
+            ifelse(
+                LAL < 2.5, 7.0 * mi_to_m * L_ref,
+                ifelse(
+                    LAL < 3.5, 8.0 * mi_to_m * L_ref,
+                    ifelse(
+                        LAL < 4.5, 9.0 * mi_to_m * L_ref,
+                        ifelse(LAL < 5.5, 11.0 * mi_to_m * L_ref, 11.0 * mi_to_m * L_ref)
+                    )
+                )
+            )
+        ),
 
         # Duration of lightning at a point (Eq. from page 13, in minutes)
-        LGTDUR ~ ifelse(CGRATE > 0.0,
+        LGTDUR ~ ifelse(
+            CGRATE > 0.0,
             -86.83 + 153.41 * CGRATE^0.1437,
-            0.0),
+            0.0
+        ),
 
         # Fraction of corridor occupied by rain-lightning vs lightning-only
         # Use miles for this calculation as equations are calibrated for miles
-        FINSID ~ ifelse((TOTWID / L_ref) > 0.0,
+        FINSID ~ ifelse(
+            (TOTWID / L_ref) > 0.0,
             begin
                 STMDIA_mi = (STMDIA / L_ref) * m_to_mi
                 TOTWID_mi = (TOTWID / L_ref) * m_to_mi
                 ((STMDIA_mi * STMSPD_mph * LGTDUR) + (0.7854 * STMDIA_mi^2)) /
-                max(1e-10, (STMDIA_mi * STMSPD_mph * TOTWID_mi) + (0.7854 * TOTWID_mi^2))
+                    max(1.0e-10, (STMDIA_mi * STMSPD_mph * TOTWID_mi) + (0.7854 * TOTWID_mi^2))
             end,
-            0.0),
+            0.0
+        ),
 
         FOTSID ~ 1.0 - FINSID,
 
@@ -1461,20 +1551,23 @@ Implements equations from pages 13-14 of Cohen & Deeming (1985).
         LRISK ~ min(100.0, CGRATE * LRSF),
 
         # Lightning-caused fire occurrence index
-        LOI ~ ifelse(LAL >= 6.0 - 0.5,
+        LOI ~ ifelse(
+            LAL >= 6.0 - 0.5,
             # LAL 6: extreme lightning
             100.0,
-            ifelse(is_lightning < 0.5,
+            ifelse(
+                is_lightning < 0.5,
                 # Not lightning
                 min(100.0, 0.25 * YLOI),
-                ifelse(is_raining > 0.5,
+                ifelse(
+                    is_raining > 0.5,
                     # Raining at observation time
                     min(100.0, 0.25 * YLOI),
                     # Lightning, not raining
                     min(100.0, 10.0 * LRISK * ICBAR + 0.25 * YLOI)
                 )
             )
-        )
+        ),
     ]
 
     return System(eqs, t; name)
@@ -1503,7 +1596,7 @@ comprehensive measure of the expected fire load.
 # Variables
 - `FLI`: Fire load index 0-100 (dimensionless)
 """
-@component function FireLoadIndex(; name=:FireLoadIndex)
+@component function FireLoadIndex(; name = :FireLoadIndex)
     @parameters begin
         BI, [description = "Burning index 0-100 (dimensionless)", unit = u"1"]
         LOI = 0.0, [description = "Lightning fire occurrence index 0-100 (dimensionless)", unit = u"1"]
@@ -1517,7 +1610,7 @@ comprehensive measure of the expected fire load.
     eqs = [
         # Page 14: FLI = 0.71 × √(BI² + (LOI + MCOI)²)
         # BI and (LOI + MCOI) are each limited to 100
-        FLI ~ 0.71 * sqrt(min(100.0, BI)^2 + min(100.0, LOI + MCOI)^2)
+        FLI ~ 0.71 * sqrt(min(100.0, BI)^2 + min(100.0, LOI + MCOI)^2),
     ]
 
     return System(eqs, t; name)
@@ -1544,14 +1637,18 @@ All values in SI units:
 
 Parameters converted from Cohen & Deeming (1985), Appendix (page 15).
 """
-const NFDRSFuelModel = NamedTuple{(
-    :name, :description,
-    :SG1, :W1, :SG10, :W10, :SG100, :W100, :SG1000, :W1000,
-    :SGWOOD, :WWOOD, :SGHERB, :WHERB,
-    :DEPTH, :MXD, :HD, :HL, :SCM, :WNDFC
-), Tuple{Symbol, String, Float64, Float64, Float64, Float64, Float64, Float64,
-         Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64,
-         Float64, Float64, Float64, Float64}}
+const NFDRSFuelModel = NamedTuple{
+    (
+        :name, :description,
+        :SG1, :W1, :SG10, :W10, :SG100, :W100, :SG1000, :W1000,
+        :SGWOOD, :WWOOD, :SGHERB, :WHERB,
+        :DEPTH, :MXD, :HD, :HL, :SCM, :WNDFC,
+    ), Tuple{
+        Symbol, String, Float64, Float64, Float64, Float64, Float64, Float64,
+        Float64, Float64, Float64, Float64, Float64, Float64, Float64, Float64,
+        Float64, Float64, Float64, Float64,
+    },
+}
 
 # Unit conversion factors for fuel model data
 const _SG_FT_TO_M = 3.28084          # ft⁻¹ to m⁻¹
@@ -1568,86 +1665,126 @@ Dictionary of all 20 NFDRS fuel models (A-U, excluding M).
 Parameters converted to SI units from Cohen & Deeming (1985), Appendix (page 15).
 """
 const NFDRS_FUEL_MODELS = Dict{Symbol, NFDRSFuelModel}(
-    :A => (name=:A, description="Western grasses (annual)",
-        SG1=3000.0*_SG_FT_TO_M, W1=0.20*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=0.0*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=0.0*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=0.0*_SG_FT_TO_M, WWOOD=0.0*_W_TON_ACRE_TO_KG_M2, SGHERB=3000.0*_SG_FT_TO_M, WHERB=0.30*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=0.80*_DEPTH_FT_TO_M, MXD=15.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=300.0*_SC_FPM_TO_MS, WNDFC=0.6),
-    :B => (name=:B, description="California chaparral",
-        SG1=700.0*_SG_FT_TO_M, W1=3.50*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=4.00*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=0.50*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1250.0*_SG_FT_TO_M, WWOOD=11.50*_W_TON_ACRE_TO_KG_M2, SGHERB=0.0*_SG_FT_TO_M, WHERB=0.0*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=4.50*_DEPTH_FT_TO_M, MXD=15.0, HD=9500.0*_H_BTU_LB_TO_J_KG, HL=9500.0*_H_BTU_LB_TO_J_KG, SCM=58.0*_SC_FPM_TO_MS, WNDFC=0.5),
-    :C => (name=:C, description="Pine-grass savanna",
-        SG1=2000.0*_SG_FT_TO_M, W1=0.40*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=1.00*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=0.0*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=0.50*_W_TON_ACRE_TO_KG_M2, SGHERB=2500.0*_SG_FT_TO_M, WHERB=0.80*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=0.75*_DEPTH_FT_TO_M, MXD=20.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=32.0*_SC_FPM_TO_MS, WNDFC=0.4),
-    :D => (name=:D, description="Southern rough",
-        SG1=1250.0*_SG_FT_TO_M, W1=2.00*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=1.00*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=0.0*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=3.00*_W_TON_ACRE_TO_KG_M2, SGHERB=1500.0*_SG_FT_TO_M, WHERB=0.75*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=2.00*_DEPTH_FT_TO_M, MXD=30.0, HD=9000.0*_H_BTU_LB_TO_J_KG, HL=9000.0*_H_BTU_LB_TO_J_KG, SCM=25.0*_SC_FPM_TO_MS, WNDFC=0.4),
-    :E => (name=:E, description="Hardwood litter (winter)",
-        SG1=2000.0*_SG_FT_TO_M, W1=1.50*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=0.50*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=0.25*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=0.50*_W_TON_ACRE_TO_KG_M2, SGHERB=2000.0*_SG_FT_TO_M, WHERB=0.50*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=0.40*_DEPTH_FT_TO_M, MXD=25.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=25.0*_SC_FPM_TO_MS, WNDFC=0.4),
-    :F => (name=:F, description="Intermediate brush",
-        SG1=700.0*_SG_FT_TO_M, W1=2.50*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=2.00*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=1.50*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1250.0*_SG_FT_TO_M, WWOOD=9.00*_W_TON_ACRE_TO_KG_M2, SGHERB=0.0*_SG_FT_TO_M, WHERB=0.0*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=4.50*_DEPTH_FT_TO_M, MXD=15.0, HD=9500.0*_H_BTU_LB_TO_J_KG, HL=9500.0*_H_BTU_LB_TO_J_KG, SCM=24.0*_SC_FPM_TO_MS, WNDFC=0.5),
-    :G => (name=:G, description="Short needle (heavy dead)",
-        SG1=2000.0*_SG_FT_TO_M, W1=2.50*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=2.00*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=5.00*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=12.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=0.50*_W_TON_ACRE_TO_KG_M2, SGHERB=2000.0*_SG_FT_TO_M, WHERB=0.50*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=1.00*_DEPTH_FT_TO_M, MXD=25.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=30.0*_SC_FPM_TO_MS, WNDFC=0.4),
-    :H => (name=:H, description="Short needle (normal dead)",
-        SG1=2000.0*_SG_FT_TO_M, W1=1.50*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=1.00*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=2.00*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=2.00*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=0.50*_W_TON_ACRE_TO_KG_M2, SGHERB=2000.0*_SG_FT_TO_M, WHERB=0.50*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=0.30*_DEPTH_FT_TO_M, MXD=20.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=8.0*_SC_FPM_TO_MS, WNDFC=0.4),
-    :I => (name=:I, description="Heavy slash",
-        SG1=1500.0*_SG_FT_TO_M, W1=12.00*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=12.00*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=10.00*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=12.00*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=0.0*_SG_FT_TO_M, WWOOD=0.0*_W_TON_ACRE_TO_KG_M2, SGHERB=0.0*_SG_FT_TO_M, WHERB=0.0*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=2.00*_DEPTH_FT_TO_M, MXD=25.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=65.0*_SC_FPM_TO_MS, WNDFC=0.5),
-    :J => (name=:J, description="Intermediate slash",
-        SG1=1500.0*_SG_FT_TO_M, W1=7.00*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=7.00*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=6.00*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=5.50*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=0.0*_SG_FT_TO_M, WWOOD=0.0*_W_TON_ACRE_TO_KG_M2, SGHERB=0.0*_SG_FT_TO_M, WHERB=0.0*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=1.30*_DEPTH_FT_TO_M, MXD=25.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=44.0*_SC_FPM_TO_MS, WNDFC=0.5),
-    :K => (name=:K, description="Light slash",
-        SG1=1500.0*_SG_FT_TO_M, W1=2.50*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=2.50*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=2.00*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=2.50*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=0.0*_SG_FT_TO_M, WWOOD=0.0*_W_TON_ACRE_TO_KG_M2, SGHERB=0.0*_SG_FT_TO_M, WHERB=0.0*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=0.60*_DEPTH_FT_TO_M, MXD=25.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=23.0*_SC_FPM_TO_MS, WNDFC=0.5),
-    :L => (name=:L, description="Western grasses (perennial)",
-        SG1=2000.0*_SG_FT_TO_M, W1=0.25*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=0.0*_W_TON_ACRE_TO_KG_M2, SG100=0.0*_SG_FT_TO_M, W100=0.0*_W_TON_ACRE_TO_KG_M2, SG1000=0.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=0.0*_SG_FT_TO_M, WWOOD=0.0*_W_TON_ACRE_TO_KG_M2, SGHERB=2000.0*_SG_FT_TO_M, WHERB=0.50*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=1.00*_DEPTH_FT_TO_M, MXD=15.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=178.0*_SC_FPM_TO_MS, WNDFC=0.6),
-    :N => (name=:N, description="Sawgrass",
-        SG1=1600.0*_SG_FT_TO_M, W1=1.50*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=3.00*_W_TON_ACRE_TO_KG_M2, SG100=0.0*_SG_FT_TO_M, W100=0.0*_W_TON_ACRE_TO_KG_M2, SG1000=0.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=2.00*_W_TON_ACRE_TO_KG_M2, SGHERB=2000.0*_SG_FT_TO_M, WHERB=0.50*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=3.00*_DEPTH_FT_TO_M, MXD=25.0, HD=8700.0*_H_BTU_LB_TO_J_KG, HL=8700.0*_H_BTU_LB_TO_J_KG, SCM=167.0*_SC_FPM_TO_MS, WNDFC=0.6),
-    :O => (name=:O, description="High pocosin",
-        SG1=1500.0*_SG_FT_TO_M, W1=2.00*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=1.00*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=3.00*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=2.00*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=7.00*_W_TON_ACRE_TO_KG_M2, SGHERB=0.0*_SG_FT_TO_M, WHERB=0.0*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=4.00*_DEPTH_FT_TO_M, MXD=30.0, HD=9000.0*_H_BTU_LB_TO_J_KG, HL=9000.0*_H_BTU_LB_TO_J_KG, SCM=99.0*_SC_FPM_TO_MS, WNDFC=0.5),
-    :P => (name=:P, description="Southern pine plantation",
-        SG1=1750.0*_SG_FT_TO_M, W1=1.00*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=2.50*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=0.50*_W_TON_ACRE_TO_KG_M2, SG1000=0.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=0.50*_W_TON_ACRE_TO_KG_M2, SGHERB=0.0*_SG_FT_TO_M, WHERB=0.0*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=0.40*_DEPTH_FT_TO_M, MXD=30.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=14.0*_SC_FPM_TO_MS, WNDFC=0.4),
-    :Q => (name=:Q, description="Alaskan black spruce",
-        SG1=1500.0*_SG_FT_TO_M, W1=2.00*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=0.50*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=2.00*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=1.00*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1200.0*_SG_FT_TO_M, WWOOD=4.00*_W_TON_ACRE_TO_KG_M2, SGHERB=1500.0*_SG_FT_TO_M, WHERB=0.50*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=3.00*_DEPTH_FT_TO_M, MXD=25.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=59.0*_SC_FPM_TO_MS, WNDFC=0.4),
-    :R => (name=:R, description="Hardwood litter (summer)",
-        SG1=1500.0*_SG_FT_TO_M, W1=0.50*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=0.50*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=0.50*_W_TON_ACRE_TO_KG_M2, SG1000=0.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=0.50*_W_TON_ACRE_TO_KG_M2, SGHERB=2000.0*_SG_FT_TO_M, WHERB=0.50*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=0.25*_DEPTH_FT_TO_M, MXD=25.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=6.0*_SC_FPM_TO_MS, WNDFC=0.4),
-    :S => (name=:S, description="Tundra",
-        SG1=1500.0*_SG_FT_TO_M, W1=0.50*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=0.50*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=0.50*_W_TON_ACRE_TO_KG_M2, SG1000=8.0*_SG_FT_TO_M, W1000=0.50*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1200.0*_SG_FT_TO_M, WWOOD=0.50*_W_TON_ACRE_TO_KG_M2, SGHERB=1500.0*_SG_FT_TO_M, WHERB=0.50*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=0.40*_DEPTH_FT_TO_M, MXD=25.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=17.0*_SC_FPM_TO_MS, WNDFC=0.6),
-    :T => (name=:T, description="Sagebrush-grass",
-        SG1=2500.0*_SG_FT_TO_M, W1=1.00*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=1.50*_W_TON_ACRE_TO_KG_M2, SG100=0.0*_SG_FT_TO_M, W100=0.0*_W_TON_ACRE_TO_KG_M2, SG1000=0.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=2.50*_W_TON_ACRE_TO_KG_M2, SGHERB=2000.0*_SG_FT_TO_M, WHERB=0.50*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=1.25*_DEPTH_FT_TO_M, MXD=15.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=73.0*_SC_FPM_TO_MS, WNDFC=0.6),
-    :U => (name=:U, description="Western pines",
-        SG1=1750.0*_SG_FT_TO_M, W1=1.50*_W_TON_ACRE_TO_KG_M2, SG10=109.0*_SG_FT_TO_M, W10=1.00*_W_TON_ACRE_TO_KG_M2, SG100=30.0*_SG_FT_TO_M, W100=0.50*_W_TON_ACRE_TO_KG_M2, SG1000=0.0*_SG_FT_TO_M, W1000=0.0*_W_TON_ACRE_TO_KG_M2,
-        SGWOOD=1500.0*_SG_FT_TO_M, WWOOD=0.50*_W_TON_ACRE_TO_KG_M2, SGHERB=2000.0*_SG_FT_TO_M, WHERB=0.50*_W_TON_ACRE_TO_KG_M2,
-        DEPTH=0.50*_DEPTH_FT_TO_M, MXD=20.0, HD=8000.0*_H_BTU_LB_TO_J_KG, HL=8000.0*_H_BTU_LB_TO_J_KG, SCM=16.0*_SC_FPM_TO_MS, WNDFC=0.4)
+    :A => (
+        name = :A, description = "Western grasses (annual)",
+        SG1 = 3000.0 * _SG_FT_TO_M, W1 = 0.2 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 0.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 0.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 0.0 * _SG_FT_TO_M, WWOOD = 0.0 * _W_TON_ACRE_TO_KG_M2, SGHERB = 3000.0 * _SG_FT_TO_M, WHERB = 0.3 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 0.8 * _DEPTH_FT_TO_M, MXD = 15.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 300.0 * _SC_FPM_TO_MS, WNDFC = 0.6,
+    ),
+    :B => (
+        name = :B, description = "California chaparral",
+        SG1 = 700.0 * _SG_FT_TO_M, W1 = 3.5 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 4.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1250.0 * _SG_FT_TO_M, WWOOD = 11.5 * _W_TON_ACRE_TO_KG_M2, SGHERB = 0.0 * _SG_FT_TO_M, WHERB = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 4.5 * _DEPTH_FT_TO_M, MXD = 15.0, HD = 9500.0 * _H_BTU_LB_TO_J_KG, HL = 9500.0 * _H_BTU_LB_TO_J_KG, SCM = 58.0 * _SC_FPM_TO_MS, WNDFC = 0.5,
+    ),
+    :C => (
+        name = :C, description = "Pine-grass savanna",
+        SG1 = 2000.0 * _SG_FT_TO_M, W1 = 0.4 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 1.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 0.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 0.5 * _W_TON_ACRE_TO_KG_M2, SGHERB = 2500.0 * _SG_FT_TO_M, WHERB = 0.8 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 0.75 * _DEPTH_FT_TO_M, MXD = 20.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 32.0 * _SC_FPM_TO_MS, WNDFC = 0.4,
+    ),
+    :D => (
+        name = :D, description = "Southern rough",
+        SG1 = 1250.0 * _SG_FT_TO_M, W1 = 2.0 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 1.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 0.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 3.0 * _W_TON_ACRE_TO_KG_M2, SGHERB = 1500.0 * _SG_FT_TO_M, WHERB = 0.75 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 2.0 * _DEPTH_FT_TO_M, MXD = 30.0, HD = 9000.0 * _H_BTU_LB_TO_J_KG, HL = 9000.0 * _H_BTU_LB_TO_J_KG, SCM = 25.0 * _SC_FPM_TO_MS, WNDFC = 0.4,
+    ),
+    :E => (
+        name = :E, description = "Hardwood litter (winter)",
+        SG1 = 2000.0 * _SG_FT_TO_M, W1 = 1.5 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 0.25 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 0.5 * _W_TON_ACRE_TO_KG_M2, SGHERB = 2000.0 * _SG_FT_TO_M, WHERB = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 0.4 * _DEPTH_FT_TO_M, MXD = 25.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 25.0 * _SC_FPM_TO_MS, WNDFC = 0.4,
+    ),
+    :F => (
+        name = :F, description = "Intermediate brush",
+        SG1 = 700.0 * _SG_FT_TO_M, W1 = 2.5 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 2.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 1.5 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1250.0 * _SG_FT_TO_M, WWOOD = 9.0 * _W_TON_ACRE_TO_KG_M2, SGHERB = 0.0 * _SG_FT_TO_M, WHERB = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 4.5 * _DEPTH_FT_TO_M, MXD = 15.0, HD = 9500.0 * _H_BTU_LB_TO_J_KG, HL = 9500.0 * _H_BTU_LB_TO_J_KG, SCM = 24.0 * _SC_FPM_TO_MS, WNDFC = 0.5,
+    ),
+    :G => (
+        name = :G, description = "Short needle (heavy dead)",
+        SG1 = 2000.0 * _SG_FT_TO_M, W1 = 2.5 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 2.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 5.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 12.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 0.5 * _W_TON_ACRE_TO_KG_M2, SGHERB = 2000.0 * _SG_FT_TO_M, WHERB = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 1.0 * _DEPTH_FT_TO_M, MXD = 25.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 30.0 * _SC_FPM_TO_MS, WNDFC = 0.4,
+    ),
+    :H => (
+        name = :H, description = "Short needle (normal dead)",
+        SG1 = 2000.0 * _SG_FT_TO_M, W1 = 1.5 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 1.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 2.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 2.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 0.5 * _W_TON_ACRE_TO_KG_M2, SGHERB = 2000.0 * _SG_FT_TO_M, WHERB = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 0.3 * _DEPTH_FT_TO_M, MXD = 20.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 8.0 * _SC_FPM_TO_MS, WNDFC = 0.4,
+    ),
+    :I => (
+        name = :I, description = "Heavy slash",
+        SG1 = 1500.0 * _SG_FT_TO_M, W1 = 12.0 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 12.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 10.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 12.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 0.0 * _SG_FT_TO_M, WWOOD = 0.0 * _W_TON_ACRE_TO_KG_M2, SGHERB = 0.0 * _SG_FT_TO_M, WHERB = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 2.0 * _DEPTH_FT_TO_M, MXD = 25.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 65.0 * _SC_FPM_TO_MS, WNDFC = 0.5,
+    ),
+    :J => (
+        name = :J, description = "Intermediate slash",
+        SG1 = 1500.0 * _SG_FT_TO_M, W1 = 7.0 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 7.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 6.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 5.5 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 0.0 * _SG_FT_TO_M, WWOOD = 0.0 * _W_TON_ACRE_TO_KG_M2, SGHERB = 0.0 * _SG_FT_TO_M, WHERB = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 1.3 * _DEPTH_FT_TO_M, MXD = 25.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 44.0 * _SC_FPM_TO_MS, WNDFC = 0.5,
+    ),
+    :K => (
+        name = :K, description = "Light slash",
+        SG1 = 1500.0 * _SG_FT_TO_M, W1 = 2.5 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 2.5 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 2.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 2.5 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 0.0 * _SG_FT_TO_M, WWOOD = 0.0 * _W_TON_ACRE_TO_KG_M2, SGHERB = 0.0 * _SG_FT_TO_M, WHERB = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 0.6 * _DEPTH_FT_TO_M, MXD = 25.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 23.0 * _SC_FPM_TO_MS, WNDFC = 0.5,
+    ),
+    :L => (
+        name = :L, description = "Western grasses (perennial)",
+        SG1 = 2000.0 * _SG_FT_TO_M, W1 = 0.25 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 0.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 0.0 * _SG_FT_TO_M, W100 = 0.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 0.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 0.0 * _SG_FT_TO_M, WWOOD = 0.0 * _W_TON_ACRE_TO_KG_M2, SGHERB = 2000.0 * _SG_FT_TO_M, WHERB = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 1.0 * _DEPTH_FT_TO_M, MXD = 15.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 178.0 * _SC_FPM_TO_MS, WNDFC = 0.6,
+    ),
+    :N => (
+        name = :N, description = "Sawgrass",
+        SG1 = 1600.0 * _SG_FT_TO_M, W1 = 1.5 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 3.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 0.0 * _SG_FT_TO_M, W100 = 0.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 0.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 2.0 * _W_TON_ACRE_TO_KG_M2, SGHERB = 2000.0 * _SG_FT_TO_M, WHERB = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 3.0 * _DEPTH_FT_TO_M, MXD = 25.0, HD = 8700.0 * _H_BTU_LB_TO_J_KG, HL = 8700.0 * _H_BTU_LB_TO_J_KG, SCM = 167.0 * _SC_FPM_TO_MS, WNDFC = 0.6,
+    ),
+    :O => (
+        name = :O, description = "High pocosin",
+        SG1 = 1500.0 * _SG_FT_TO_M, W1 = 2.0 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 1.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 3.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 2.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 7.0 * _W_TON_ACRE_TO_KG_M2, SGHERB = 0.0 * _SG_FT_TO_M, WHERB = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 4.0 * _DEPTH_FT_TO_M, MXD = 30.0, HD = 9000.0 * _H_BTU_LB_TO_J_KG, HL = 9000.0 * _H_BTU_LB_TO_J_KG, SCM = 99.0 * _SC_FPM_TO_MS, WNDFC = 0.5,
+    ),
+    :P => (
+        name = :P, description = "Southern pine plantation",
+        SG1 = 1750.0 * _SG_FT_TO_M, W1 = 1.0 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 2.5 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG1000 = 0.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 0.5 * _W_TON_ACRE_TO_KG_M2, SGHERB = 0.0 * _SG_FT_TO_M, WHERB = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 0.4 * _DEPTH_FT_TO_M, MXD = 30.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 14.0 * _SC_FPM_TO_MS, WNDFC = 0.4,
+    ),
+    :Q => (
+        name = :Q, description = "Alaskan black spruce",
+        SG1 = 1500.0 * _SG_FT_TO_M, W1 = 2.0 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 2.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 1.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1200.0 * _SG_FT_TO_M, WWOOD = 4.0 * _W_TON_ACRE_TO_KG_M2, SGHERB = 1500.0 * _SG_FT_TO_M, WHERB = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 3.0 * _DEPTH_FT_TO_M, MXD = 25.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 59.0 * _SC_FPM_TO_MS, WNDFC = 0.4,
+    ),
+    :R => (
+        name = :R, description = "Hardwood litter (summer)",
+        SG1 = 1500.0 * _SG_FT_TO_M, W1 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG1000 = 0.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 0.5 * _W_TON_ACRE_TO_KG_M2, SGHERB = 2000.0 * _SG_FT_TO_M, WHERB = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 0.25 * _DEPTH_FT_TO_M, MXD = 25.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 6.0 * _SC_FPM_TO_MS, WNDFC = 0.4,
+    ),
+    :S => (
+        name = :S, description = "Tundra",
+        SG1 = 1500.0 * _SG_FT_TO_M, W1 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG1000 = 8.0 * _SG_FT_TO_M, W1000 = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1200.0 * _SG_FT_TO_M, WWOOD = 0.5 * _W_TON_ACRE_TO_KG_M2, SGHERB = 1500.0 * _SG_FT_TO_M, WHERB = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 0.4 * _DEPTH_FT_TO_M, MXD = 25.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 17.0 * _SC_FPM_TO_MS, WNDFC = 0.6,
+    ),
+    :T => (
+        name = :T, description = "Sagebrush-grass",
+        SG1 = 2500.0 * _SG_FT_TO_M, W1 = 1.0 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 1.5 * _W_TON_ACRE_TO_KG_M2, SG100 = 0.0 * _SG_FT_TO_M, W100 = 0.0 * _W_TON_ACRE_TO_KG_M2, SG1000 = 0.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 2.5 * _W_TON_ACRE_TO_KG_M2, SGHERB = 2000.0 * _SG_FT_TO_M, WHERB = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 1.25 * _DEPTH_FT_TO_M, MXD = 15.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 73.0 * _SC_FPM_TO_MS, WNDFC = 0.6,
+    ),
+    :U => (
+        name = :U, description = "Western pines",
+        SG1 = 1750.0 * _SG_FT_TO_M, W1 = 1.5 * _W_TON_ACRE_TO_KG_M2, SG10 = 109.0 * _SG_FT_TO_M, W10 = 1.0 * _W_TON_ACRE_TO_KG_M2, SG100 = 30.0 * _SG_FT_TO_M, W100 = 0.5 * _W_TON_ACRE_TO_KG_M2, SG1000 = 0.0 * _SG_FT_TO_M, W1000 = 0.0 * _W_TON_ACRE_TO_KG_M2,
+        SGWOOD = 1500.0 * _SG_FT_TO_M, WWOOD = 0.5 * _W_TON_ACRE_TO_KG_M2, SGHERB = 2000.0 * _SG_FT_TO_M, WHERB = 0.5 * _W_TON_ACRE_TO_KG_M2,
+        DEPTH = 0.5 * _DEPTH_FT_TO_M, MXD = 20.0, HD = 8000.0 * _H_BTU_LB_TO_J_KG, HL = 8000.0 * _H_BTU_LB_TO_J_KG, SCM = 16.0 * _SC_FPM_TO_MS, WNDFC = 0.4,
+    )
 )
 
 """

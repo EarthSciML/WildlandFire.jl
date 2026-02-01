@@ -13,6 +13,9 @@ modeling. The package is part of the [EarthSciML](https://github.com/EarthSciML)
 - **Dynamic Fuel Load Transfer**: Load transfer from live to dead herbaceous fuel based on curing
 - **Live Fuel Moisture of Extinction**: Calculation of live fuel extinction moisture
 - **Related Fire Behavior Models**: Flame length, fireline intensity, residence time
+- **Fire Spread Direction**: Vector addition for calculating direction of maximum spread when wind is not aligned with slope
+- **Elliptical Fire Spread**: Fire shape calculations from a single ignition point
+- **Fire Perimeter Spread**: Rate of spread normal to the fire perimeter
 - **National Fire Danger Rating System (NFDRS)**: Fuel moisture and fire danger assessment
   - Fuel Moisture Models: Dead fuel moisture (1-hr, 10-hr, 100-hr, 1000-hr timelag classes) and live fuel moisture (herbaceous and woody)
   - Fire Behavior Indices: Spread Component, Energy Release Component, Burning Index
@@ -76,7 +79,7 @@ bi = BurningIndex()
 ## Contents
 
 ```@contents
-Pages = ["nfdrs.md", "rothermel.md"]
+Pages = ["nfdrs.md", "rothermel.md", "fire_spread_direction.md"]
 Depth = 2
 ```
 
