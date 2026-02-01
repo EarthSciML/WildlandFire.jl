@@ -1,0 +1,5 @@
+[default.extend-words]
+# Technical terms used in fire spread modeling
+UE = "UE"   # Effective midflame wind speed variable
+SAV = "SAV" # Surface-area-to-volume ratio
+nd = "nd"   # Ordinal suffix (e.g., 2nd)
