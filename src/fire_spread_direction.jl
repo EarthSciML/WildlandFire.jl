@@ -54,7 +54,6 @@ sol = solve(prob)
 @component function FireSpreadDirection(; name = :FireSpreadDirection)
     @constants begin
         one = 1.0, [description = "Dimensionless one for unit balancing", unit = u"1"]
-        zero_rad = 0.0, [description = "Zero angle", unit = u"rad"]
         # Conversion factor for length-to-width ratio equation
         # Z = 1 + 0.25*U_E where U_E is in mi/h
         # Since 1 m/s = 2.23694 mi/h: Z = 1 + 0.25 * 2.23694 * U_E = 1 + 0.559 * U_E (U_E in m/s)
