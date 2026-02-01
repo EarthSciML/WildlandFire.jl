@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Fire Spread Direction · WildlandFire.jl</title><meta name="title" content="Fire Spread Direction · WildlandFire.jl"/><meta property="og:title" content="Fire Spread Direction · WildlandFire.jl"/><meta property="twitter:title" content="Fire Spread Direction · WildlandFire.jl"/><meta name="description" content="Documentation for WildlandFire.jl."/><meta property="og:description" content="Documentation for WildlandFire.jl."/><meta property="twitter:description" content="Documentation for WildlandFire.jl."/><meta property="og:url" content="https://wildlandfire.earthsci.dev/fire_spread_direction/"/><meta property="twitter:url" content="https://wildlandfire.earthsci.dev/fire_spread_direction/"/><link rel="canonical" href="https://wildlandfire.earthsci.dev/fire_spread_direction/"/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">WildlandFire.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../nfdrs/">NFDRS</a></li><li><a class="tocitem" href="../rothermel/">Rothermel Fire Spread Model</a></li><li class="is-active"><a class="tocitem" href>Fire Spread Direction</a><ul class="internal"><li><a class="tocitem" href="#Overview"><span>Overview</span></a></li><li><a class="tocitem" href="#FireSpreadDirection"><span>FireSpreadDirection</span></a></li><li><a class="tocitem" href="#EllipticalFireSpread"><span>EllipticalFireSpread</span></a></li><li><a class="tocitem" href="#FirePerimeterSpread"><span>FirePerimeterSpread</span></a></li><li><a class="tocitem" href="#Analysis"><span>Analysis</span></a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Fire Spread Direction</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Fire Spread Direction</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Fire-Spread-Direction"><a class="docs-heading-anchor" href="#Fire-Spread-Direction">Fire Spread Direction</a><a id="Fire-Spread-Direction-1"></a><a class="docs-heading-anchor-permalink" href="#Fire-Spread-Direction" title="Permalink"></a></h1><h2 id="Overview"><a class="docs-heading-anchor" href="#Overview">Overview</a><a id="Overview-1"></a><a class="docs-heading-anchor-permalink" href="#Overview" title="Permalink"></a></h2><p>When wind blows at an angle to the slope, vector addition is used to find the direction and rate of maximum fire spread. This module implements the equations from Section 6 of Andrews (2018), which describe fire behavior in the direction of maximum spread, elliptical fire shape from a single ignition point, and fire spread normal to the perimeter.</p><p><strong>Reference</strong>: Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associated developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins, CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. Pages 84-92, Table 26.</p><p>Additional reference for fire perimeter equations: Catchpole, E. A.; deMestre, N. J.; Gill, A. M. 1982. Intensity of fire at its perimeter. Australian Forest Research. 12: 47-54.</p><h2 id="FireSpreadDirection"><a class="docs-heading-anchor" href="#FireSpreadDirection">FireSpreadDirection</a><a id="FireSpreadDirection-1"></a><a class="docs-heading-anchor-permalink" href="#FireSpreadDirection" title="Permalink"></a></h2><p>Calculates fire behavior in the direction of maximum spread when wind is not blowing directly upslope.</p><article><details class="docstring" open="true"><summary id="WildlandFire.FireSpreadDirection"><a class="docstring-binding" href="#WildlandFire.FireSpreadDirection"><code>WildlandFire.FireSpreadDirection</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">FireSpreadDirection(; name=:FireSpreadDirection)</code></pre><p>Create a system for calculating fire behavior in the direction of maximum spread when wind is not blowing directly upslope.</p><p>The Rothermel surface fire spread model assumes wind and slope effects are in the same direction. When wind blows at an angle to the slope, vector addition is used to find the direction and rate of maximum fire spread.</p><p><strong>Model Description</strong></p><p>The slope vector has magnitude D<em>S and direction 0 (upslope). The wind vector has magnitude D</em>W in direction ω from upslope. The resultant vector gives the direction of maximum spread (α) and the head fire rate of spread (R_H).</p><p>Key outputs:</p><ul><li><code>R_H</code>: Rate of spread in direction of maximum spread (head fire)</li><li><code>α</code>: Direction of maximum spread relative to upslope</li><li><code>φ_E</code>: Effective wind factor in direction of maximum spread</li><li><code>U_E</code>: Effective wind speed in direction of maximum spread</li><li><code>Z</code>: Fire length-to-width ratio</li></ul><p><strong>Reference</strong></p><p>Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associated developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins, CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. Table 26, pages 86-87.</p><p><strong>Example</strong></p><pre><code class="language-julia hljs">using ModelingToolkit, WildlandFire, OrdinaryDiffEqDefault
+
+sys = FireSpreadDirection()
+compiled_sys = mtkcompile(sys)
+
+# Calculate with cross-slope wind at 45 degrees from upslope
+prob = NonlinearProblem(compiled_sys, Dict(
+    compiled_sys.R0 =&gt; 0.01,      # No-wind no-slope rate of spread (m/s)
+    compiled_sys.φw =&gt; 5.0,        # Wind factor (dimensionless)
+    compiled_sys.φs =&gt; 2.0,        # Slope factor (dimensionless)
+    compiled_sys.ω =&gt; π/4,         # Wind direction 45° from upslope (rad)
+    compiled_sys.β_ratio =&gt; 0.5,   # Relative packing ratio
+    compiled_sys.C_coeff =&gt; 7.47,  # Wind coefficient C
+    compiled_sys.B_coeff =&gt; 0.5,   # Wind coefficient B
+    compiled_sys.E_coeff =&gt; 0.5,   # Wind coefficient E
+    compiled_sys.elapsed_time =&gt; 60.0  # Elapsed time (s)
+))
+sol = solve(prob)</code></pre></div></section></details></article><h3 id="State-Variables"><a class="docs-heading-anchor" href="#State-Variables">State Variables</a><a id="State-Variables-1"></a><a class="docs-heading-anchor-permalink" href="#State-Variables" title="Permalink"></a></h3><pre><code class="language-julia hljs">using DataFrames, ModelingToolkit, Symbolics, DynamicQuantities
+using WildlandFire
+
+sys = FireSpreadDirection()
+
+vars = unknowns(sys)
+DataFrame(
+    :Name =&gt; [string(Symbolics.tosymbol(v, escape = false)) for v in vars],
+    :Units =&gt; [string(dimension(ModelingToolkit.get_unit(v))) for v in vars],
+    :Description =&gt; [ModelingToolkit.getdescription(v) for v in vars]
+)</code></pre><div><div style = "float: left;"><span>10×3 DataFrame</span></div><div style = "clear: both;"></div></div><div class = "data-frame" style = "overflow-x: scroll;"><table class = "data-frame" style = "margin-bottom: 6px;"><thead><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;">Row</th><th style = "text-align: left;">Name</th><th style = "text-align: left;">Units</th><th style = "text-align: left;">Description</th></tr><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;"></th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th></tr></thead><tbody><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td><td style = "text-align: left;">D_S</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Slope vector magnitude</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td><td style = "text-align: left;">D_W</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Wind vector magnitude</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td><td style = "text-align: left;">X</td><td style = "text-align: left;">m</td><td style = "text-align: left;">X-component of resultant vector</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td><td style = "text-align: left;">Y</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Y-component of resultant vector</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td><td style = "text-align: left;">D_H</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Head fire distance magnitude</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td><td style = "text-align: left;">R_H</td><td style = "text-align: left;">m s⁻¹</td><td style = "text-align: left;">Rate of spread in direction of maximum spread (head fire)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td><td style = "text-align: left;">α</td><td style = "text-align: left;"></td><td style = "text-align: left;">Direction of maximum spread relative to upslope</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td><td style = "text-align: left;">φ_E</td><td style = "text-align: left;"></td><td style = "text-align: left;">Effective wind factor in direction of maximum spread (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td><td style = "text-align: left;">U_E</td><td style = "text-align: left;">m s⁻¹</td><td style = "text-align: left;">Effective wind speed in direction of maximum spread</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td><td style = "text-align: left;">Z</td><td style = "text-align: left;"></td><td style = "text-align: left;">Fire length-to-width ratio (dimensionless)</td></tr></tbody></table></div><h3 id="Parameters"><a class="docs-heading-anchor" href="#Parameters">Parameters</a><a id="Parameters-1"></a><a class="docs-heading-anchor-permalink" href="#Parameters" title="Permalink"></a></h3><pre><code class="language-julia hljs">params = parameters(sys)
+DataFrame(
+    :Name =&gt; [string(Symbolics.tosymbol(p, escape = false)) for p in params],
+    :Units =&gt; [string(dimension(ModelingToolkit.get_unit(p))) for p in params],
+    :Description =&gt; [ModelingToolkit.getdescription(p) for p in params]
+)</code></pre><div><div style = "float: left;"><span>13×3 DataFrame</span></div><div style = "clear: both;"></div></div><div class = "data-frame" style = "overflow-x: scroll;"><table class = "data-frame" style = "margin-bottom: 6px;"><thead><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;">Row</th><th style = "text-align: left;">Name</th><th style = "text-align: left;">Units</th><th style = "text-align: left;">Description</th></tr><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;"></th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th></tr></thead><tbody><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td><td style = "text-align: left;">φs</td><td style = "text-align: left;"></td><td style = "text-align: left;">Slope factor (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td><td style = "text-align: left;">R0</td><td style = "text-align: left;">m s⁻¹</td><td style = "text-align: left;">No-wind no-slope rate of spread</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td><td style = "text-align: left;">elapsed_time</td><td style = "text-align: left;">s</td><td style = "text-align: left;">Elapsed time for vector calculations</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td><td style = "text-align: left;">φw</td><td style = "text-align: left;"></td><td style = "text-align: left;">Wind factor (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td><td style = "text-align: left;">ω</td><td style = "text-align: left;"></td><td style = "text-align: left;">Wind direction relative to upslope</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td><td style = "text-align: left;">D_min</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Minimum distance to avoid division by zero</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td><td style = "text-align: left;">one</td><td style = "text-align: left;"></td><td style = "text-align: left;">Dimensionless one for unit balancing</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td><td style = "text-align: left;">U_ref</td><td style = "text-align: left;">m s⁻¹</td><td style = "text-align: left;">Reference wind speed</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td><td style = "text-align: left;">β_ratio</td><td style = "text-align: left;"></td><td style = "text-align: left;">Relative packing ratio β/β_op (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td><td style = "text-align: left;">E_coeff</td><td style = "text-align: left;"></td><td style = "text-align: left;">Wind coefficient E (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td><td style = "text-align: left;">C_coeff</td><td style = "text-align: left;"></td><td style = "text-align: left;">Wind coefficient C (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">12</td><td style = "text-align: left;">B_coeff</td><td style = "text-align: left;"></td><td style = "text-align: left;">Wind coefficient B (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">13</td><td style = "text-align: left;">c_Z</td><td style = "text-align: left;">m⁻¹ s</td><td style = "text-align: left;">Length-to-width ratio coefficient (SI)</td></tr></tbody></table></div><h3 id="Equations"><a class="docs-heading-anchor" href="#Equations">Equations</a><a id="Equations-1"></a><a class="docs-heading-anchor-permalink" href="#Equations" title="Permalink"></a></h3><pre><code class="language-julia hljs">eqs = equations(sys)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10-element Vector{Symbolics.Equation}:
+ D_S(t) ~ R0*elapsed_time*φs
+ D_W(t) ~ R0*elapsed_time*φw
+ X(t) ~ D_S(t) + D_W(t)*cos(ω)
+ Y(t) ~ D_W(t)*sin(ω)
+ D_H(t) ~ sqrt(Y(t)^<span class="sgr34">2</span> + X(t)^<span class="sgr34">2</span>)
+ R_H(t) ~ R0 + D_H(t) / elapsed_time
+ α(t) ~ asin(abs(Y(t)) / max(D_H(t), D_min))
+ φ_E(t) ~ -one + R_H(t) / R0
+ U_E(t) ~ U_ref*(((φ_E(t)*(β_ratio^E_coeff)) / C_coeff)^(one / B_coeff))
+ Z(t) ~ one + c_Z*U_E(t)</code></pre><h2 id="EllipticalFireSpread"><a class="docs-heading-anchor" href="#EllipticalFireSpread">EllipticalFireSpread</a><a id="EllipticalFireSpread-1"></a><a class="docs-heading-anchor-permalink" href="#EllipticalFireSpread" title="Permalink"></a></h2><p>Calculates fire spread from a single ignition point assuming an elliptical fire shape.</p><article><details class="docstring" open="true"><summary id="WildlandFire.EllipticalFireSpread"><a class="docstring-binding" href="#WildlandFire.EllipticalFireSpread"><code>WildlandFire.EllipticalFireSpread</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">EllipticalFireSpread(; name=:EllipticalFireSpread)</code></pre><p>Create a system for calculating fire spread from a single ignition point assuming an elliptical fire shape.</p><p>When a fire starts from a single ignition point, it is assumed to be elliptically shaped with the fire spreading at a steady rate throughout the projection time. The length-to-width ratio is determined from the effective wind speed in the direction of maximum spread.</p><p><strong>Key Outputs</strong></p><ul><li><code>e</code>: Eccentricity of the fire ellipse</li><li><code>R_γ</code>: Rate of spread from ignition point in direction γ</li><li><code>R_B</code>: Rate of spread of backing fire</li><li><code>L</code>: Fire length</li><li><code>W</code>: Fire width</li><li><code>D_F</code>: Flanking spread distance</li></ul><p><strong>Reference</strong></p><p>Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associated developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins, CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. Table 26, pages 86-89.</p><p>Catchpole, E. A.; deMestre, N. J.; Gill, A. M. 1982. Intensity of fire at its perimeter. Australian Forest Research. 12: 47–54.</p><p><strong>Example</strong></p><pre><code class="language-julia hljs">using ModelingToolkit, WildlandFire, OrdinaryDiffEqDefault
+
+sys = EllipticalFireSpread()
+compiled_sys = mtkcompile(sys)
+
+prob = NonlinearProblem(compiled_sys, Dict(
+    compiled_sys.R_H =&gt; 0.1,       # Head fire rate of spread (m/s)
+    compiled_sys.Z =&gt; 2.0,         # Length-to-width ratio
+    compiled_sys.γ =&gt; π/4,         # Direction 45° from head fire direction (rad)
+    compiled_sys.elapsed_time =&gt; 3600.0  # Elapsed time (s)
+))
+sol = solve(prob)</code></pre></div></section></details></article><h3 id="State-Variables-2"><a class="docs-heading-anchor" href="#State-Variables-2">State Variables</a><a class="docs-heading-anchor-permalink" href="#State-Variables-2" title="Permalink"></a></h3><pre><code class="language-julia hljs">using DataFrames, ModelingToolkit, Symbolics, DynamicQuantities
+using WildlandFire
+
+sys = EllipticalFireSpread()
+
+vars = unknowns(sys)
+DataFrame(
+    :Name =&gt; [string(Symbolics.tosymbol(v, escape = false)) for v in vars],
+    :Units =&gt; [string(dimension(ModelingToolkit.get_unit(v))) for v in vars],
+    :Description =&gt; [ModelingToolkit.getdescription(v) for v in vars]
+)</code></pre><div><div style = "float: left;"><span>11×3 DataFrame</span></div><div style = "clear: both;"></div></div><div class = "data-frame" style = "overflow-x: scroll;"><table class = "data-frame" style = "margin-bottom: 6px;"><thead><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;">Row</th><th style = "text-align: left;">Name</th><th style = "text-align: left;">Units</th><th style = "text-align: left;">Description</th></tr><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;"></th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th></tr></thead><tbody><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td><td style = "text-align: left;">e</td><td style = "text-align: left;"></td><td style = "text-align: left;">Eccentricity of fire ellipse (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td><td style = "text-align: left;">R_γ</td><td style = "text-align: left;">m s⁻¹</td><td style = "text-align: left;">Rate of spread from ignition point in direction γ</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td><td style = "text-align: left;">R_B</td><td style = "text-align: left;">m s⁻¹</td><td style = "text-align: left;">Rate of spread of backing fire</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td><td style = "text-align: left;">D_H</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Heading spread distance</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td><td style = "text-align: left;">D_B</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Backing spread distance</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td><td style = "text-align: left;">L</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Fire length</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td><td style = "text-align: left;">W</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Fire width</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">8</td><td style = "text-align: left;">D_F</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Flanking spread distance</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">9</td><td style = "text-align: left;">f</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Ellipse semi-major axis</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">10</td><td style = "text-align: left;">g</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Distance from focus to center</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">11</td><td style = "text-align: left;">h</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Ellipse semi-minor axis</td></tr></tbody></table></div><h3 id="Parameters-2"><a class="docs-heading-anchor" href="#Parameters-2">Parameters</a><a class="docs-heading-anchor-permalink" href="#Parameters-2" title="Permalink"></a></h3><pre><code class="language-julia hljs">params = parameters(sys)
+DataFrame(
+    :Name =&gt; [string(Symbolics.tosymbol(p, escape = false)) for p in params],
+    :Units =&gt; [string(dimension(ModelingToolkit.get_unit(p))) for p in params],
+    :Description =&gt; [ModelingToolkit.getdescription(p) for p in params]
+)</code></pre><div><div style = "float: left;"><span>6×3 DataFrame</span></div><div style = "clear: both;"></div></div><div class = "data-frame" style = "overflow-x: scroll;"><table class = "data-frame" style = "margin-bottom: 6px;"><thead><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;">Row</th><th style = "text-align: left;">Name</th><th style = "text-align: left;">Units</th><th style = "text-align: left;">Description</th></tr><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;"></th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th></tr></thead><tbody><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td><td style = "text-align: left;">Z</td><td style = "text-align: left;"></td><td style = "text-align: left;">Fire length-to-width ratio (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td><td style = "text-align: left;">one</td><td style = "text-align: left;"></td><td style = "text-align: left;">Dimensionless one for unit balancing</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td><td style = "text-align: left;">R_H</td><td style = "text-align: left;">m s⁻¹</td><td style = "text-align: left;">Rate of spread in direction of maximum spread (head fire)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td><td style = "text-align: left;">γ</td><td style = "text-align: left;"></td><td style = "text-align: left;">Direction from ignition point relative to max spread direction</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td><td style = "text-align: left;">elapsed_time</td><td style = "text-align: left;">s</td><td style = "text-align: left;">Elapsed time</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td><td style = "text-align: left;">two</td><td style = "text-align: left;"></td><td style = "text-align: left;">Dimensionless two</td></tr></tbody></table></div><h3 id="Equations-2"><a class="docs-heading-anchor" href="#Equations-2">Equations</a><a class="docs-heading-anchor-permalink" href="#Equations-2" title="Permalink"></a></h3><pre><code class="language-julia hljs">eqs = equations(sys)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">11-element Vector{Symbolics.Equation}:
+ e(t) ~ sqrt(-one + Z^<span class="sgr34">2</span>) / Z
+ R_γ(t) ~ (R_H*(one - e(t))) / (one - cos(γ)*e(t))
+ R_B(t) ~ (R_H*(one - e(t))) / (one + e(t))
+ D_H(t) ~ R_H*elapsed_time
+ D_B(t) ~ elapsed_time*R_B(t)
+ L(t) ~ D_H(t) + D_B(t)
+ W(t) ~ L(t) / Z
+ D_F(t) ~ W(t) / two
+ f(t) ~ L(t) / two
+ g(t) ~ -f(t) + D_H(t)
+ h(t) ~ D_F(t)</code></pre><h2 id="FirePerimeterSpread"><a class="docs-heading-anchor" href="#FirePerimeterSpread">FirePerimeterSpread</a><a id="FirePerimeterSpread-1"></a><a class="docs-heading-anchor-permalink" href="#FirePerimeterSpread" title="Permalink"></a></h2><p>Calculates fire spread rate normal to the fire perimeter based on Catchpole et al. (1982).</p><article><details class="docstring" open="true"><summary id="WildlandFire.FirePerimeterSpread"><a class="docstring-binding" href="#WildlandFire.FirePerimeterSpread"><code>WildlandFire.FirePerimeterSpread</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">FirePerimeterSpread(; name=:FirePerimeterSpread)</code></pre><p>Create a system for calculating fire spread rate normal to the fire perimeter.</p><p>Fire spread rate and intensity on the perimeter of a fire are described by Catchpole et al. (1982). Given the direction from the ignition point (γ), this system calculates the associated direction normal to the perimeter (ψ) and the rate of spread in that direction (R_ψ).</p><p><strong>Key Outputs</strong></p><ul><li><code>R_ψ</code>: Rate of spread normal to the fire perimeter</li><li><code>ψ</code>: Direction normal to the perimeter</li><li><code>θ</code>: Intermediate angle from center of ellipse</li><li><code>I_B</code>: Fireline intensity (Byram&#39;s)</li></ul><p><strong>Reference</strong></p><p>Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associated developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins, CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station. Table 26, pages 89-91.</p><p>Catchpole, E. A.; deMestre, N. J.; Gill, A. M. 1982. Intensity of fire at its perimeter. Australian Forest Research. 12: 47–54.</p></div></section></details></article><h3 id="State-Variables-3"><a class="docs-heading-anchor" href="#State-Variables-3">State Variables</a><a class="docs-heading-anchor-permalink" href="#State-Variables-3" title="Permalink"></a></h3><pre><code class="language-julia hljs">using DataFrames, ModelingToolkit, Symbolics, DynamicQuantities
+using WildlandFire
+
+sys = FirePerimeterSpread()
+
+vars = unknowns(sys)
+DataFrame(
+    :Name =&gt; [string(Symbolics.tosymbol(v, escape = false)) for v in vars],
+    :Units =&gt; [string(dimension(ModelingToolkit.get_unit(v))) for v in vars],
+    :Description =&gt; [ModelingToolkit.getdescription(v) for v in vars]
+)</code></pre><div><div style = "float: left;"><span>6×3 DataFrame</span></div><div style = "clear: both;"></div></div><div class = "data-frame" style = "overflow-x: scroll;"><table class = "data-frame" style = "margin-bottom: 6px;"><thead><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;">Row</th><th style = "text-align: left;">Name</th><th style = "text-align: left;">Units</th><th style = "text-align: left;">Description</th></tr><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;"></th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th></tr></thead><tbody><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td><td style = "text-align: left;">cos_θ</td><td style = "text-align: left;"></td><td style = "text-align: left;">Cosine of intermediate angle θ (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td><td style = "text-align: left;">sin_θ</td><td style = "text-align: left;"></td><td style = "text-align: left;">Sine of intermediate angle θ (dimensionless)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td><td style = "text-align: left;">θ</td><td style = "text-align: left;"></td><td style = "text-align: left;">Intermediate angle from center of ellipse</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td><td style = "text-align: left;">R_ψ</td><td style = "text-align: left;">m s⁻¹</td><td style = "text-align: left;">Rate of spread normal to fire perimeter</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td><td style = "text-align: left;">ψ</td><td style = "text-align: left;"></td><td style = "text-align: left;">Direction normal to perimeter relative to max spread</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td><td style = "text-align: left;">I_B</td><td style = "text-align: left;">m kg s⁻³</td><td style = "text-align: left;">Fireline intensity (Byram)</td></tr></tbody></table></div><h3 id="Parameters-3"><a class="docs-heading-anchor" href="#Parameters-3">Parameters</a><a class="docs-heading-anchor-permalink" href="#Parameters-3" title="Permalink"></a></h3><pre><code class="language-julia hljs">params = parameters(sys)
+DataFrame(
+    :Name =&gt; [string(Symbolics.tosymbol(p, escape = false)) for p in params],
+    :Units =&gt; [string(dimension(ModelingToolkit.get_unit(p))) for p in params],
+    :Description =&gt; [ModelingToolkit.getdescription(p) for p in params]
+)</code></pre><div><div style = "float: left;"><span>7×3 DataFrame</span></div><div style = "clear: both;"></div></div><div class = "data-frame" style = "overflow-x: scroll;"><table class = "data-frame" style = "margin-bottom: 6px;"><thead><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;">Row</th><th style = "text-align: left;">Name</th><th style = "text-align: left;">Units</th><th style = "text-align: left;">Description</th></tr><tr class = "columnLabelRow"><th class = "stubheadLabel" style = "font-weight: bold; text-align: right;"></th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th><th title = "String" style = "text-align: left;">String</th></tr></thead><tbody><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">1</td><td style = "text-align: left;">γ</td><td style = "text-align: left;"></td><td style = "text-align: left;">Direction from ignition point relative to max spread direction</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">2</td><td style = "text-align: left;">f</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Ellipse semi-major axis</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">3</td><td style = "text-align: left;">g</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Distance from focus to center</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">4</td><td style = "text-align: left;">h</td><td style = "text-align: left;">m</td><td style = "text-align: left;">Ellipse semi-minor axis</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">5</td><td style = "text-align: left;">one</td><td style = "text-align: left;"></td><td style = "text-align: left;">Dimensionless one</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">6</td><td style = "text-align: left;">R_H</td><td style = "text-align: left;">m s⁻¹</td><td style = "text-align: left;">Rate of spread in direction of maximum spread (head fire)</td></tr><tr class = "dataRow"><td class = "rowLabel" style = "font-weight: bold; text-align: right;">7</td><td style = "text-align: left;">H_A</td><td style = "text-align: left;">kg s⁻²</td><td style = "text-align: left;">Heat per unit area</td></tr></tbody></table></div><h3 id="Equations-3"><a class="docs-heading-anchor" href="#Equations-3">Equations</a><a class="docs-heading-anchor-permalink" href="#Equations-3" title="Permalink"></a></h3><pre><code class="language-julia hljs">eqs = equations(sys)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{Symbolics.Equation}:
+ cos_θ(t) ~ (h*cos(γ)*sqrt((f^<span class="sgr34">2</span> - (g^<span class="sgr34">2</span>))*(sin(γ)^<span class="sgr34">2</span>) + (h^<span class="sgr34">2</span>)*(cos(γ)^<span class="sgr34">2</span>)) - f*g*(sin(γ)^<span class="sgr34">2</span>)) / ((f^<span class="sgr34">2</span>)*(sin(γ)^<span class="sgr34">2</span>) + (h^<span class="sgr34">2</span>)*(cos(γ)^<span class="sgr34">2</span>))
+ sin_θ(t) ~ sqrt(one - (cos_θ(t)^<span class="sgr34">2</span>))
+ θ(t) ~ acos(cos_θ(t))
+ R_ψ(t) ~ (R_H*(f + g*cos_θ(t))*h) / (f*sqrt((f^<span class="sgr34">2</span>)*(sin_θ(t)^<span class="sgr34">2</span>) + (h^<span class="sgr34">2</span>)*(cos_θ(t)^<span class="sgr34">2</span>)))
+ ψ(t) ~ atan((f*sin_θ(t)) / (h*cos_θ(t)))
+ I_B(t) ~ H_A*R_ψ(t)</code></pre><h2 id="Analysis"><a class="docs-heading-anchor" href="#Analysis">Analysis</a><a id="Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Analysis" title="Permalink"></a></h2><h3 id="Effect-of-Wind-Direction-on-Fire-Spread"><a class="docs-heading-anchor" href="#Effect-of-Wind-Direction-on-Fire-Spread">Effect of Wind Direction on Fire Spread</a><a id="Effect-of-Wind-Direction-on-Fire-Spread-1"></a><a class="docs-heading-anchor-permalink" href="#Effect-of-Wind-Direction-on-Fire-Spread" title="Permalink"></a></h3><p>The following example demonstrates how wind direction affects the direction of maximum fire spread. When wind blows upslope (omega = 0), the fire spreads directly uphill. As the wind direction rotates, the direction of maximum spread shifts.</p><pre><code class="language-julia hljs">using WildlandFire, ModelingToolkit, OrdinaryDiffEqDefault
+using Plots, DynamicQuantities
+
+# Create and compile the system
+sys = FireSpreadDirection()
+compiled_sys = mtkcompile(sys)
+
+# Common parameters
+R0_val = 0.01  # m/s
+φw_val = 5.0   # wind factor
+φs_val = 2.0   # slope factor
+t_val = 60.0   # elapsed time (s)
+
+# Sweep wind direction from 0 to 2pi
+ω_values = range(0, 2π, length=37)
+α_results = Float64[]
+R_H_results = Float64[]
+
+for ω_val in ω_values
+    prob = NonlinearProblem(compiled_sys, Dict(
+        compiled_sys.R0 =&gt; R0_val,
+        compiled_sys.φw =&gt; φw_val,
+        compiled_sys.φs =&gt; φs_val,
+        compiled_sys.ω =&gt; ω_val,
+        compiled_sys.elapsed_time =&gt; t_val,
+        compiled_sys.β_ratio =&gt; 0.5,
+        compiled_sys.C_coeff =&gt; 7.47,
+        compiled_sys.B_coeff =&gt; 0.15566,
+        compiled_sys.E_coeff =&gt; 0.715,
+    ))
+    sol = solve(prob)
+    push!(α_results, ustrip(sol[compiled_sys.α]))
+    push!(R_H_results, ustrip(sol[compiled_sys.R_H]))
+end
+
+p1 = plot(rad2deg.(ω_values), rad2deg.(α_results),
+    xlabel=&quot;Wind direction from upslope (degrees)&quot;,
+    ylabel=&quot;Direction of max spread (degrees)&quot;,
+    title=&quot;Direction of Maximum Spread vs Wind Direction&quot;,
+    legend=false,
+    linewidth=2)
+
+p2 = plot(rad2deg.(ω_values), R_H_results .* 60,  # Convert to m/min
+    xlabel=&quot;Wind direction from upslope (degrees)&quot;,
+    ylabel=&quot;Head fire rate of spread (m/min)&quot;,
+    title=&quot;Head Fire Rate of Spread vs Wind Direction&quot;,
+    legend=false,
+    linewidth=2)
+
+plot(p1, p2, layout=(2,1), size=(600, 500))</code></pre><img src="be8e23fa.svg" alt="Example block output"/><h3 id="Elliptical-Fire-Shape"><a class="docs-heading-anchor" href="#Elliptical-Fire-Shape">Elliptical Fire Shape</a><a id="Elliptical-Fire-Shape-1"></a><a class="docs-heading-anchor-permalink" href="#Elliptical-Fire-Shape" title="Permalink"></a></h3><p>This example shows the elliptical fire perimeter for different length-to-width ratios.</p><pre><code class="language-julia hljs">using WildlandFire, ModelingToolkit, OrdinaryDiffEqDefault
+using Plots, DynamicQuantities
+
+sys = EllipticalFireSpread()
+compiled_sys = mtkcompile(sys)
+
+R_H_val = 0.1  # m/s
+t_val = 3600.0  # 1 hour
+
+p = plot(xlabel=&quot;Crosswind distance (m)&quot;, ylabel=&quot;Upwind/Downwind distance (m)&quot;,
+         title=&quot;Fire Ellipse Shapes for Different Z Values&quot;,
+         aspect_ratio=:equal, legend=:topleft)
+
+for Z_val in [1.5, 2.0, 3.0, 5.0]
+    prob = NonlinearProblem(compiled_sys, Dict(
+        compiled_sys.R_H =&gt; R_H_val,
+        compiled_sys.Z =&gt; Z_val,
+        compiled_sys.γ =&gt; 0.0,
+        compiled_sys.elapsed_time =&gt; t_val,
+    ))
+    sol = solve(prob)
+
+    # Get ellipse dimensions
+    L = ustrip(sol[compiled_sys.L])
+    W = ustrip(sol[compiled_sys.W])
+    D_H = ustrip(sol[compiled_sys.D_H])
+    D_B = ustrip(sol[compiled_sys.D_B])
+
+    # Draw ellipse centered at ignition point (0, 0)
+    # Semi-axes: a = L/2 (upwind/downwind), b = W/2 (crosswind)
+    θ = range(0, 2π, length=100)
+    a = L / 2  # semi-major axis
+    b = W / 2  # semi-minor axis
+    # Center offset: ignition point is at focus, center is at (D_H - a, 0)
+    center_offset = D_H - a
+
+    x_ellipse = b .* sin.(θ)
+    y_ellipse = a .* cos.(θ) .+ center_offset
+
+    plot!(p, x_ellipse, y_ellipse, label=&quot;Z = $(Z_val)&quot;, linewidth=2)
+end
+
+# Mark ignition point
+scatter!(p, [0], [0], label=&quot;Ignition&quot;, markersize=8, color=:red)
+
+p</code></pre><img src="03158393.svg" alt="Example block output"/><h3 id="Fire-Intensity-Around-the-Perimeter"><a class="docs-heading-anchor" href="#Fire-Intensity-Around-the-Perimeter">Fire Intensity Around the Perimeter</a><a id="Fire-Intensity-Around-the-Perimeter-1"></a><a class="docs-heading-anchor-permalink" href="#Fire-Intensity-Around-the-Perimeter" title="Permalink"></a></h3><p>This example shows how fireline intensity varies around the fire perimeter.</p><pre><code class="language-julia hljs">using WildlandFire, ModelingToolkit, OrdinaryDiffEqDefault
+using Plots, DynamicQuantities
+
+sys = FirePerimeterSpread()
+compiled_sys = mtkcompile(sys)
+
+R_H_val = 0.1  # m/s
+f_val = 180.0  # semi-major axis (m)
+h_val = 90.0   # semi-minor axis (m)
+g_val = sqrt(f_val^2 - h_val^2)  # focal distance
+H_A_val = 5000.0  # Heat per unit area (J/m²)
+
+γ_values = range(0, 2π, length=73)
+R_ψ_results = Float64[]
+I_B_results = Float64[]
+
+for γ_val in γ_values
+    prob = NonlinearProblem(compiled_sys, Dict(
+        compiled_sys.R_H =&gt; R_H_val,
+        compiled_sys.f =&gt; f_val,
+        compiled_sys.g =&gt; g_val,
+        compiled_sys.h =&gt; h_val,
+        compiled_sys.γ =&gt; γ_val,
+        compiled_sys.H_A =&gt; H_A_val,
+    ))
+    sol = solve(prob)
+    push!(R_ψ_results, ustrip(sol[compiled_sys.R_ψ]))
+    push!(I_B_results, ustrip(sol[compiled_sys.I_B]))
+end
+
+p1 = plot(rad2deg.(γ_values), R_ψ_results .* 60,  # Convert to m/min
+    xlabel=&quot;Direction from head fire (degrees)&quot;,
+    ylabel=&quot;Rate of spread normal to perimeter (m/min)&quot;,
+    title=&quot;Perimeter Spread Rate Around Fire&quot;,
+    legend=false,
+    linewidth=2)
+
+p2 = plot(rad2deg.(γ_values), I_B_results ./ 1000,  # Convert to kW/m
+    xlabel=&quot;Direction from head fire (degrees)&quot;,
+    ylabel=&quot;Fireline intensity (kW/m)&quot;,
+    title=&quot;Fireline Intensity Around Fire Perimeter&quot;,
+    legend=false,
+    linewidth=2)
+
+plot(p1, p2, layout=(2,1), size=(600, 500))</code></pre><img src="0eabbd20.svg" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../rothermel/">« Rothermel Fire Spread Model</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Sunday 1 February 2026 03:35">Sunday 1 February 2026</span>. Using Julia version 1.12.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
