@@ -10,7 +10,7 @@ OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
 
 [compat]
 julia = "1.10"
-DynamicQuantities = "1"
+DynamicQuantities = "1.5"
 ModelingToolkit = "11.9"
 OrdinaryDiffEqDefault = "1.12"
 
