@@ -21,7 +21,7 @@ included.
 
 **Reference**: Finney, M.A., McHugh, C.W., Grenfell, I.C., Riley, K.L., Short, K.C. (2011).
 A simulation of probabilistic wildfire risk components for the continental United States.
-*Stochastic Environmental Research and Risk Assessment*, 25:973–1000.
+*Stochastic Environmental Research and Risk Assessment*, 25:973--1000.
 DOI: [10.1007/s00477-011-0462-z](https://doi.org/10.1007/s00477-011-0462-z)
 
 ```@docs
@@ -40,6 +40,8 @@ The fire occurrence model uses logistic regression to predict the probability
 of at least one large fire starting on a given day, as a function of the
 Energy Release Component (ERC) index (Section 2.2, Fig. 4a).
 
+#### State Variables
+
 ```@example fsim
 using ModelingToolkit, Symbolics, DataFrames, DynamicQuantities
 using WildlandFire
@@ -49,6 +51,7 @@ sys = FireOccurrenceLogistic()
 vars = unknowns(sys)
 DataFrame(
     :Name => [string(Symbolics.tosymbol(v, escape = false)) for v in vars],
+    :Units => [string(dimension(ModelingToolkit.get_unit(v))) for v in vars],
     :Description => [ModelingToolkit.getdescription(v) for v in vars]
 )
 ```
@@ -59,6 +62,7 @@ DataFrame(
 params = parameters(sys)
 DataFrame(
     :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params],
+    :Units => [string(dimension(ModelingToolkit.get_unit(p))) for p in params],
     :Description => [ModelingToolkit.getdescription(p) for p in params]
 )
 ```
@@ -74,12 +78,15 @@ equations(sys)
 The fire containment model estimates the probability of successful fire
 suppression based on fire growth rate, duration, and fuel type (Section 2.4, Fig. 6).
 
+#### State Variables
+
 ```@example fsim
 sys_contain = FireContainment()
 
 vars_c = unknowns(sys_contain)
 DataFrame(
     :Name => [string(Symbolics.tosymbol(v, escape = false)) for v in vars_c],
+    :Units => [string(dimension(ModelingToolkit.get_unit(v))) for v in vars_c],
     :Description => [ModelingToolkit.getdescription(v) for v in vars_c]
 )
 ```
@@ -90,8 +97,15 @@ DataFrame(
 params_c = parameters(sys_contain)
 DataFrame(
     :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params_c],
+    :Units => [string(dimension(ModelingToolkit.get_unit(p))) for p in params_c],
     :Description => [ModelingToolkit.getdescription(p) for p in params_c]
 )
+```
+
+#### Equations
+
+```@example fsim
+equations(sys_contain)
 ```
 
 ### Burn Probability Model
@@ -99,20 +113,42 @@ DataFrame(
 Burn probability is the fundamental output of FSim, representing the annual
 likelihood of burning at a given location (Sections 2.5, 3).
 
+#### State Variables
+
 ```@example fsim
 sys_bp = BurnProbability()
 
 vars_bp = unknowns(sys_bp)
 DataFrame(
     :Name => [string(Symbolics.tosymbol(v, escape = false)) for v in vars_bp],
+    :Units => [string(dimension(ModelingToolkit.get_unit(v))) for v in vars_bp],
     :Description => [ModelingToolkit.getdescription(v) for v in vars_bp]
 )
+```
+
+#### Parameters
+
+```@example fsim
+params_bp = parameters(sys_bp)
+DataFrame(
+    :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params_bp],
+    :Units => [string(dimension(ModelingToolkit.get_unit(p))) for p in params_bp],
+    :Description => [ModelingToolkit.getdescription(p) for p in params_bp]
+)
+```
+
+#### Equations
+
+```@example fsim
+equations(sys_bp)
 ```
 
 ### ERC Time Series Model
 
 The autoregressive time series model generates synthetic daily ERC(G) values
-that capture seasonal trends and day-to-day persistence (Section 2.1, Eqs. 1–4).
+that capture seasonal trends and day-to-day persistence (Section 2.1, Eqs. 1--4).
+
+#### State Variables
 
 ```@example fsim
 sys_erc = ERCTimeSeries()
@@ -120,8 +156,26 @@ sys_erc = ERCTimeSeries()
 vars_erc = unknowns(sys_erc)
 DataFrame(
     :Name => [string(Symbolics.tosymbol(v, escape = false)) for v in vars_erc],
+    :Units => [string(dimension(ModelingToolkit.get_unit(v))) for v in vars_erc],
     :Description => [ModelingToolkit.getdescription(v) for v in vars_erc]
 )
+```
+
+#### Parameters
+
+```@example fsim
+params_erc = parameters(sys_erc)
+DataFrame(
+    :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params_erc],
+    :Units => [string(dimension(ModelingToolkit.get_unit(p))) for p in params_erc],
+    :Description => [ModelingToolkit.getdescription(p) for p in params_erc]
+)
+```
+
+#### Equations
+
+```@example fsim
+equations(sys_erc)
 ```
 
 ### Flame Length Categorization
@@ -129,14 +183,34 @@ DataFrame(
 The flame length categorization model classifies Byram's fireline intensity
 into six operational flame length categories (Fig. 10).
 
+#### State Variables
+
 ```@example fsim
 sys_fl = FlameLengthCategory()
 
 vars_fl = unknowns(sys_fl)
 DataFrame(
     :Name => [string(Symbolics.tosymbol(v, escape = false)) for v in vars_fl],
+    :Units => [string(dimension(ModelingToolkit.get_unit(v))) for v in vars_fl],
     :Description => [ModelingToolkit.getdescription(v) for v in vars_fl]
 )
+```
+
+#### Parameters
+
+```@example fsim
+params_fl = parameters(sys_fl)
+DataFrame(
+    :Name => [string(Symbolics.tosymbol(p, escape = false)) for p in params_fl],
+    :Units => [string(dimension(ModelingToolkit.get_unit(p))) for p in params_fl],
+    :Description => [ModelingToolkit.getdescription(p) for p in params_fl]
+)
+```
+
+#### Equations
+
+```@example fsim
+equations(sys_fl)
 ```
 
 ## Analysis
@@ -154,13 +228,13 @@ sys = FireOccurrenceLogistic()
 cs = mtkcompile(sys)
 
 # Simulate curves for different fire size thresholds
-# β₀ values represent different minimum fire sizes (more negative = larger fires)
+# Larger negative β₀ values represent larger minimum fire sizes
 erc_range = 0:1:100
 thresholds = [
-    (β₀=-3.0, β₁=0.05, label="Small fires (≈ 4+ ha)"),
-    (β₀=-4.5, β₁=0.05, label="Medium fires (≈ 120+ ha)"),
-    (β₀=-5.5, β₁=0.05, label="Large fires (≈ 250+ ha)"),
-    (β₀=-7.0, β₁=0.05, label="Very large fires (≈ 1200+ ha)"),
+    (β₀=-3.0, β₁=0.05, label="Small fires (4+ ha)"),
+    (β₀=-4.5, β₁=0.05, label="Medium fires (120+ ha)"),
+    (β₀=-5.5, β₁=0.05, label="Large fires (250+ ha)"),
+    (β₀=-7.0, β₁=0.05, label="Very large fires (1200+ ha)"),
 ]
 
 p = plot(xlabel="ERC (G)", ylabel="Probability of fire occurrence",
@@ -248,19 +322,19 @@ cs_erc = mtkcompile(sys_erc)
 # Generate a synthetic year of ERC using the AR(1) model
 # Seasonal trend: approximate bell-shaped curve peaking in summer
 days = 1:365
-f_seasonal = [40.0 * sin(π * (d - 90) / 180)^2 for d in days]
+f_seasonal = [40.0 * sin(pi * (d - 90) / 180)^2 for d in days]
 
 # AR(1) parameters (typical for a western US station)
-φ₁ = 0.85
-ρ₁ = 0.85
-s² = 150.0
+phi1 = 0.85
+rho1 = 0.85
+s2 = 150.0
 
 # Innovation variance
 prob_var = NonlinearProblem(cs_erc, Dict(
     cs_erc.f_t => 50.0, cs_erc.a_prev => 0.0, cs_erc.a_current => 0.0,
-    cs_erc.φ₁ => φ₁, cs_erc.ρ₁ => ρ₁, cs_erc.s² => s²))
+    cs_erc.φ₁ => phi1, cs_erc.ρ₁ => rho1, cs_erc.s² => s2))
 sol_var = solve(prob_var)
-σ_innovation = sqrt(sol_var[cs_erc.var_a])
+sigma_innovation = sqrt(sol_var[cs_erc.var_a])
 
 # Simulate 3 years using the AR(1) process
 using Random
@@ -273,7 +347,7 @@ a_values = zeros(n_days)
 for d in 1:n_days
     day_of_year = mod1(d, 365)
     local f_t = f_seasonal[day_of_year]
-    a_t = σ_innovation * randn()
+    a_t = sigma_innovation * randn()
 
     a_prev_val = d > 1 ? a_values[d-1] : 0.0
 
@@ -281,9 +355,9 @@ for d in 1:n_days
         cs_erc.f_t => f_t,
         cs_erc.a_prev => a_prev_val,
         cs_erc.a_current => a_t,
-        cs_erc.φ₁ => φ₁,
-        cs_erc.ρ₁ => ρ₁,
-        cs_erc.s² => s²))
+        cs_erc.φ₁ => phi1,
+        cs_erc.ρ₁ => rho1,
+        cs_erc.s² => s2))
     local sol = solve(prob)
     erc_simulated[d] = max(0.0, sol[cs_erc.ERC_hat])
     a_values[d] = a_t
@@ -325,7 +399,7 @@ p_fl = scatter(collect(fl_range), active_cats,
     xlabel="Flame Length (m)",
     ylabel="Category",
     title="Flame Length Categories\n(cf. Finney et al. 2011, Fig. 10)",
-    yticks=(1:6, ["≤0.6m", "0.6-1.2m", "1.2-1.8m", "1.8-2.4m", "2.4-3.7m", ">3.7m"]),
+    yticks=(1:6, ["0-0.6m", "0.6-1.2m", "1.2-1.8m", "1.8-2.4m", "2.4-3.7m", ">3.7m"]),
     legend=false, markersize=3, color=active_cats)
 p_fl
 ```
@@ -333,7 +407,7 @@ p_fl
 ### Burn Probability Range (Fig. 7c)
 
 FSim produces burn probabilities spanning approximately four orders of magnitude
-across the U.S. (10⁻⁵ to 10⁻²). This example demonstrates the relationship
+across the U.S. (10^-5 to 10^-2). This example demonstrates the relationship
 between burn counts and annual burn probability.
 
 ```@example fsim

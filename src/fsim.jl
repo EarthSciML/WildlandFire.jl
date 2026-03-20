@@ -247,7 +247,7 @@ sol = solve(prob)
         # Cell-level burn probability — Finney et al. (2011), Section 2.5
         BP ~ N_burned / N_years,
 
-        # FPU-level burn probability — Finney et al. (2011), Section 2.6
+        # FPU-level burn probability — Finney et al. (2011), Section 2.5
         BP_FPU ~ A_burned / (A_FPU * N_years),
 
         # Conditional burn probability by flame length — Finney et al. (2011), Section 3
@@ -308,7 +308,7 @@ DOI: 10.1007/s00477-011-0462-z (Section 2.1, Eqs. 1–4)
 
 Based on methodology from:
 Box, G., Jenkins, G. (1976). Time series analysis: forecasting and control.
-2nd edn. Holden Day, San Francisco.
+2nd edition. Holden Day, San Francisco.
 
 # Example
 

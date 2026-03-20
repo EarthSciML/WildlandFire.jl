@@ -378,13 +378,13 @@ end
     # Test: higher autocorrelation (closer to 1) reduces innovation variance
     for ρ in [0.3, 0.5, 0.7, 0.9]
         φ = ρ  # For AR(1), optimal φ₁ = ρ₁
-        prob = NonlinearProblem(
+        local prob = NonlinearProblem(
             cs, Dict(
                 cs.f_t => 50.0, cs.a_prev => 0.0, cs.a_current => 0.0,
                 cs.φ₁ => φ, cs.ρ₁ => ρ, cs.s² => 100.0
             )
         )
-        sol = solve(prob)
+        local sol = solve(prob)
         # Innovation variance should decrease as autocorrelation increases
         @test sol[cs.var_a] ≈ 100.0 * (1 - ρ^2) rtol = 1.0e-10
     end
