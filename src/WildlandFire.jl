@@ -16,6 +16,7 @@ using OrdinaryDiffEqDefault
 include("rothermel.jl")
 include("fire_spread_direction.jl")
 include("nfdrs.jl")
+include("fsim.jl")
 
 # Export NFDRS components
 export EquilibriumMoistureContent
@@ -34,5 +35,9 @@ export fuel_loading_to_kg_per_sqm, fuel_loading_to_lb_per_sqft  # latter depreca
 
 # Export Rothermel model
 export RothermelFireSpread
+
+# Export FSim components
+export FireOccurrenceLogistic, FireContainment
+export BurnProbability, ERCTimeSeries, FlameLengthCategory
 
 end # module
