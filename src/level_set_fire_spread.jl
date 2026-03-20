@@ -1,6 +1,7 @@
 """
     LevelSetFireSpread(; name=:LevelSetFireSpread, x_domain, y_domain,
-                         t_domain, initial_condition, boundary_conditions=nothing)
+                         t_domain, initial_condition, boundary_conditions=nothing,
+                         spread_rate=1.0)
 
 Create a level-set fire front propagation PDE system.
 
@@ -28,7 +29,7 @@ MethodOfLines.jl and time stepping by OrdinaryDiffEq.jl.
   Negative values indicate initial fire region, positive values indicate unburned fuel.
 - `boundary_conditions`: Optional vector of boundary condition equations. If not provided,
   Neumann (zero-gradient) boundary conditions are used.
-- `defaults`: Dictionary of parameter default values
+- `spread_rate`: Default value for the fire spread rate parameter S (m/s). Default is 1.0.
 
 # Returns
 A `PDESystem` representing the level-set fire spread equation.
@@ -242,6 +243,28 @@ doi:10.5194/gmd-4-591-2011
 end
 
 
+# Anderson 13 fuel model data from WRF-SFIRE (Table 1, Mandel et al. 2011)
+# fgi: total fuel load (kg/m²), depth: fuel bed depth (m),
+# savr: surface-area-to-volume ratio (1/ft), mce: moisture of extinction (1),
+# dens: ovendry fuel particle density (lb/ft³), st: total mineral content (1),
+# se: effective mineral content (1), weight: fuel weight parameter (s),
+# h: heat content (BTU/lb)
+const ANDERSON_FUEL_DATA = Dict(
+    1 => (fgi = 0.166, depth = 0.305, savr = 3500, mce = 0.12, dens = 32.0, st = 0.0555, se = 0.01, weight = 7, h = 8000.0),
+    2 => (fgi = 0.896, depth = 0.305, savr = 3000, mce = 0.15, dens = 32.0, st = 0.0555, se = 0.01, weight = 7, h = 8000.0),
+    3 => (fgi = 0.674, depth = 0.762, savr = 1500, mce = 0.25, dens = 32.0, st = 0.0555, se = 0.01, weight = 7, h = 8000.0),
+    4 => (fgi = 3.591, depth = 1.829, savr = 1739, mce = 0.2, dens = 32.0, st = 0.0555, se = 0.01, weight = 180, h = 8000.0),
+    5 => (fgi = 0.784, depth = 0.61, savr = 1683, mce = 0.2, dens = 32.0, st = 0.0555, se = 0.01, weight = 25, h = 8000.0),
+    6 => (fgi = 1.344, depth = 0.762, savr = 1564, mce = 0.25, dens = 32.0, st = 0.0555, se = 0.01, weight = 25, h = 8000.0),
+    7 => (fgi = 1.091, depth = 0.762, savr = 1562, mce = 0.4, dens = 32.0, st = 0.0555, se = 0.01, weight = 25, h = 8000.0),
+    8 => (fgi = 1.12, depth = 0.061, savr = 1889, mce = 0.3, dens = 32.0, st = 0.0555, se = 0.01, weight = 900, h = 8000.0),
+    9 => (fgi = 0.78, depth = 0.061, savr = 2484, mce = 0.25, dens = 32.0, st = 0.0555, se = 0.01, weight = 900, h = 8000.0),
+    10 => (fgi = 2.694, depth = 0.305, savr = 1764, mce = 0.25, dens = 32.0, st = 0.0555, se = 0.01, weight = 900, h = 8000.0),
+    11 => (fgi = 2.582, depth = 0.305, savr = 1182, mce = 0.15, dens = 32.0, st = 0.0555, se = 0.01, weight = 900, h = 8000.0),
+    12 => (fgi = 7.749, depth = 0.701, savr = 1145, mce = 0.2, dens = 32.0, st = 0.0555, se = 0.01, weight = 900, h = 8000.0),
+    13 => (fgi = 13.024, depth = 0.914, savr = 1159, mce = 0.25, dens = 32.0, st = 0.0555, se = 0.01, weight = 900, h = 8000.0),
+)
+
 """
     anderson_fuel_coefficients(fuel_model::Int; M_f=0.08)
 
@@ -264,7 +287,7 @@ A `NamedTuple` with fields:
 - `S_0`: Minimum spread rate (m/s)
 - `R_0`: No-wind no-slope spread rate (m/s)
 - `b`: Wind exponent (dimensionless)
-- `c`: Wind factor coefficient (m/s)
+- `c`: Wind factor coefficient, used as c·U^b in Eq. 2 (units: (m/s)^(1-b))
 - `d`: Slope factor coefficient (m/s)
 - `e`: Maximum wind speed for spread rate (m/s)
 - `T_f`: Fuel burn time constant (s)
@@ -281,32 +304,11 @@ Mandel, J., Beezley, J.D., and Kochanski, A.K. (2011). Coupled atmosphere-wildla
 modeling with WRF 3.3 and SFIRE 2011. *Geosci. Model Dev.*, 4, 591-610.
 """
 function anderson_fuel_coefficients(fuel_model::Int; M_f = 0.08)
-    # Anderson 13 fuel model data from WRF-SFIRE
-    # fgi: initial fuel load (kg/m^2), depth: fuel bed depth (m),
-    # savr: surface-area-to-volume ratio (1/ft), mce: moisture of extinction,
-    # dens: ovendry fuel particle density (lb/ft^3), st: total mineral content,
-    # se: effective mineral content, weight: fuel weight parameter (s)
-    fuel_data = Dict(
-        1 => (fgi = 0.166, depth = 0.305, savr = 3500, mce = 0.12, dens = 32.0, st = 0.0555, se = 0.01, weight = 7),
-        2 => (fgi = 0.896, depth = 0.305, savr = 3000, mce = 0.15, dens = 32.0, st = 0.0555, se = 0.01, weight = 7),
-        3 => (fgi = 0.674, depth = 0.762, savr = 1500, mce = 0.25, dens = 32.0, st = 0.0555, se = 0.01, weight = 7),
-        4 => (fgi = 3.591, depth = 1.829, savr = 1739, mce = 0.2, dens = 32.0, st = 0.0555, se = 0.01, weight = 180),
-        5 => (fgi = 0.784, depth = 0.61, savr = 1683, mce = 0.2, dens = 32.0, st = 0.0555, se = 0.01, weight = 25),
-        6 => (fgi = 1.344, depth = 0.762, savr = 1564, mce = 0.25, dens = 32.0, st = 0.0555, se = 0.01, weight = 25),
-        7 => (fgi = 1.091, depth = 0.762, savr = 1562, mce = 0.4, dens = 32.0, st = 0.0555, se = 0.01, weight = 25),
-        8 => (fgi = 1.12, depth = 0.061, savr = 1889, mce = 0.3, dens = 32.0, st = 0.0555, se = 0.01, weight = 900),
-        9 => (fgi = 0.78, depth = 0.061, savr = 2484, mce = 0.25, dens = 32.0, st = 0.0555, se = 0.01, weight = 900),
-        10 => (fgi = 2.694, depth = 0.305, savr = 1764, mce = 0.25, dens = 32.0, st = 0.0555, se = 0.01, weight = 900),
-        11 => (fgi = 2.582, depth = 0.305, savr = 1182, mce = 0.15, dens = 32.0, st = 0.0555, se = 0.01, weight = 900),
-        12 => (fgi = 7.749, depth = 0.701, savr = 1145, mce = 0.2, dens = 32.0, st = 0.0555, se = 0.01, weight = 900),
-        13 => (fgi = 13.024, depth = 0.914, savr = 1159, mce = 0.25, dens = 32.0, st = 0.0555, se = 0.01, weight = 900),
-    )
-
-    if !haskey(fuel_data, fuel_model)
+    if !haskey(ANDERSON_FUEL_DATA, fuel_model)
         error("Unknown fuel model: $fuel_model. Valid models are 1-13.")
     end
 
-    fd = fuel_data[fuel_model]
+    fd = ANDERSON_FUEL_DATA[fuel_model]
 
     # Compute Rothermel spread rate coefficients in English units (BTU-lb-ft-min)
     # then convert to SI, following Table 2 of Mandel et al. (2011).
@@ -326,7 +328,7 @@ function anderson_fuel_coefficients(fuel_model::Int; M_f = 0.08)
     depth_ft = fd.depth / 0.3048       # m → ft
     sigma = fd.savr                    # 1/ft (already in English units)
     rho_p = fd.dens                    # lb/ft^3 (already in English units)
-    h_us = 8000.0                      # BTU/lb (standard Rothermel heat content)
+    h_us = fd.h                          # BTU/lb (heat content from fuel model data)
 
     # Fuel bed properties — Table 2, Mandel et al. (2011)
     w_0 = fgi_lbft2 / (1.0 + M_f)     # Total fuel load net of moisture (Eq. T2-7)
@@ -379,10 +381,9 @@ function anderson_fuel_coefficients(fuel_model::Int; M_f = 0.08)
     # Fuel burn time constant — Mandel et al. (2011)
     T_f = fd.weight / 0.8514
 
-    # Heat content in SI: 8000 BTU/lb converted to J/kg
+    # Heat content in SI: convert BTU/lb to J/kg
     # 1 BTU = 1055.06 J, 1 lb = 0.453592 kg
-    # 8000 BTU/lb × 1055.06 J/BTU / 0.453592 kg/lb = 18,608,000 J/kg
-    h_si = 8000.0 * 1055.06 / 0.453592  # J/kg
+    h_si = fd.h * 1055.06 / 0.453592  # J/kg
 
     return (
         S_0 = 0.0,

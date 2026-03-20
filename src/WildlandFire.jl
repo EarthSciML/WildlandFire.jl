@@ -40,6 +40,6 @@ export RothermelFireSpread
 
 # Export level-set fire spread model
 export LevelSetFireSpread, FuelConsumption, FireHeatFlux
-export anderson_fuel_coefficients
+export anderson_fuel_coefficients, ANDERSON_FUEL_DATA
 
 end # module

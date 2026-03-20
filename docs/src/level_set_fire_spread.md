@@ -168,7 +168,7 @@ coeffs = anderson_fuel_coefficients(1)
 DataFrame(
     :Field => [string(k) for k in keys(coeffs)],
     :Value => [coeffs[k] for k in keys(coeffs)],
-    :Units => ["m/s", "m/s", "—", "m/s", "m/s", "m/s", "s", "kg/m²", "J/kg", "m"],
+    :Units => ["m/s", "m/s", "—", "(m/s)^(1-b)", "m/s", "m/s", "s", "kg/m²", "J/kg", "m"],
 )
 ```
 
@@ -176,7 +176,10 @@ DataFrame(
 
 The fuel is characterized by the quantities listed in Table 1 of
 Mandel et al. (2011). The 13 Anderson (1982) fuel categories provide
-preset vectors of these properties:
+preset vectors of these properties. Note that some quantities are stored
+in English units per the Rothermel (1972) convention (surface-area-to-volume
+ratio ``\sigma`` in 1/ft, fuel particle density ``\rho_p`` in lb/ft³, and
+heat content ``h`` in BTU/lb).
 
 ```@example levelset
 fuel_names = [
@@ -186,6 +189,26 @@ fuel_names = [
     "Timber (understory)", "Light logging slash", "Medium logging slash",
     "Heavy logging slash"
 ]
+DataFrame(
+    :Model => 1:13,
+    :Name => fuel_names,
+    Symbol("w_ℓ (kg/m²)") => [ANDERSON_FUEL_DATA[i].fgi for i in 1:13],
+    Symbol("δ (m)") => [ANDERSON_FUEL_DATA[i].depth for i in 1:13],
+    Symbol("σ (1/ft)") => [ANDERSON_FUEL_DATA[i].savr for i in 1:13],
+    Symbol("M_x") => [ANDERSON_FUEL_DATA[i].mce for i in 1:13],
+    Symbol("ρ_p (lb/ft³)") => [ANDERSON_FUEL_DATA[i].dens for i in 1:13],
+    Symbol("S_T") => [ANDERSON_FUEL_DATA[i].st for i in 1:13],
+    Symbol("S_E") => [ANDERSON_FUEL_DATA[i].se for i in 1:13],
+    Symbol("h (BTU/lb)") => [ANDERSON_FUEL_DATA[i].h for i in 1:13],
+    Symbol("w (s)") => [ANDERSON_FUEL_DATA[i].weight for i in 1:13],
+)
+```
+
+### Derived Quantities
+
+The computed spread rate coefficients and burn parameters for each fuel model:
+
+```@example levelset
 all_coeffs = [anderson_fuel_coefficients(i) for i in 1:13]
 DataFrame(
     :Model => 1:13,
@@ -212,12 +235,12 @@ DataFrame(
         "Minimum spread rate",
         "No-wind no-slope spread rate",
         "Wind speed exponent",
-        "Wind factor coefficient",
+        "Wind factor coefficient (used as c·U^b)",
         "Slope factor coefficient",
         "Maximum wind speed",
     ],
     :Value => [coeffs1.S_0, coeffs1.R_0, coeffs1.b, coeffs1.c, coeffs1.d, coeffs1.e],
-    :Units => ["m/s", "m/s", "—", "m/s", "m/s", "m/s"],
+    :Units => ["m/s", "m/s", "—", "(m/s)^(1-b)", "m/s", "m/s"],
 )
 ```
 

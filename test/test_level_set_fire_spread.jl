@@ -267,3 +267,30 @@ end
 
     @test coeffs_dry.R_0 > coeffs_wet.R_0
 end
+
+@testitem "ANDERSON_FUEL_DATA - Table 1 Properties" setup = [LevelSetSetup] tags = [:levelset] begin
+    # Verify the raw fuel data matches Table 1 of Mandel et al. (2011)
+    @test length(ANDERSON_FUEL_DATA) == 13
+
+    # All models should have positive fuel properties
+    for i in 1:13
+        fd = ANDERSON_FUEL_DATA[i]
+        @test fd.fgi > 0.0       # Total fuel load (kg/m²)
+        @test fd.depth > 0.0     # Fuel bed depth (m)
+        @test fd.savr > 0        # Surface-area-to-volume ratio (1/ft)
+        @test 0.0 < fd.mce < 1.0 # Moisture of extinction (fraction)
+        @test fd.dens > 0.0      # Fuel particle density (lb/ft³)
+        @test fd.st > 0.0        # Total mineral content
+        @test fd.se > 0.0        # Effective mineral content
+        @test fd.weight > 0      # Fuel weight parameter (s)
+        @test fd.h > 0.0         # Heat content (BTU/lb)
+    end
+
+    # Spot-check Fuel Model 1 (short grass) values
+    fm1 = ANDERSON_FUEL_DATA[1]
+    @test fm1.fgi ≈ 0.166       # 0.74 tons/acre ≈ 0.166 kg/m²
+    @test fm1.depth ≈ 0.305     # 1.0 ft ≈ 0.305 m
+    @test fm1.savr == 3500      # 1/ft
+    @test fm1.mce ≈ 0.12
+    @test fm1.dens ≈ 32.0       # lb/ft³
+end
