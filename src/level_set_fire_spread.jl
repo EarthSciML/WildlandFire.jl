@@ -5,10 +5,11 @@
 
 Create a level-set fire front propagation PDE system.
 
-This implements the level-set method for tracking fire front evolution on a 2D domain,
-as described in Muñoz-Esparza et al. (2018) and Mandel et al. (2011). The fire front
-is represented implicitly as the zero contour of a level-set function ψ(x, y, t), where
-ψ ≤ 0 denotes the burning region and ψ > 0 denotes unburned fuel.
+This implements a simplified level-set method for tracking fire front evolution on a 2D
+domain, based on the Hamilton-Jacobi equation from Mandel et al. (2011) and inspired by
+the advanced algorithm of Muñoz-Esparza et al. (2018). The fire front is represented
+implicitly as the zero contour of a level-set function ψ(x, y, t), where ψ ≤ 0 denotes
+the burning region and ψ > 0 denotes unburned fuel.
 
 The level-set function evolves according to the Hamilton-Jacobi equation (Eq. 9,
 Mandel et al. 2011):
@@ -17,8 +18,16 @@ Mandel et al. 2011):
 \\frac{\\partial \\psi}{\\partial t} + S \\|\\nabla \\psi\\| = 0
 ```
 
-where S is the fire spread rate (m/s). Spatial discretization is handled by
-MethodOfLines.jl and time stepping by OrdinaryDiffEq.jl.
+where S is the fire spread rate (m/s).
+
+## Implementation Details
+
+This implementation uses MethodOfLines.jl for spatial discretization (finite differences)
+and OrdinaryDiffEq.jl for time stepping. For production fire modeling requiring high
+accuracy, consider the full Muñoz-Esparza et al. (2018) algorithm which includes:
+- Fifth-order WENO spatial discretization
+- Third-order Runge-Kutta temporal integration
+- Level-set reinitialization for maintaining signed distance property
 
 # Arguments
 - `name`: System name (default `:LevelSetFireSpread`)
