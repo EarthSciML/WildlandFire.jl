@@ -56,13 +56,13 @@ sol = solve(prob)
     end
 
     @parameters begin
-        β₀, [description = "Logistic regression intercept (dimensionless)"]
-        β₁, [description = "Logistic regression slope coefficient (dimensionless)"]
-        ERC, [description = "Energy Release Component index (dimensionless)"]
+        β₀, [description = "Logistic regression intercept (dimensionless)", unit = u"1"]
+        β₁, [description = "Logistic regression slope coefficient (dimensionless)", unit = u"1"]
+        ERC, [description = "Energy Release Component index (dimensionless)", unit = u"1"]
     end
 
     @variables begin
-        P_fire(t), [description = "Probability of at least one large fire (dimensionless)"]
+        P_fire(t), [description = "Probability of at least one large fire (dimensionless)", unit = u"1"]
     end
 
     eqs = [
@@ -142,17 +142,17 @@ sol = solve(prob)
     end
 
     @parameters begin
-        α₀, [description = "Containment model intercept (dimensionless)"]
-        α₁, [description = "Containment model NPI coefficient (dimensionless)"]
-        α₂, [description = "Containment model high-spread coefficient (dimensionless)"]
-        α₃, [description = "Containment model timber fuel coefficient (dimensionless)"]
-        NPI, [description = "Number of previous spread intervals (dimensionless)"]
-        is_high_spread, [description = "High spread interval indicator, 0 or 1 (dimensionless)"]
-        is_timber, [description = "Timber fuel type indicator, 0 or 1 (dimensionless)"]
+        α₀, [description = "Containment model intercept (dimensionless)", unit = u"1"]
+        α₁, [description = "Containment model NPI coefficient (dimensionless)", unit = u"1"]
+        α₂, [description = "Containment model high-spread coefficient (dimensionless)", unit = u"1"]
+        α₃, [description = "Containment model timber fuel coefficient (dimensionless)", unit = u"1"]
+        NPI, [description = "Number of previous spread intervals (dimensionless)", unit = u"1"]
+        is_high_spread, [description = "High spread interval indicator, 0 or 1 (dimensionless)", unit = u"1"]
+        is_timber, [description = "Timber fuel type indicator, 0 or 1 (dimensionless)", unit = u"1"]
     end
 
     @variables begin
-        P_contain(t), [description = "Probability of fire containment (dimensionless)"]
+        P_contain(t), [description = "Probability of fire containment (dimensionless)", unit = u"1"]
     end
 
     eqs = [
@@ -230,17 +230,17 @@ sol = solve(prob)
 """
 @component function BurnProbability(; name = :BurnProbability)
     @parameters begin
-        N_burned, [description = "Number of times cell burned in simulation (dimensionless)"]
-        N_years, [description = "Total number of simulated years (dimensionless)"]
+        N_burned, [description = "Number of times cell burned in simulation (dimensionless)", unit = u"1"]
+        N_years, [description = "Total number of simulated years (dimensionless)", unit = u"1"]
         A_burned, [description = "Total area burned across all simulated years", unit = u"m^2"]
         A_FPU, [description = "Total Fire Planning Unit area", unit = u"m^2"]
-        P_FL_given_burn, [description = "Conditional probability of flame length category given burning (dimensionless)"]
+        P_FL_given_burn, [description = "Conditional probability of flame length category given burning (dimensionless)", unit = u"1"]
     end
 
     @variables begin
-        BP(t), [description = "Cell-level annual burn probability (dimensionless)"]
-        BP_FPU(t), [description = "FPU-level annual burn probability (dimensionless)"]
-        BP_conditional(t), [description = "Conditional burn probability at given flame length (dimensionless)"]
+        BP(t), [description = "Cell-level annual burn probability (dimensionless)", unit = u"1"]
+        BP_FPU(t), [description = "FPU-level annual burn probability (dimensionless)", unit = u"1"]
+        BP_conditional(t), [description = "Conditional burn probability at given flame length (dimensionless)", unit = u"1"]
     end
 
     eqs = [
@@ -336,18 +336,18 @@ sol = solve(prob)
     end
 
     @parameters begin
-        f_t, [description = "Seasonal trend value at current time step (dimensionless)"]
-        a_prev, [description = "White noise value at previous time step (dimensionless)"]
-        a_current, [description = "White noise value at current time step (dimensionless)"]
-        φ₁, [description = "First-order autoregressive coefficient (dimensionless)"]
-        ρ₁, [description = "First-order autocorrelation (dimensionless)"]
-        s², [description = "Observed daily variance of ERC (dimensionless)"]
+        f_t, [description = "Seasonal trend value at current time step (dimensionless)", unit = u"1"]
+        a_prev, [description = "White noise value at previous time step (dimensionless)", unit = u"1"]
+        a_current, [description = "White noise value at current time step (dimensionless)", unit = u"1"]
+        φ₁, [description = "First-order autoregressive coefficient (dimensionless)", unit = u"1"]
+        ρ₁, [description = "First-order autocorrelation (dimensionless)", unit = u"1"]
+        s², [description = "Observed daily variance of ERC (dimensionless)", unit = u"1"]
     end
 
     @variables begin
-        ERC_hat(t), [description = "Simulated daily ERC value (dimensionless)"]
-        var_a(t), [description = "Variance of white noise process (dimensionless)"]
-        σ²_daily(t), [description = "Daily variance of ERC around seasonal trend (dimensionless)"]
+        ERC_hat(t), [description = "Simulated daily ERC value (dimensionless)", unit = u"1"]
+        var_a(t), [description = "Variance of white noise process (dimensionless)", unit = u"1"]
+        σ²_daily(t), [description = "Daily variance of ERC around seasonal trend (dimensionless)", unit = u"1"]
     end
 
     eqs = [
@@ -432,12 +432,12 @@ sol = solve(prob)
     end
 
     @variables begin
-        cat_1(t), [description = "In FL category 1: ≤ 0.6 m (dimensionless)"]
-        cat_2(t), [description = "In FL category 2: 0.6–1.2 m (dimensionless)"]
-        cat_3(t), [description = "In FL category 3: 1.2–1.8 m (dimensionless)"]
-        cat_4(t), [description = "In FL category 4: 1.8–2.4 m (dimensionless)"]
-        cat_5(t), [description = "In FL category 5: 2.4–3.7 m (dimensionless)"]
-        cat_6(t), [description = "In FL category 6: > 3.7 m (dimensionless)"]
+        cat_1(t), [description = "In FL category 1: ≤ 0.6 m (dimensionless)", unit = u"1"]
+        cat_2(t), [description = "In FL category 2: 0.6–1.2 m (dimensionless)", unit = u"1"]
+        cat_3(t), [description = "In FL category 3: 1.2–1.8 m (dimensionless)", unit = u"1"]
+        cat_4(t), [description = "In FL category 4: 1.8–2.4 m (dimensionless)", unit = u"1"]
+        cat_5(t), [description = "In FL category 5: 2.4–3.7 m (dimensionless)", unit = u"1"]
+        cat_6(t), [description = "In FL category 6: > 3.7 m (dimensionless)", unit = u"1"]
     end
 
     eqs = [

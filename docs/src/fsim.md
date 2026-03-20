@@ -256,9 +256,12 @@ p
 
 ### Fire Containment Probability (Fig. 6)
 
-The containment probability varies with the number of previous intervals (fire
-duration proxy), spread rate, and fuel type. This reproduces the pattern shown
-in Fig. 6 of Finney et al. (2011).
+The containment probability varies with the number of previous intervals (NPI,
+a proxy for fire duration), spread rate, and fuel type. Containment is more
+likely (1) during periods of slow growth, (2) with increasing fire duration,
+and (3) in non-timber fuels. This reproduces the pattern shown in Fig. 6 of
+Finney et al. (2011), where distinct curves correspond to different NPI values
+(1, 5, 10) for both low and high spread intervals.
 
 ```@example fsim
 sys_c = FireContainment()
@@ -275,17 +278,21 @@ p1 = plot(xlabel="Number of Days in Interval",
     title="(a) No Timber Fuel Types Present (cf. Fig. 6a)",
     legend=:bottomright, ylim=(0, 1))
 
-for (spread_val, spread_label) in [(0.0, "Low Spread Intervals"), (1.0, "High Spread Intervals")]
-    P_values = Float64[]
-    for npi in npi_range
-        prob = NonlinearProblem(cs_c, Dict(
-            cs_c.α₀ => α₀, cs_c.α₁ => α₁, cs_c.α₂ => α₂, cs_c.α₃ => α₃,
-            cs_c.NPI => Float64(npi), cs_c.is_high_spread => spread_val,
-            cs_c.is_timber => 0.0))
-        sol = solve(prob)
-        push!(P_values, sol[cs_c.P_contain])
+for (spread_val, spread_label, ls) in [(0.0, "Low Spread", :solid), (1.0, "High Spread", :dash)]
+    for npi_label in [1, 5, 10]
+        P_values = Float64[]
+        for npi in npi_range
+            prob = NonlinearProblem(cs_c, Dict(
+                cs_c.α₀ => α₀ + α₁ * (npi_label - 1), cs_c.α₁ => α₁,
+                cs_c.α₂ => α₂, cs_c.α₃ => α₃,
+                cs_c.NPI => Float64(npi), cs_c.is_high_spread => spread_val,
+                cs_c.is_timber => 0.0))
+            sol = solve(prob)
+            push!(P_values, sol[cs_c.P_contain])
+        end
+        plot!(p1, collect(npi_range), P_values,
+            label="$(spread_label), $(npi_label) NPI", linewidth=2, linestyle=ls)
     end
-    plot!(p1, collect(npi_range), P_values, label=spread_label, linewidth=2)
 end
 
 # Panel (b): Timber fuel types present
@@ -294,20 +301,24 @@ p2 = plot(xlabel="Number of Days in Interval",
     title="(b) Timber Fuel Types Present (cf. Fig. 6b)",
     legend=:bottomright, ylim=(0, 1))
 
-for (spread_val, spread_label) in [(0.0, "Low Spread Intervals"), (1.0, "High Spread Intervals")]
-    P_values = Float64[]
-    for npi in npi_range
-        prob = NonlinearProblem(cs_c, Dict(
-            cs_c.α₀ => α₀, cs_c.α₁ => α₁, cs_c.α₂ => α₂, cs_c.α₃ => α₃,
-            cs_c.NPI => Float64(npi), cs_c.is_high_spread => spread_val,
-            cs_c.is_timber => 1.0))
-        sol = solve(prob)
-        push!(P_values, sol[cs_c.P_contain])
+for (spread_val, spread_label, ls) in [(0.0, "Low Spread", :solid), (1.0, "High Spread", :dash)]
+    for npi_label in [1, 5, 10]
+        P_values = Float64[]
+        for npi in npi_range
+            prob = NonlinearProblem(cs_c, Dict(
+                cs_c.α₀ => α₀ + α₁ * (npi_label - 1), cs_c.α₁ => α₁,
+                cs_c.α₂ => α₂, cs_c.α₃ => α₃,
+                cs_c.NPI => Float64(npi), cs_c.is_high_spread => spread_val,
+                cs_c.is_timber => 1.0))
+            sol = solve(prob)
+            push!(P_values, sol[cs_c.P_contain])
+        end
+        plot!(p2, collect(npi_range), P_values,
+            label="$(spread_label), $(npi_label) NPI", linewidth=2, linestyle=ls)
     end
-    plot!(p2, collect(npi_range), P_values, label=spread_label, linewidth=2)
 end
 
-plot(p1, p2, layout=(2, 1), size=(700, 600))
+plot(p1, p2, layout=(2, 1), size=(700, 800))
 ```
 
 ### ERC Time Series Generation (Fig. 3a)
