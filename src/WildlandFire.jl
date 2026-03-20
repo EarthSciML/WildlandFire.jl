@@ -7,7 +7,9 @@ Wildland fire modeling components for EarthSciML, including:
 """
 module WildlandFire
 
+using DomainSets
 using DynamicQuantities
+using MethodOfLines
 using ModelingToolkit
 using ModelingToolkit: t, D
 using OrdinaryDiffEqDefault
@@ -16,6 +18,7 @@ using OrdinaryDiffEqDefault
 include("rothermel.jl")
 include("fire_spread_direction.jl")
 include("nfdrs.jl")
+include("level_set_fire_spread.jl")
 include("fsim.jl")
 
 # Export NFDRS components
@@ -36,6 +39,9 @@ export fuel_loading_to_kg_per_sqm, fuel_loading_to_lb_per_sqft  # latter depreca
 # Export Rothermel model
 export RothermelFireSpread
 
+# Export level-set fire spread model
+export LevelSetFireSpread, FuelConsumption, FireHeatFlux
+export anderson_fuel_coefficients, ANDERSON_FUEL_DATA
 # Export FSim components
 export FireOccurrenceLogistic, FireContainment
 export BurnProbability, ERCTimeSeries, FlameLengthCategory
