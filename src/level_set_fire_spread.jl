@@ -308,15 +308,25 @@ function anderson_fuel_coefficients(fuel_model::Int; M_f = 0.08)
 
     fd = fuel_data[fuel_model]
 
-    # Compute Rothermel spread rate coefficients in English units
-    # then convert to SI, following Table 2 of Mandel et al. (2011)
+    # Compute Rothermel spread rate coefficients in English units (BTU-lb-ft-min)
+    # then convert to SI, following Table 2 of Mandel et al. (2011).
+    # The Rothermel (1972) model was calibrated in English units, so we perform
+    # the computation in English units and convert the final results to SI.
+    #
+    # Unit conversions used:
+    #   1 ft  = 0.3048 m
+    #   1 lb  = 0.453592 kg
+    #   1 BTU = 1055.06 J
+    #   1 lb/ft^2 = 4.88243 kg/m^2  (so 1 kg/m^2 = 0.204816 lb/ft^2)
+    #   1 ft/min  = 0.00508 m/s     (= 0.3048/60)
+    #   1 m/s     = 196.85 ft/min   (= 60/0.3048)
 
-    # Unit conversions for Rothermel computation (English units)
-    fgi_lbft2 = fd.fgi * 0.204816     # kg/m^2 to lb/ft^2
-    depth_ft = fd.depth / 0.3048       # m to ft
-    sigma = fd.savr                    # 1/ft (kept in English units for Rothermel)
-    rho_p = fd.dens                    # lb/ft^3
-    h_us = 8000.0                      # BTU/lb (default heat content)
+    # Convert inputs from SI to English units
+    fgi_lbft2 = fd.fgi * 0.204816     # kg/m^2 → lb/ft^2
+    depth_ft = fd.depth / 0.3048       # m → ft
+    sigma = fd.savr                    # 1/ft (already in English units)
+    rho_p = fd.dens                    # lb/ft^3 (already in English units)
+    h_us = 8000.0                      # BTU/lb (standard Rothermel heat content)
 
     # Fuel bed properties — Table 2, Mandel et al. (2011)
     w_0 = fgi_lbft2 / (1.0 + M_f)     # Total fuel load net of moisture (Eq. T2-7)
@@ -352,21 +362,27 @@ function anderson_fuel_coefficients(fuel_model::Int; M_f = 0.08)
     E_wind = 0.715 * exp(-3.59e-4 * sigma)  # Eq. T2-19
 
     # Coefficients for Eq. 2 form: S = max{S_0, R_0 + c*min{e, max{0,U}}^b + d*max{0,tan(phi)}^2}
-    c_wind = R0_us * C_wind * beta_ratio^(-E_wind)
-    d_slope_coeff = R0_us * 5.275 * beta^(-0.3)
+    # In English units: c_us * U_ftmin^b gives ft/min, d_us * tan²φ gives ft/min
+    c_wind = R0_us * C_wind * beta_ratio^(-E_wind)  # ft/min (Eq. 2 wind coefficient)
+    d_slope_coeff = R0_us * 5.275 * beta^(-0.3)     # ft/min (Eq. 2 slope coefficient)
 
-    # Convert to SI: ft/min to m/s (multiply by 0.00508)
-    R0_si = R0_us * 0.00508
-    # For c coefficient: wind speed U will be in m/s, needs conversion factor
-    c_wind_si = c_wind * 196.85^B_wind * 0.00508
-    d_slope_si = d_slope_coeff * 0.00508
-    e_max_si = 30.0  # m/s (maximum wind speed, following CAWFE)
+    # Convert from English (ft/min) to SI (m/s)
+    ft_min_to_m_s = 0.3048 / 60.0  # = 0.00508 m/s per ft/min
+    m_s_to_ft_min = 60.0 / 0.3048  # = 196.85 ft/min per m/s
+    R0_si = R0_us * ft_min_to_m_s
+    # For c: c_si * U_ms^b = c_us * (U_ms * m_s_to_ft_min)^b * ft_min_to_m_s
+    c_wind_si = c_wind * m_s_to_ft_min^B_wind * ft_min_to_m_s
+    # For d: slope tan²φ is dimensionless, so only the rate needs conversion
+    d_slope_si = d_slope_coeff * ft_min_to_m_s
+    e_max_si = 30.0  # m/s (maximum wind speed, following CAWFE convention)
 
     # Fuel burn time constant — Mandel et al. (2011)
     T_f = fd.weight / 0.8514
 
-    # Heat content in SI
-    h_si = 17.433e6  # J/kg (default combustion heat content)
+    # Heat content in SI: 8000 BTU/lb converted to J/kg
+    # 1 BTU = 1055.06 J, 1 lb = 0.453592 kg
+    # 8000 BTU/lb × 1055.06 J/BTU / 0.453592 kg/lb = 18,608,000 J/kg
+    h_si = 8000.0 * 1055.06 / 0.453592  # J/kg
 
     return (
         S_0 = 0.0,

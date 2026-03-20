@@ -80,9 +80,9 @@ end
     # Expected radius at t_end: r₀ + S*t_end = 10 + 1*5 = 15m
     r_expected = r0 + S_val * t_end
 
-    # Tolerance is generous due to coarse grid discretization
-    # (the paper shows 10-35% ROS errors for typical grid sizes with ENO1)
-    @test abs(r_tend - r_expected) / r_expected < 0.5  # within 50% on coarse grid
+    # Tolerance allows for discretization error on a coarse grid
+    # (Mandel et al. 2011 report 10-35% ROS errors for typical grid sizes with ENO1)
+    @test abs(r_tend - r_expected) / r_expected < 0.25  # within 25% on coarse grid
 end
 
 @testitem "LevelSetFireSpread - Custom Boundary Conditions" setup = [LevelSetSetup] tags = [:levelset] begin
@@ -133,9 +133,8 @@ end
     T_f_val = 10.0  # 10 second burn time
     prob = ODEProblem(
         compiled_sys,
-        [compiled_sys.F => 1.0],
+        merge(Dict(compiled_sys.F => 1.0), Dict(compiled_sys.T_f => T_f_val, compiled_sys.is_burning => 1.0)),
         (0.0, 30.0),
-        [compiled_sys.T_f => T_f_val, compiled_sys.is_burning => 1.0]
     )
     sol = solve(prob)
 
@@ -160,9 +159,8 @@ end
 
     prob = ODEProblem(
         compiled_sys,
-        [compiled_sys.F => 1.0],
+        merge(Dict(compiled_sys.F => 1.0), Dict(compiled_sys.T_f => 10.0, compiled_sys.is_burning => 0.0)),
         (0.0, 100.0),
-        [compiled_sys.T_f => 10.0, compiled_sys.is_burning => 0.0]
     )
     sol = solve(prob)
 
@@ -188,19 +186,21 @@ end
     compiled_sys = mtkcompile(fhf; inputs = [fhf_nns.fuel_burn_rate])
 
     w_l_val = 0.166     # kg/m^2 (fuel model 1)
-    h_val = 17.433e6    # J/kg
+    h_val = 8000.0 * 1055.06 / 0.453592  # J/kg (8000 BTU/lb in SI)
     M_f_val = 0.08      # 8% moisture
     burn_rate_val = 0.1  # 1/s
 
     prob = NonlinearProblem(
         compiled_sys,
-        [compiled_sys.phi_h => 0.0, compiled_sys.phi_q => 0.0],
-        [
-            compiled_sys.fuel_burn_rate => burn_rate_val,
-            compiled_sys.w_l => w_l_val,
-            compiled_sys.h_fuel => h_val,
-            compiled_sys.M_f => M_f_val,
-        ]
+        merge(
+            Dict(compiled_sys.phi_h => 0.0, compiled_sys.phi_q => 0.0),
+            Dict(
+                compiled_sys.fuel_burn_rate => burn_rate_val,
+                compiled_sys.w_l => w_l_val,
+                compiled_sys.h_fuel => h_val,
+                compiled_sys.M_f => M_f_val,
+            ),
+        ),
     )
     sol = solve(prob)
 
@@ -254,6 +254,10 @@ end
 
     # T_f for FM1: weight=7, T_f = 7/0.8514 ≈ 8.22 s
     @test isapprox(coeffs.T_f, 7.0 / 0.8514, rtol = 1.0e-4)
+
+    # Heat content: 8000 BTU/lb converted to SI (J/kg)
+    h_expected = 8000.0 * 1055.06 / 0.453592  # ≈ 18,608,000 J/kg
+    @test isapprox(coeffs.h, h_expected, rtol = 1.0e-4)
 end
 
 @testitem "anderson_fuel_coefficients - Moisture Sensitivity" setup = [LevelSetSetup] tags = [:levelset] begin

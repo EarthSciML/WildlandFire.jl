@@ -92,8 +92,11 @@ The `FuelConsumption` component models exponential fuel decay after ignition
 (Eq. 3, Mandel et al. 2011):
 
 ```math
-\frac{dF}{dt} = -\frac{F}{T_f} \quad \text{when burning}
+F(t) = \exp\left(-\frac{t - t_i}{T_f}\right), \quad t > t_i
 ```
+
+where ``t_i`` is the ignition time and ``T_f = w / 0.8514`` is the fuel burn time
+constant derived from the fuel weight parameter ``w``.
 
 ```@example levelset
 fc = FuelConsumption()
@@ -112,7 +115,20 @@ equations(fc)
 ### Fire Heat Flux
 
 The `FireHeatFlux` component computes sensible and latent heat fluxes from burning
-fuel (Eqs. 4–5, Mandel et al. 2011):
+fuel (Eqs. 4–5, Mandel et al. 2011).
+
+Sensible heat flux (Eq. 4):
+```math
+\phi_h = \frac{-dF/dt \cdot w_\ell \cdot h}{1 + M_f} \quad (W\,m^{-2})
+```
+
+Latent heat flux (Eq. 5):
+```math
+\phi_q = \frac{-dF/dt \cdot (M_f + 0.56) \cdot L \cdot w_\ell}{1 + M_f} \quad (W\,m^{-2})
+```
+
+where 0.56 is the estimated mass ratio of water output from combustion to dry fuel,
+and ``L = 2.5 \times 10^6`` J/kg is the latent heat of condensation of water at 0°C.
 
 ```@example levelset
 fhf = FireHeatFlux()
@@ -128,21 +144,80 @@ DataFrame(
 equations(fhf)
 ```
 
-### Anderson Fuel Model Coefficients
+### Fire Spread Rate (Eq. 2)
 
-The `anderson_fuel_coefficients` function precomputes Rothermel spread rate
-coefficients for the 13 Anderson (1982) fuel models. The fire spread rate
-is computed as (Eq. 2, Mandel et al. 2011):
+The fire spread rate is computed using the modified Rothermel formula
+(Eq. 2, Mandel et al. 2011):
 
 ```math
 S = \max\{S_0,\; R_0 + c \cdot \min\{e,\; \max\{0, U\}\}^b + d \cdot \max\{0,\; \tan\phi\}^2\}
 ```
 
+where ``U`` is the wind speed normal to the fire front (m/s), ``\tan\phi`` is the
+terrain slope in the normal direction, and ``S_0, R_0, b, c, d, e`` are
+fuel-dependent coefficients computed from the Rothermel (1972) model following
+Table 2 of Mandel et al. (2011).
+
+### Anderson Fuel Model Coefficients
+
+The `anderson_fuel_coefficients` function precomputes these Rothermel spread rate
+coefficients for the 13 Anderson (1982) fuel models:
+
 ```@example levelset
 coeffs = anderson_fuel_coefficients(1)
 DataFrame(
     :Field => [string(k) for k in keys(coeffs)],
-    :Value => [coeffs[k] for k in keys(coeffs)]
+    :Value => [coeffs[k] for k in keys(coeffs)],
+    :Units => ["m/s", "m/s", "—", "m/s", "m/s", "m/s", "s", "kg/m²", "J/kg", "m"],
+)
+```
+
+### Fuel Properties (Table 1, Mandel et al. 2011)
+
+The fuel is characterized by the quantities listed in Table 1 of
+Mandel et al. (2011). The 13 Anderson (1982) fuel categories provide
+preset vectors of these properties:
+
+```@example levelset
+fuel_names = [
+    "Short grass", "Timber grass/understory", "Tall grass",
+    "Chaparral", "Brush", "Dormant brush",
+    "Southern rough", "Compact timber litter", "Hardwood litter",
+    "Timber (understory)", "Light logging slash", "Medium logging slash",
+    "Heavy logging slash"
+]
+all_coeffs = [anderson_fuel_coefficients(i) for i in 1:13]
+DataFrame(
+    :Model => 1:13,
+    :Name => fuel_names,
+    Symbol("R₀ (m/s)") => [round(c.R_0, sigdigits=4) for c in all_coeffs],
+    Symbol("T_f (s)") => [round(c.T_f, sigdigits=4) for c in all_coeffs],
+    Symbol("w_l (kg/m²)") => [c.w_l for c in all_coeffs],
+    Symbol("δ (m)") => [c.delta for c in all_coeffs],
+)
+```
+
+### Rothermel Spread Rate Computation (Table 2, Mandel et al. 2011)
+
+The computation of the fire spread rate factors from fuel properties
+follows the equations in Table 2 of Mandel et al. (2011), originally
+from Rothermel (1972). Here we show the full coefficients for fuel
+model 1 (short grass) at 8% moisture:
+
+```@example levelset
+coeffs1 = anderson_fuel_coefficients(1; M_f = 0.08)
+DataFrame(
+    :Coefficient => ["S₀", "R₀", "b", "c", "d", "e"],
+    :Description => [
+        "Minimum spread rate",
+        "No-wind no-slope spread rate",
+        "Wind speed exponent",
+        "Wind factor coefficient",
+        "Slope factor coefficient",
+        "Maximum wind speed",
+    ],
+    :Value => [coeffs1.S_0, coeffs1.R_0, coeffs1.b, coeffs1.c, coeffs1.d, coeffs1.e],
+    :Units => ["m/s", "m/s", "—", "m/s", "m/s", "m/s"],
 )
 ```
 
@@ -153,6 +228,8 @@ DataFrame(
 With a constant spread rate ``S`` and no wind or slope, the level-set equation
 produces circular fire spread. Starting from a circular ignition of radius
 ``r_0``, the fire radius at time ``t`` should be ``r_0 + S \cdot t``.
+This is the fundamental analytical solution for the level-set equation
+(Mandel et al. 2011, Sect. 3.4).
 
 ```@example levelset
 using MethodOfLines, DomainSets, OrdinaryDiffEqDefault, Plots
@@ -194,12 +271,15 @@ plot(p1, p2, p3, layout = (1, 3), size = (900, 300))
 savefig("circular_spread.png"); nothing # hide
 ```
 
-![Circular fire spread](circular_spread.png)
+![Circular fire spread: the level-set method propagates the ψ=0 contour outward at rate S, producing approximately circular expansion from a circular initial condition (Eq. 9, Mandel et al. 2011).](circular_spread.png)
 
-### Fuel Consumption Dynamics
+### Fuel Consumption Dynamics (Eq. 3)
 
 The fuel fraction ``F(t)`` decays exponentially with time constant ``T_f``
-after ignition, following Eq. 3 of Mandel et al. (2011):
+after ignition, following Eq. 3 of Mandel et al. (2011). The fuel weight
+parameter ``w`` determines the burn time through ``T_f = w / 0.8514``.
+For ``w = 1000`` s, fuel burns to 60% of its original quantity in 600 s
+(Table 1, Mandel et al. 2011).
 
 ```@example levelset
 fc = FuelConsumption()
@@ -208,9 +288,8 @@ compiled_fc = mtkcompile(fc; inputs = [fc_nns.is_burning])
 
 T_f_val = 10.0
 prob_fc = ODEProblem(compiled_fc,
-    [compiled_fc.F => 1.0],
-    (0.0, 40.0),
-    [compiled_fc.T_f => T_f_val, compiled_fc.is_burning => 1.0])
+    merge(Dict(compiled_fc.F => 1.0), Dict(compiled_fc.T_f => T_f_val, compiled_fc.is_burning => 1.0)),
+    (0.0, 40.0))
 sol_fc = solve(prob_fc)
 
 t_plot = 0:0.1:40
@@ -218,47 +297,42 @@ F_numerical = [sol_fc(ti)[1] for ti in t_plot]
 F_analytical = exp.(-t_plot ./ T_f_val)
 
 plot(t_plot, F_numerical, label = "Numerical", linewidth = 2)
-plot!(t_plot, F_analytical, label = "Analytical: exp(-t/Tₓ)", linestyle = :dash, linewidth = 2)
+plot!(t_plot, F_analytical, label = "Analytical: exp(-t/T_f)", linestyle = :dash, linewidth = 2)
 xlabel!("Time (s)")
 ylabel!("Fuel fraction F")
-title!("Fuel Consumption (Tₓ = $(T_f_val) s)")
+title!("Fuel Consumption (Eq. 3, Mandel et al. 2011, T_f = $(T_f_val) s)")
 savefig("fuel_consumption.png"); nothing # hide
 ```
 
-![Fuel consumption](fuel_consumption.png)
+![Fuel consumption: exponential decay of fuel fraction after ignition. At t = T_f, F ≈ 1/e ≈ 0.368 (Eq. 3, Mandel et al. 2011).](fuel_consumption.png)
 
 ### Anderson Fuel Model Comparison
 
 Comparison of no-wind no-slope spread rates ``R_0`` across the 13 Anderson
-fuel models at 8% fuel moisture:
+fuel models at 8% fuel moisture, computed using the Rothermel coefficients
+from Table 2 of Mandel et al. (2011):
 
 ```@example levelset
-fuel_names = [
-    "1: Short grass", "2: Timber grass", "3: Tall grass",
-    "4: Chaparral", "5: Brush", "6: Dormant brush",
-    "7: Southern rough", "8: Compact timber litter", "9: Hardwood litter",
-    "10: Timber understory", "11: Light slash", "12: Medium slash",
-    "13: Heavy slash"
-]
-
 R0_vals = [anderson_fuel_coefficients(i).R_0 for i in 1:13]
 
 bar(1:13, R0_vals .* 60,  # Convert m/s to m/min
     xticks = (1:13, string.(1:13)),
     xlabel = "Anderson Fuel Model",
     ylabel = "R₀ (m/min)",
-    title = "No-Wind No-Slope Spread Rate\n(8% fuel moisture)",
+    title = "No-Wind No-Slope Spread Rate (8% moisture)\n(Table 2, Mandel et al. 2011)",
     legend = false,
     bar_width = 0.7)
 savefig("anderson_fuel_models.png"); nothing # hide
 ```
 
-![Anderson fuel models](anderson_fuel_models.png)
+![Anderson fuel model comparison: no-wind no-slope spread rates for the 13 Anderson (1982) fuel categories, computed following the Rothermel model as described in Table 2 of Mandel et al. (2011).](anderson_fuel_models.png)
 
-### Moisture Sensitivity
+### Moisture Sensitivity (Table 2, Mandel et al. 2011)
 
 Higher fuel moisture reduces spread rate by absorbing heat that would
-otherwise preheat adjacent fuel (Table 2, Mandel et al. 2011):
+otherwise preheat adjacent fuel. The moisture damping coefficient
+``\eta_M`` (Eq. 29/30, Rothermel 1972) decreases the reaction intensity
+as moisture approaches the moisture of extinction ``M_x``:
 
 ```@example levelset
 moisture_range = 0.02:0.01:0.11
@@ -271,8 +345,8 @@ plot!(moisture_range .* 100, R0_fm3 .* 60,
     label = "FM 3 (Tall grass)", linewidth = 2, marker = :square)
 xlabel!("Fuel Moisture (%)")
 ylabel!("R₀ (m/min)")
-title!("Spread Rate vs Fuel Moisture")
+title!("Spread Rate vs Fuel Moisture\n(Table 2, Mandel et al. 2011)")
 savefig("moisture_sensitivity.png"); nothing # hide
 ```
 
-![Moisture sensitivity](moisture_sensitivity.png)
+![Moisture sensitivity: higher fuel moisture reduces the fire spread rate through the moisture damping coefficient η_M (Table 2, Mandel et al. 2011).](moisture_sensitivity.png)
