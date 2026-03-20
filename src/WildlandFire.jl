@@ -19,6 +19,7 @@ include("rothermel.jl")
 include("fire_spread_direction.jl")
 include("nfdrs.jl")
 include("level_set_fire_spread.jl")
+include("fsim.jl")
 
 # Export NFDRS components
 export EquilibriumMoistureContent
@@ -41,5 +42,8 @@ export RothermelFireSpread
 # Export level-set fire spread model
 export LevelSetFireSpread, FuelConsumption, FireHeatFlux
 export anderson_fuel_coefficients, ANDERSON_FUEL_DATA
+# Export FSim components
+export FireOccurrenceLogistic, FireContainment
+export BurnProbability, ERCTimeSeries, FlameLengthCategory
 
 end # module
