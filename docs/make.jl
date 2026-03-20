@@ -17,6 +17,7 @@ makedocs(;
         "NFDRS" => "nfdrs.md",
         "Rothermel Fire Spread Model" => "rothermel.md",
         "Fire Spread Direction" => "fire_spread_direction.md",
+        "FSim Wildfire Risk" => "fsim.md",
     ],
 )
 
