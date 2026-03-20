@@ -314,76 +314,143 @@ function anderson_fuel_coefficients(fuel_model::Int; M_f = 0.08)
     # then convert to SI, following Table 2 of Mandel et al. (2011).
     # The Rothermel (1972) model was calibrated in English units, so we perform
     # the computation in English units and convert the final results to SI.
-    #
-    # Unit conversions used:
-    #   1 ft  = 0.3048 m
-    #   1 lb  = 0.453592 kg
-    #   1 BTU = 1055.06 J
-    #   1 lb/ft^2 = 4.88243 kg/m^2  (so 1 kg/m^2 = 0.204816 lb/ft^2)
-    #   1 ft/min  = 0.00508 m/s     (= 0.3048/60)
-    #   1 m/s     = 196.85 ft/min   (= 60/0.3048)
+
+    # Unit conversion constants - numerical for computational efficiency
+    ft_to_m = 0.3048        # feet to meters conversion
+    lb_to_kg = 0.453592     # pounds to kilograms conversion
+    btu_to_j = 1055.06      # BTU to Joules conversion
+    kgm2_to_lbft2 = 0.204816  # kg/m² to lb/ft² conversion
+    min_to_s = 60.0         # minutes to seconds conversion
+    one = 1.0               # dimensionless one
 
     # Convert inputs from SI to English units
-    fgi_lbft2 = fd.fgi * 0.204816     # kg/m^2 → lb/ft^2
-    depth_ft = fd.depth / 0.3048       # m → ft
-    sigma = fd.savr                    # 1/ft (already in English units)
-    rho_p = fd.dens                    # lb/ft^3 (already in English units)
-    h_us = fd.h                          # BTU/lb (heat content from fuel model data)
+    fgi_lbft2 = fd.fgi * kgm2_to_lbft2     # kg/m^2 → lb/ft^2
+    depth_ft = fd.depth / ft_to_m          # m → ft
+    sigma = fd.savr                        # 1/ft (already in English units)
+    rho_p = fd.dens                        # lb/ft^3 (already in English units)
+    h_us = fd.h                            # BTU/lb (heat content from fuel model data)
+
+    # Empirical constants from Rothermel (1972) formulas — Table 2, Mandel et al. (2011)
+    # Eq. T2-21 coefficients for optimum packing ratio
+    beta_op_coeff = 3.348
+    beta_op_exp = -0.8189
+
+    # Eq. T2-12 coefficients
+    coeff_A_c1 = 4.774
+    coeff_A_exp = 0.1
+    coeff_A_c2 = 7.27
+
+    # Eq. T2-9 coefficients for maximum reaction velocity
+    gamma_c1 = 495.0
+    gamma_c2 = 0.0594
+    gamma_exp = 1.5
+
+    # Eq. T2-5 coefficients for moisture damping
+    eta_M_c1 = 2.59
+    eta_M_c2 = 5.11
+    eta_M_c3 = 3.52
+
+    # Eq. T2-4 coefficients for mineral damping
+    eta_s_c1 = 0.174
+    eta_s_exp = -0.19
+
+    # Eq. T2-2 coefficients for propagating flux ratio
+    xi_c1 = 0.792
+    xi_c2 = 0.681
+    xi_c3 = 0.1
+    xi_c4 = 192.0
+    xi_c5 = 0.2595
 
     # Fuel bed properties — Table 2, Mandel et al. (2011)
-    w_0 = fgi_lbft2 / (1.0 + M_f)     # Total fuel load net of moisture (Eq. T2-7)
-    w_n = fgi_lbft2 / (1.0 + fd.st)   # Fuel loading net of minerals (Eq. T2-6)
+    w_0 = fgi_lbft2 / (one + M_f)     # Total fuel load net of moisture (Eq. T2-7)
+    w_n = fgi_lbft2 / (one + fd.st)   # Fuel loading net of minerals (Eq. T2-6)
     rho_b = w_0 / depth_ft            # Oven dry bulk density (Eq. T2-11)
     beta = rho_b / rho_p              # Packing ratio (Eq. T2-10)
-    beta_op = 3.348 * sigma^(-0.8189) # Optimum packing ratio (Eq. T2-21)
+    beta_op = beta_op_coeff * sigma^beta_op_exp # Optimum packing ratio (Eq. T2-21)
     beta_ratio = beta / beta_op
 
     # Reaction intensity components — Table 2, Mandel et al. (2011)
-    coeff_A = 1.0 / (4.774 * sigma^0.1 - 7.27)  # Eq. T2-12
-    Gamma_max = sigma^1.5 / (495.0 + 0.0594 * sigma^1.5)  # Eq. T2-9
-    Gamma = Gamma_max * beta_ratio^coeff_A * exp(coeff_A * (1.0 - beta_ratio))  # Eq. T2-8
+    coeff_A = one / (coeff_A_c1 * sigma^coeff_A_exp - coeff_A_c2)  # Eq. T2-12
+    Gamma_max = sigma^gamma_exp / (gamma_c1 + gamma_c2 * sigma^gamma_exp)  # Eq. T2-9
+    Gamma = Gamma_max * beta_ratio^coeff_A * exp(coeff_A * (one - beta_ratio))  # Eq. T2-8
 
-    rM = min(M_f / fd.mce, 1.0)
-    eta_M = 1.0 - 2.59 * rM + 5.11 * rM^2 - 3.52 * rM^3  # Eq. T2-5
-    eta_s = min(0.174 * fd.se^(-0.19), 1.0)  # Eq. T2-4
+    rM = min(M_f / fd.mce, one)
+    eta_M = one - eta_M_c1 * rM + eta_M_c2 * rM^2 - eta_M_c3 * rM^3  # Eq. T2-5
+    eta_s = min(eta_s_c1 * fd.se^eta_s_exp, one)  # Eq. T2-4
     I_R = Gamma * w_n * h_us * eta_M * eta_s  # Eq. T2-3
 
     # Propagating flux ratio — Eq. T2-2
-    xi = exp((0.792 + 0.681 * sqrt(sigma)) * (beta + 0.1)) / (192.0 + 0.2595 * sigma)
+    xi = exp((xi_c1 + xi_c2 * sqrt(sigma)) * (beta + xi_c3)) / (xi_c4 + xi_c5 * sigma)
+
+    # More empirical constants from Rothermel (1972) formulas
+    # Eq. T2-13 heat sink coefficient
+    eps_coeff = -138.0
+
+    # Eq. T2-14 ignition energy coefficients
+    Q_ig_c1 = 250.0
+    Q_ig_c2 = 1116.0
+
+    # Eq. T2-16 wind factor coefficient
+    C_wind_coeff = 7.47
+    C_wind_exp_coeff = -0.133
+    C_wind_exp = 0.55
+
+    # Eq. T2-17 wind speed exponent
+    B_wind_coeff = 0.02526
+    B_wind_exp = 0.54
+
+    # Eq. T2-19 wind speed coefficient
+    E_wind_coeff = 0.715
+    E_wind_exp_coeff = -3.59e-4
+
+    # Slope coefficient
+    slope_coeff = 5.275
+    slope_exp = -0.3
+
+    # Unit conversion rate constants
+    ft_min_to_m_s = 0.00508  # ft/min to m/s conversion
+    m_s_to_ft_min = 196.85   # m/s to ft/min conversion
 
     # Heat sink — Table 2, Mandel et al. (2011)
-    eps = exp(-138.0 / sigma)           # Eq. T2-13
-    Q_ig = 250.0 + 1116.0 * M_f        # Eq. T2-14
+    eps = exp(eps_coeff / sigma)           # Eq. T2-13
+    Q_ig = Q_ig_c1 + Q_ig_c2 * M_f        # Eq. T2-14
 
     # Base spread rate (ft/min) — Eq. T2-1
     R0_us = (I_R * xi) / (rho_b * eps * Q_ig)
 
     # Wind factor coefficients — Table 2, Mandel et al. (2011)
-    C_wind = 7.47 * exp(-0.133 * sigma^0.55)  # Eq. T2-16
-    B_wind = 0.02526 * sigma^0.54  # Eq. T2-17
-    E_wind = 0.715 * exp(-3.59e-4 * sigma)  # Eq. T2-19
+    C_wind = C_wind_coeff * exp(C_wind_exp_coeff * sigma^C_wind_exp)  # Eq. T2-16
+    B_wind = B_wind_coeff * sigma^B_wind_exp  # Eq. T2-17
+    E_wind = E_wind_coeff * exp(E_wind_exp_coeff * sigma)  # Eq. T2-19
 
     # Coefficients for Eq. 2 form: S = max{S_0, R_0 + c*min{e, max{0,U}}^b + d*max{0,tan(phi)}^2}
     # In English units: c_us * U_ftmin^b gives ft/min, d_us * tan²φ gives ft/min
     c_wind = R0_us * C_wind * beta_ratio^(-E_wind)  # ft/min (Eq. 2 wind coefficient)
-    d_slope_coeff = R0_us * 5.275 * beta^(-0.3)     # ft/min (Eq. 2 slope coefficient)
+    d_slope_coeff = R0_us * slope_coeff * beta^slope_exp     # ft/min (Eq. 2 slope coefficient)
 
     # Convert from English (ft/min) to SI (m/s)
-    ft_min_to_m_s = 0.3048 / 60.0  # = 0.00508 m/s per ft/min
-    m_s_to_ft_min = 60.0 / 0.3048  # = 196.85 ft/min per m/s
     R0_si = R0_us * ft_min_to_m_s
+    # More unit conversion constants
+    # Maximum wind speed (from CAWFE convention)
+    e_max = 30.0  # m/s
+
+    # Fuel burn time conversion factor
+    fuel_burn_factor = 0.8514
+
+    # Heat content conversion to SI: 1 BTU/lb = 2326.11 J/kg
+    btu_lb_to_j_kg = 2326.11  # J/kg per BTU/lb
+
     # For c: c_si * U_ms^b = c_us * (U_ms * m_s_to_ft_min)^b * ft_min_to_m_s
     c_wind_si = c_wind * m_s_to_ft_min^B_wind * ft_min_to_m_s
     # For d: slope tan²φ is dimensionless, so only the rate needs conversion
     d_slope_si = d_slope_coeff * ft_min_to_m_s
-    e_max_si = 30.0  # m/s (maximum wind speed, following CAWFE convention)
+    e_max_si = e_max  # m/s (maximum wind speed, following CAWFE convention)
 
     # Fuel burn time constant — Mandel et al. (2011)
-    T_f = fd.weight / 0.8514
+    T_f = fd.weight / fuel_burn_factor
 
     # Heat content in SI: convert BTU/lb to J/kg
-    # 1 BTU = 1055.06 J, 1 lb = 0.453592 kg
-    h_si = fd.h * 1055.06 / 0.453592  # J/kg
+    h_si = fd.h * btu_lb_to_j_kg  # J/kg
 
     return (
         S_0 = 0.0,
