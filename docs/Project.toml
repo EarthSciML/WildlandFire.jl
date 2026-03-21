@@ -13,6 +13,7 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
 DynamicQuantities = "1"
+MethodOfLines = "0.11"
 ModelingToolkit = "11"
 NonlinearSolve = "4"
 OrdinaryDiffEqDefault = "1"
