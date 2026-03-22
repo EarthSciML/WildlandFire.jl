@@ -1,7 +1,7 @@
 """
-    LevelSetFireSpread(; name=:LevelSetFireSpread, x_domain, y_domain,
-                         t_domain, initial_condition, boundary_conditions=nothing,
-                         spread_rate=1.0)
+    LevelSetFireSpread(domain::DomainInfo; name=:LevelSetFireSpread,
+                       initial_condition, boundary_conditions=nothing,
+                       spread_rate=1.0)
 
 Create a level-set fire front propagation PDE system.
 
@@ -30,10 +30,9 @@ accuracy, consider the full Muñoz-Esparza et al. (2018) algorithm which include
 - Level-set reinitialization for maintaining signed distance property
 
 # Arguments
+- `domain`: A `DomainInfo` object specifying the spatial (x, y) and temporal (t) domains.
+  Must have exactly 2 spatial dimensions.
 - `name`: System name (default `:LevelSetFireSpread`)
-- `x_domain`: Tuple (x_min, x_max) defining the x-extent of the domain (m)
-- `y_domain`: Tuple (y_min, y_max) defining the y-extent of the domain (m)
-- `t_domain`: Tuple (t_min, t_max) defining the time interval (s)
 - `initial_condition`: Function `(x, y) -> ψ₀` giving the initial level-set field.
   Negative values indicate initial fire region, positive values indicate unburned fuel.
 - `boundary_conditions`: Optional vector of boundary condition equations. If not provided,
@@ -56,20 +55,23 @@ doi:10.5194/gmd-4-591-2011
 # Example
 
 ```julia
-using WildlandFire, MethodOfLines, DomainSets, OrdinaryDiffEqDefault
+using WildlandFire, EarthSciMLBase, ModelingToolkit, DynamicQuantities
+using ModelingToolkit: t
+using MethodOfLines, DomainSets, OrdinaryDiffEqDefault
 
 # Domain: 500m x 500m, 60 seconds
-x_domain = (0.0, 500.0)
-y_domain = (0.0, 500.0)
-t_domain = (0.0, 60.0)
+@parameters x [unit = u"m"]
+@parameters y [unit = u"m"]
+domain = DomainInfo(
+    constIC(0.0, t ∈ Interval(0.0, 60.0)),
+    constBC(0.0, x ∈ Interval(0.0, 500.0), y ∈ Interval(0.0, 500.0)),
+)
 
 # Circular ignition at center (radius 10m)
 initial_condition(x, y) = sqrt((x - 250.0)^2 + (y - 250.0)^2) - 10.0
 
 # Create PDE system
-sys = LevelSetFireSpread(;
-    x_domain, y_domain, t_domain, initial_condition,
-)
+sys = LevelSetFireSpread(domain; initial_condition)
 
 # Discretize and solve
 dx = 5.0
@@ -78,18 +80,25 @@ prob = MethodOfLines.discretize(sys, discretization; checks=false)
 sol = solve(prob)
 ```
 """
-function LevelSetFireSpread(;
+function LevelSetFireSpread(
+        domain::DomainInfo;
         name = :LevelSetFireSpread,
-        x_domain::Tuple{Float64, Float64},
-        y_domain::Tuple{Float64, Float64},
-        t_domain::Tuple{Float64, Float64},
         initial_condition,
         boundary_conditions = nothing,
         spread_rate = 1.0
     )
 
-    @parameters x [description = "Horizontal coordinate x", unit = u"m"]
-    @parameters y [description = "Horizontal coordinate y", unit = u"m"]
+    # Extract domain information
+    t_domain = get_tspan(domain)
+    spatial_eps = EarthSciMLBase.endpoints(domain)
+    @assert length(spatial_eps) == 2 "LevelSetFireSpread requires exactly 2 spatial dimensions, got $(length(spatial_eps))"
+    x_domain = spatial_eps[1]
+    y_domain = spatial_eps[2]
+
+    # Get spatial variables from domain
+    spatial_vars = EarthSciMLBase.pvars(domain)
+    x = spatial_vars[1]
+    y = spatial_vars[2]
 
     # Fire spread rate with default value
     @parameters S = spread_rate [description = "Fire spread rate", unit = u"m/s"]
@@ -119,11 +128,7 @@ function LevelSetFireSpread(;
         ψ_ref = 1.0, [description = "Reference length for initial condition", unit = u"m"]
     end
 
-    domains = [
-        t ∈ Interval(t_domain[1], t_domain[2]),
-        x ∈ Interval(x_domain[1], x_domain[2]),
-        y ∈ Interval(y_domain[1], y_domain[2]),
-    ]
+    pde_domains = EarthSciMLBase.domains(domain)
 
     # Initial condition
     ic = ψ(t_domain[1], x, y) ~ initial_condition(x, y) * ψ_ref
@@ -142,7 +147,7 @@ function LevelSetFireSpread(;
     end
 
     return PDESystem(
-        eq, bcs, domains, [t, x, y], [ψ(t, x, y)],
+        eq, bcs, pde_domains, [t, x, y], [ψ(t, x, y)],
         [S, ψ_ref]; name = name
     )
 end
