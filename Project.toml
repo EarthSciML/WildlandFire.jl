@@ -10,6 +10,7 @@ EarthSciMLBase = "e53f1632-a13c-4728-9402-0c66d48804b0"
 MethodOfLines = "94925ecb-adb7-4558-8ed8-f975c56a0bf4"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
+OrdinaryDiffEqSSPRK = "669c94d9-1f4b-4b64-b377-1aa079aa2388"
 
 [weakdeps]
 EarthSciData = "a293c155-435f-439d-9c11-a083b6b47337"
@@ -25,6 +26,7 @@ EarthSciMLBase = "0.25.1"
 MethodOfLines = "0.11.11"
 ModelingToolkit = "11"
 OrdinaryDiffEqDefault = "1"
+OrdinaryDiffEqSSPRK = "1"
 julia = "1.10"
 
 [extras]

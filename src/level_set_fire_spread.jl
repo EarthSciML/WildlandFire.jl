@@ -22,11 +22,11 @@ where S is the fire spread rate (m/s).
 
 ## Implementation Details
 
-This implementation uses MethodOfLines.jl for spatial discretization (finite differences)
-and OrdinaryDiffEq.jl for time stepping. For production fire modeling requiring high
-accuracy, consider the full Muñoz-Esparza et al. (2018) algorithm which includes:
-- Fifth-order WENO spatial discretization
-- Third-order Runge-Kutta temporal integration
+This implementation uses MethodOfLines.jl for spatial discretization with a fifth-order
+WENO (Weighted Essentially Non-Oscillatory) advection scheme and a third-order
+Strong-Stability-Preserving Runge-Kutta (SSPRK33) temporal integrator, following the
+recommendations of Muñoz-Esparza et al. (2018). For production fire modeling requiring
+even higher accuracy, consider adding:
 - Level-set reinitialization for maintaining signed distance property
 
 # Arguments
@@ -57,7 +57,7 @@ doi:10.5194/gmd-4-591-2011
 ```julia
 using WildlandFire, EarthSciMLBase, ModelingToolkit, DynamicQuantities
 using ModelingToolkit: t
-using MethodOfLines, DomainSets, OrdinaryDiffEqDefault
+using MethodOfLines, DomainSets, OrdinaryDiffEqSSPRK
 
 # Domain: 500m x 500m, 60 seconds
 @parameters x [unit = u"m"]
@@ -75,9 +75,10 @@ sys = LevelSetFireSpread(domain; initial_condition)
 
 # Discretize and solve
 dx = 5.0
-discretization = MOLFiniteDifference([sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1])
+discretization = MOLFiniteDifference([sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1];
+    advection_scheme = WENOScheme())
 prob = MethodOfLines.discretize(sys, discretization; checks=false)
-sol = solve(prob)
+sol = solve(prob, SSPRK33(); dt = 0.5, adaptive = false)
 ```
 """
 function LevelSetFireSpread(
