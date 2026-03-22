@@ -5,7 +5,6 @@ export EMCCoupler, OneHourFuelMoistureCoupler
 using EarthSciMLBase
 using EarthSciMLBase: CoupleType, ConnectorSystem, param_to_var
 import EarthSciMLBase: couple2
-using EarthSciData: LANDFIRECoupler, ERA5Coupler
 
 # ---- Coupler structs ---------------------------------------------------------
 
@@ -156,11 +155,7 @@ end
     TerrainSlope(; name = :TerrainSlope)
 
 A component that computes terrain slope magnitude and aspect from elevation
-gradients. The `elevation` parameter is expected to be coupled from a data
-source (e.g., USGS3DEP).
-
-When used with EarthSciMLBase's spatial domain, elevation gradients are
-computed using the domain's partial derivative operators.
+gradients.
 
 Outputs:
 - `tanϕ`: slope steepness (rise/run, dimensionless)
@@ -183,8 +178,8 @@ Outputs:
     end
 
     eqs = [
-        tanϕ ~ sqrt(dzdx^2 + dzdy^2) + zero_1,  # Eq. slope magnitude
-        slope_aspect ~ atan(dzdy, dzdx) + zero_rad,  # Eq. slope aspect
+        tanϕ ~ sqrt(dzdx^2 + dzdy^2) + zero_1,
+        slope_aspect ~ atan(dzdy, dzdx) + zero_rad,
     ]
 
     return System(
@@ -198,9 +193,9 @@ end
 """
     MidflameWind(; name = :MidflameWind)
 
-A component that converts ERA5 horizontal wind components (u, v at 10m) to
-Rothermel's midflame-height wind speed `U` and wind direction `ω` relative
-to the upslope direction.
+A component that converts horizontal wind components (u, v) to Rothermel's
+midflame-height wind speed `U` and wind direction `ω` relative to the
+upslope direction.
 
 Uses a wind reduction factor to convert 10m wind to midflame height (~6.1m
 for forest fuels). The default reduction factor of 0.4 is typical for
@@ -225,8 +220,8 @@ timber fuel types (Baughman & Albini, 1980).
     end
 
     eqs = [
-        U ~ wind_reduction * sqrt(u_wind^2 + v_wind^2) + zero_ms,  # Wind speed magnitude
-        ω ~ atan(v_wind, u_wind) - slope_aspect + zero_rad,  # Wind direction relative to upslope
+        U ~ wind_reduction * sqrt(u_wind^2 + v_wind^2) + zero_ms,
+        ω ~ atan(v_wind, u_wind) - slope_aspect + zero_rad,
     ]
 
     return System(
@@ -235,14 +230,7 @@ timber fuel types (Baughman & Albini, 1980).
     )
 end
 
-# ---- couple2 methods ---------------------------------------------------------
-
-# LANDFIRE fuel_model → FuelModelLookup
-function couple2(lf::LANDFIRECoupler, fm::FuelModelLookupCoupler)
-    lf, fm = lf.sys, fm.sys
-    fm = param_to_var(fm, :fuel_model)
-    return ConnectorSystem([fm.fuel_model ~ lf.fuel_model], fm, lf)
-end
+# ---- couple2 methods (inter-component, no EarthSciData dependency) -----------
 
 # FuelModelLookup → RothermelFireSpread (fuel parameters)
 function couple2(fm::FuelModelLookupCoupler, r::RothermelCoupler)
@@ -266,18 +254,6 @@ function couple2(ts::TerrainSlopeCoupler, r::RothermelCoupler)
     return ConnectorSystem([r.tanϕ ~ ts.tanϕ], r, ts)
 end
 
-# ERA5 → MidflameWind (wind components)
-function couple2(era::ERA5Coupler, mw::MidflameWindCoupler)
-    era, mw = era.sys, mw.sys
-    mw = param_to_var(mw, :u_wind, :v_wind)
-    return ConnectorSystem(
-        [
-            mw.u_wind ~ era.pl₊u,
-            mw.v_wind ~ era.pl₊v,
-        ], mw, era
-    )
-end
-
 # MidflameWind → RothermelFireSpread (wind speed)
 function couple2(mw::MidflameWindCoupler, r::RothermelCoupler)
     mw, r = mw.sys, r.sys
@@ -290,20 +266,6 @@ function couple2(ts::TerrainSlopeCoupler, mw::MidflameWindCoupler)
     ts, mw = ts.sys, mw.sys
     mw = param_to_var(mw, :slope_aspect)
     return ConnectorSystem([mw.slope_aspect ~ ts.slope_aspect], mw, ts)
-end
-
-# ---- Fuel moisture coupling (NFDRS) ------------------------------------------
-
-# ERA5 → EquilibriumMoistureContent (temperature and relative humidity)
-function couple2(era::ERA5Coupler, emc::EMCCoupler)
-    era, emc = era.sys, emc.sys
-    emc = param_to_var(emc, :TEMP, :RH)
-    return ConnectorSystem(
-        [
-            emc.TEMP ~ era.pl₊t,
-            emc.RH ~ era.pl₊r,
-        ], emc, era
-    )
 end
 
 # EquilibriumMoistureContent → OneHourFuelMoisture (EMC → EMCPRM)

@@ -18,6 +18,7 @@ makedocs(;
         "Rothermel Fire Spread Model" => "rothermel.md",
         "Fire Spread Direction" => "fire_spread_direction.md",
         "Level-Set Fire Spread" => "level_set_fire_spread.md",
+        "Coupling" => "coupling.md",
         "FSim Wildfire Risk" => "fsim.md",
     ],
 )

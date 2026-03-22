@@ -14,7 +14,6 @@ using ModelingToolkit
 using ModelingToolkit: t, D
 using OrdinaryDiffEqDefault
 using EarthSciMLBase
-using EarthSciData
 
 # Include implementations
 include("rothermel.jl")
