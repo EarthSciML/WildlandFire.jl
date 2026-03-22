@@ -264,7 +264,10 @@ sol = solve(prob)
         F_L ~ c_FL * (IB / IB_ref)^0.46,                   # Eq. FL, Flame length (Byram)
     ]
 
-    return System(eqs, t; name)
+    return System(
+        eqs, t; name,
+        metadata = Dict(EarthSciMLBase.CoupleType => RothermelCoupler)
+    )
 end
 
 

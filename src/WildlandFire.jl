@@ -13,6 +13,8 @@ using MethodOfLines
 using ModelingToolkit
 using ModelingToolkit: t, D
 using OrdinaryDiffEqDefault
+using EarthSciMLBase
+using EarthSciData
 
 # Include implementations
 include("rothermel.jl")
@@ -20,6 +22,7 @@ include("fire_spread_direction.jl")
 include("nfdrs.jl")
 include("level_set_fire_spread.jl")
 include("fsim.jl")
+include("coupling.jl")
 
 # Export NFDRS components
 export EquilibriumMoistureContent
