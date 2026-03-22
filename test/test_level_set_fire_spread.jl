@@ -59,7 +59,10 @@ end
     )
 
     dx = 2.0
-    discretization = MOLFiniteDifference([sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1])
+    discretization = MOLFiniteDifference(
+        [sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1];
+        advection_scheme = WENOScheme()
+    )
     prob = MethodOfLines.discretize(sys, discretization; checks = false)
     sol = solve(prob; saveat = t_end)
 

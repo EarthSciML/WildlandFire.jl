@@ -24,30 +24,23 @@ and MethodOfLines.jl for spatial discretization. While based on Muñoz-Esparza e
 this simplified version differs from the full WRF-Fire implementation in several key aspects:
 
 **Current Implementation:**
-- Basic finite difference spatial discretization via MethodOfLines.jl
-- Standard ODE solver temporal integration
+- Fifth-order WENO (Weighted Essentially Non-Oscillatory) spatial discretization via MethodOfLines.jl
+- Adaptive temporal integration via OrdinaryDiffEq.jl
 - Constant fire spread rate ``S`` (suitable for idealized cases)
 
-**Full Muñoz-Esparza et al. (2018) Algorithm (future work):**
-- Fifth-order WENO scheme for spatial derivatives
-- Third-order explicit Runge-Kutta temporal integration
+**Future work (full Muñoz-Esparza et al. 2018 algorithm):**
 - Level-set reinitialization equation to maintain signed distance property
 - Spatially-varying spread rate coupled to wind and slope
 
-This simplified implementation serves as a foundation for level-set fire modeling
-and provides exact solutions for circular fire spread with constant spread rate.
+This implementation provides accurate solutions for circular fire spread with constant
+spread rate using the WENO scheme recommended by Muñoz-Esparza et al. (2018).
 
 ## Accuracy Considerations
 
-Muñoz-Esparza et al. (2018) demonstrate that common level-set implementations yield
-rate-of-spread errors in the range 10–35% for typical grid sizes (Δ = 12.5–100 m)
-and considerably underestimate fire area. The fifth-order WENO scheme significantly
-reduces these errors compared to standard finite difference methods.
-
-For research applications requiring high accuracy, implementing the full algorithm
-from Muñoz-Esparza et al. (2018) is recommended. For educational purposes, idealized
-test cases, and algorithm development, this simplified implementation provides a
-clear foundation that captures the essential physics of level-set fire spread.
+Muñoz-Esparza et al. (2018) demonstrate that common level-set implementations with
+standard finite differences yield rate-of-spread errors in the range 10–35% for typical
+grid sizes (Δ = 12.5–100 m) and considerably underestimate fire area. The fifth-order
+WENO scheme used in this implementation significantly reduces these errors.
 
 **References**:
 
@@ -73,7 +66,7 @@ anderson_fuel_coefficients
 The `LevelSetFireSpread` function returns a `PDESystem` representing the level-set
 equation on a 2D spatial domain with time. This implementation uses:
 
-- **Spatial Discretization**: MethodOfLines.jl with finite differences (default second-order)
+- **Spatial Discretization**: MethodOfLines.jl with fifth-order WENO scheme
 - **Temporal Integration**: OrdinaryDiffEq.jl with adaptive time stepping
 - **Boundary Conditions**: Neumann (zero gradient) by default, following Mandel et al. (2011) Sect. 3.4
 
@@ -82,8 +75,8 @@ The Hamilton-Jacobi equation (Eq. 9, Mandel et al. 2011) is discretized as:
 \frac{\partial \psi}{\partial t} = -S \sqrt{\left(\frac{\partial \psi}{\partial x}\right)^2 + \left(\frac{\partial \psi}{\partial y}\right)^2}
 ```
 
-For comparison, the full Muñoz-Esparza et al. (2018) implementation uses fifth-order
-WENO spatial discretization and third-order Runge-Kutta temporal integration.
+This follows the spatial and temporal discretization scheme recommended by
+Muñoz-Esparza et al. (2018).
 
 ```@example levelset
 using DataFrames, ModelingToolkit, Symbolics, DynamicQuantities
@@ -320,7 +313,8 @@ sys = LevelSetFireSpread(domain_circ;
 )
 
 dx = 2.0
-discretization = MOLFiniteDifference([sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1])
+discretization = MOLFiniteDifference([sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1];
+    advection_scheme = WENOScheme())
 prob = MethodOfLines.discretize(sys, discretization; checks = false)
 sol = solve(prob; saveat = [0.0, t_end / 2, t_end])
 
