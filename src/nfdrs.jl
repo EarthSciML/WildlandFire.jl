@@ -114,7 +114,10 @@ Implements Equations 1a, 1b, 1c from Cohen & Deeming (1985), page 1.
         ),
     ]
 
-    return System(eqs, t; name)
+    return System(
+        eqs, t; name,
+        metadata = Dict(EarthSciMLBase.CoupleType => EMCCoupler)
+    )
 end
 
 # =============================================================================
@@ -168,7 +171,10 @@ From Cohen & Deeming (1985), page 3:
         ),
     ]
 
-    return System(eqs, t; name)
+    return System(
+        eqs, t; name,
+        metadata = Dict(EarthSciMLBase.CoupleType => OneHourFuelMoistureCoupler)
+    )
 end
 
 # =============================================================================
