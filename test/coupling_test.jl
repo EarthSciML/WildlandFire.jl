@@ -119,7 +119,8 @@ end
 
 @testitem "USGS3DEP-TerrainSlope coupling" setup = [CouplingSetup] tags = [:coupling] begin
     using EarthSciData
-    using Dates
+    using EarthSciMLBase: DomainInfo, get_tspan_datetime
+    import Dates: DateTime
 
     domain = DomainInfo(
         DateTime(2018, 11, 8), DateTime(2018, 11, 9);
