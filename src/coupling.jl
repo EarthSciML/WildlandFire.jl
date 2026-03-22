@@ -1,5 +1,6 @@
 export RothermelCoupler, TerrainSlope, TerrainSlopeCoupler, MidflameWind, MidflameWindCoupler
 export FuelModelLookup, FuelModelLookupCoupler
+export EMCCoupler, OneHourFuelMoistureCoupler
 
 using EarthSciMLBase
 using EarthSciMLBase: CoupleType, ConnectorSystem, param_to_var
@@ -21,6 +22,14 @@ struct MidflameWindCoupler
 end
 
 struct FuelModelLookupCoupler
+    sys::Any
+end
+
+struct EMCCoupler
+    sys::Any
+end
+
+struct OneHourFuelMoistureCoupler
     sys::Any
 end
 
@@ -281,4 +290,32 @@ function couple2(ts::TerrainSlopeCoupler, mw::MidflameWindCoupler)
     ts, mw = ts.sys, mw.sys
     mw = param_to_var(mw, :slope_aspect)
     return ConnectorSystem([mw.slope_aspect ~ ts.slope_aspect], mw, ts)
+end
+
+# ---- Fuel moisture coupling (NFDRS) ------------------------------------------
+
+# ERA5 → EquilibriumMoistureContent (temperature and relative humidity)
+function couple2(era::ERA5Coupler, emc::EMCCoupler)
+    era, emc = era.sys, emc.sys
+    emc = param_to_var(emc, :TEMP, :RH)
+    return ConnectorSystem(
+        [
+            emc.TEMP ~ era.pl₊t,
+            emc.RH ~ era.pl₊r,
+        ], emc, era
+    )
+end
+
+# EquilibriumMoistureContent → OneHourFuelMoisture (EMC → EMCPRM)
+function couple2(emc::EMCCoupler, fm1::OneHourFuelMoistureCoupler)
+    emc, fm1 = emc.sys, fm1.sys
+    fm1 = param_to_var(fm1, :EMCPRM)
+    return ConnectorSystem([fm1.EMCPRM ~ emc.EMC], fm1, emc)
+end
+
+# OneHourFuelMoisture → RothermelFireSpread (MC1 → Mf)
+function couple2(fm1::OneHourFuelMoistureCoupler, r::RothermelCoupler)
+    fm1, r = fm1.sys, r.sys
+    r = param_to_var(r, :Mf)
+    return ConnectorSystem([r.Mf ~ fm1.MC1], r, fm1)
 end

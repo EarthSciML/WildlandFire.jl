@@ -89,14 +89,45 @@ end
     @test sys isa ModelingToolkit.AbstractSystem
 end
 
+@testitem "EMC has CoupleType" setup = [CouplingSetup] tags = [:coupling] begin
+    emc = EquilibriumMoistureContent()
+    ct = ModelingToolkit.getmetadata(emc, EarthSciMLBase.CoupleType, nothing)
+    @test ct === WildlandFire.EMCCoupler
+end
+
+@testitem "OneHourFuelMoisture has CoupleType" setup = [CouplingSetup] tags = [:coupling] begin
+    fm1 = OneHourFuelMoisture()
+    ct = ModelingToolkit.getmetadata(fm1, EarthSciMLBase.CoupleType, nothing)
+    @test ct === WildlandFire.OneHourFuelMoistureCoupler
+end
+
+@testitem "EMC-OneHourFuelMoisture coupling" setup = [CouplingSetup] tags = [:coupling] begin
+    emc = EquilibriumMoistureContent()
+    fm1 = OneHourFuelMoisture()
+    cs = couple(emc, fm1)
+    sys = convert(System, cs; compile = false)
+    @test sys isa ModelingToolkit.AbstractSystem
+end
+
+@testitem "OneHourFuelMoisture-Rothermel coupling" setup = [CouplingSetup] tags = [:coupling] begin
+    fm1 = OneHourFuelMoisture()
+    r = RothermelFireSpread()
+    cs = couple(fm1, r)
+    sys = convert(System, cs; compile = false)
+    @test sys isa ModelingToolkit.AbstractSystem
+end
+
 @testitem "Full fire model coupling" setup = [CouplingSetup] tags = [:coupling] begin
     fm = FuelModelLookup()
     ts = TerrainSlope()
     mw = MidflameWind()
+    emc = EquilibriumMoistureContent()
+    fm1 = OneHourFuelMoisture()
     r = RothermelFireSpread()
-    cs = couple(fm, ts, mw, r)
+    cs = couple(fm, ts, mw, emc, fm1, r)
     sys = convert(System, cs; compile = false)
     @test sys isa ModelingToolkit.AbstractSystem
     # Should have all equations from all components plus connectors
-    @test length(equations(sys)) > 26 + 5 + 2 + 2
+    # Rothermel(26) + FuelModelLookup(5) + TerrainSlope(2) + MidflameWind(2) + EMC(1) + OneHourFM(1) + connectors
+    @test length(equations(sys)) > 26 + 5 + 2 + 2 + 1 + 1
 end
