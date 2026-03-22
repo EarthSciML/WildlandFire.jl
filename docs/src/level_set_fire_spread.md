@@ -25,7 +25,7 @@ this simplified version differs from the full WRF-Fire implementation in several
 
 **Current Implementation:**
 - Fifth-order WENO (Weighted Essentially Non-Oscillatory) spatial discretization via MethodOfLines.jl
-- Third-order Strong-Stability-Preserving Runge-Kutta (SSPRK33) temporal integration
+- Adaptive temporal integration via OrdinaryDiffEq.jl
 - Constant fire spread rate ``S`` (suitable for idealized cases)
 
 **Future work (full Muñoz-Esparza et al. 2018 algorithm):**
@@ -33,7 +33,7 @@ this simplified version differs from the full WRF-Fire implementation in several
 - Spatially-varying spread rate coupled to wind and slope
 
 This implementation provides accurate solutions for circular fire spread with constant
-spread rate using the WENO + SSP-RK3 combination recommended by Muñoz-Esparza et al. (2018).
+spread rate using the WENO scheme recommended by Muñoz-Esparza et al. (2018).
 
 ## Accuracy Considerations
 
@@ -67,7 +67,7 @@ The `LevelSetFireSpread` function returns a `PDESystem` representing the level-s
 equation on a 2D spatial domain with time. This implementation uses:
 
 - **Spatial Discretization**: MethodOfLines.jl with fifth-order WENO scheme
-- **Temporal Integration**: Third-order SSP Runge-Kutta (SSPRK33)
+- **Temporal Integration**: OrdinaryDiffEq.jl with adaptive time stepping
 - **Boundary Conditions**: Neumann (zero gradient) by default, following Mandel et al. (2011) Sect. 3.4
 
 The Hamilton-Jacobi equation (Eq. 9, Mandel et al. 2011) is discretized as:
@@ -295,7 +295,7 @@ This is the fundamental analytical solution for the level-set equation
 (Mandel et al. 2011, Sect. 3.4).
 
 ```@example levelset
-using MethodOfLines, OrdinaryDiffEqDefault, OrdinaryDiffEqSSPRK, Plots
+using MethodOfLines, OrdinaryDiffEqDefault, Plots
 
 r0 = 10.0       # initial radius (m)
 S_val = 1.0      # spread rate (m/s)
@@ -316,7 +316,7 @@ dx = 2.0
 discretization = MOLFiniteDifference([sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1];
     advection_scheme = WENOScheme())
 prob = MethodOfLines.discretize(sys, discretization; checks = false)
-sol = solve(prob, SSPRK33(); dt = 0.5, adaptive = false, saveat = [0.0, t_end / 2, t_end])
+sol = solve(prob; saveat = [0.0, t_end / 2, t_end])
 
 psi = sol[sys.dvs[1]]
 x_grid = sol[sys.ivs[2]]

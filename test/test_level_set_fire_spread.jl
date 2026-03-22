@@ -7,7 +7,6 @@
     using EarthSciMLBase
     using MethodOfLines
     using OrdinaryDiffEqDefault
-    using OrdinaryDiffEqSSPRK
     using DomainSets
 end
 
@@ -65,7 +64,7 @@ end
         advection_scheme = WENOScheme()
     )
     prob = MethodOfLines.discretize(sys, discretization; checks = false)
-    sol = solve(prob, SSPRK33(); dt = 0.5, adaptive = false, saveat = t_end)
+    sol = solve(prob; saveat = t_end)
 
     @test sol.retcode == SciMLBase.ReturnCode.Success
 
