@@ -2,17 +2,23 @@
     using Test
     using ModelingToolkit
     using ModelingToolkit: t, D
+    using DynamicQuantities
     using WildlandFire
+    using EarthSciMLBase
     using MethodOfLines
     using OrdinaryDiffEqDefault
     using DomainSets
 end
 
 @testitem "LevelSetFireSpread - Structural Verification" setup = [LevelSetSetup] tags = [:levelset] begin
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, 10.0)),
+        constBC(0.0, x ∈ Interval(0.0, 100.0), y ∈ Interval(0.0, 100.0)),
+    )
     sys = LevelSetFireSpread(
-        x_domain = (0.0, 100.0),
-        y_domain = (0.0, 100.0),
-        t_domain = (0.0, 10.0),
+        domain;
         initial_condition = (x, y) -> sqrt((x - 50.0)^2 + (y - 50.0)^2) - 10.0,
         spread_rate = 1.0,
     )
@@ -40,10 +46,14 @@ end
     center = domain_size / 2.0
     t_end = 5.0
 
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, t_end)),
+        constBC(0.0, x ∈ Interval(0.0, domain_size), y ∈ Interval(0.0, domain_size)),
+    )
     sys = LevelSetFireSpread(
-        x_domain = (0.0, domain_size),
-        y_domain = (0.0, domain_size),
-        t_domain = (0.0, t_end),
+        domain;
         initial_condition = (x, y) -> sqrt((x - center)^2 + (y - center)^2) - r0,
         spread_rate = S_val,
     )
@@ -86,8 +96,6 @@ end
 end
 
 @testitem "LevelSetFireSpread - Custom Boundary Conditions" setup = [LevelSetSetup] tags = [:levelset] begin
-    using DynamicQuantities
-
     # Test that custom boundary conditions can be provided
     @parameters x [description = "x", unit = u"m"]
     @parameters y [description = "y", unit = u"m"]
@@ -105,10 +113,12 @@ end
         ψ(t, x, 100.0) ~ ψ_bc,
     ]
 
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, 5.0)),
+        constBC(0.0, x ∈ Interval(0.0, 100.0), y ∈ Interval(0.0, 100.0)),
+    )
     sys = LevelSetFireSpread(
-        x_domain = (0.0, 100.0),
-        y_domain = (0.0, 100.0),
-        t_domain = (0.0, 5.0),
+        domain;
         initial_condition = (x, y) -> sqrt((x - 50.0)^2 + (y - 50.0)^2) - 10.0,
         boundary_conditions = custom_bcs,
     )
