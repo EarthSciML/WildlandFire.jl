@@ -129,6 +129,58 @@ end
     @test length(sys.bcs) == 5  # 1 IC + 4 custom BCs
 end
 
+@testitem "LevelSetFireSpread - Lat-Lon Domain" setup = [LevelSetSetup] tags = [:levelset] begin
+    # Test that LevelSetFireSpread works with lat-lon coordinates and coordinate transforms
+    @parameters lon [unit = u"rad"]
+    @parameters lat [unit = u"rad"]
+    t_end = 300.0  # 5 minutes
+    S_val = 5.0    # 5 m/s spread rate
+    domain = DomainInfo(
+        EarthSciMLBase.partialderivatives_δxyδlonlat,
+        constIC(0.0, t ∈ Interval(0.0, t_end)),
+        constBC(
+            0.0,
+            lon ∈ Interval(-0.01, 0.01),
+            lat ∈ Interval(-0.01, 0.01)
+        ),
+    )
+
+    # Initial condition: circular fire near origin
+    # Use approximate Earth radius to convert radians to meters for distance calc
+    R_earth = 6.371e6
+    initial_condition(lon, lat) = sqrt(
+        (lon * R_earth)^2 + (lat * R_earth)^2
+    ) - 100.0  # 100m radius ignition
+
+    sys = LevelSetFireSpread(domain; initial_condition, spread_rate = S_val)
+
+    @test sys isa PDESystem
+    @test length(equations(sys)) == 1
+    @test length(sys.ivs) == 3  # t, lon, lat
+
+    # Verify it can be discretized and solved
+    # dlon = 0.001 rad ≈ 6.4 km grid spacing near the equator (coarse)
+    dlon = 0.001
+    discretization = MOLFiniteDifference(
+        [sys.ivs[2] => dlon, sys.ivs[3] => dlon], sys.ivs[1];
+        advection_scheme = WENOScheme()
+    )
+    prob = MethodOfLines.discretize(sys, discretization; checks = false)
+    sol = solve(prob; saveat = t_end)
+    @test sol.retcode == SciMLBase.ReturnCode.Success
+
+    # The grid is coarse (~6.4 km cells) so the fire front won't cross cell
+    # boundaries in 300s at 5 m/s (~1.5 km advance). Instead, verify that
+    # level-set values decreased (fire front is approaching unburned cells).
+    psi = sol[sys.dvs[1]]
+    mid = div(size(psi, 2), 2) + 1
+    # Adjacent cell to fire center: ψ should decrease as fire approaches
+    @test psi[end, mid + 1, mid] < psi[1, mid + 1, mid]
+    # Expected decrease ≈ S * t_end = 5 * 300 = 1500m
+    decrease = psi[1, mid + 1, mid] - psi[end, mid + 1, mid]
+    @test isapprox(decrease, S_val * t_end, rtol = 0.15)
+end
+
 @testitem "FuelConsumption - Structural Verification" setup = [LevelSetSetup] tags = [:levelset] begin
     fc = FuelConsumption()
     @test fc !== nothing
