@@ -1,7 +1,9 @@
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
 DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
+MethodOfLines = "94925ecb-adb7-4558-8ed8-f975c56a0bf4"
 ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
 NonlinearSolve = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
 OrdinaryDiffEqDefault = "50262376-6c5a-4cf5-baba-aaf4f84d72d7"
@@ -12,7 +14,11 @@ WildlandFire = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 
 [compat]
 Documenter = "1"
+DataFrames = "1"
 DynamicQuantities = "1"
 ModelingToolkit = "11"
 NonlinearSolve = "4"
+Plots = "1"
+OrdinaryDiffEqDefault = "1"
+Statistics = "1"
 Symbolics = "7"
