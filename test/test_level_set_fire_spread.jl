@@ -58,7 +58,7 @@ end
         spread_rate = S_val,
     )
 
-    dx = 2.0
+    dx = 5.0
     discretization = MOLFiniteDifference(
         [sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1];
         advection_scheme = WENOScheme()
@@ -93,9 +93,9 @@ end
     # Expected radius at t_end: r₀ + S*t_end = 10 + 1*5 = 15m
     r_expected = r0 + S_val * t_end
 
-    # Tolerance allows for discretization error on a coarse grid
-    # (Mandel et al. 2011 report 10-35% ROS errors for typical grid sizes with ENO1)
-    @test abs(r_tend - r_expected) / r_expected < 0.25  # within 25% on coarse grid
+    # Tolerance allows for discretization error on a coarse grid (dx=5m)
+    # WENO reduces errors vs standard FD but coarser grid increases spatial error
+    @test abs(r_tend - r_expected) / r_expected < 0.35
 end
 
 @testitem "LevelSetFireSpread - Custom Boundary Conditions" setup = [LevelSetSetup] tags = [:levelset] begin

@@ -312,7 +312,7 @@ sys = LevelSetFireSpread(domain_circ;
     spread_rate = S_val,
 )
 
-dx = 2.0
+dx = 5.0
 discretization = MOLFiniteDifference([sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1];
     advection_scheme = WENOScheme())
 prob = MethodOfLines.discretize(sys, discretization; checks = false)
