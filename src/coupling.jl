@@ -1,6 +1,7 @@
 export RothermelCoupler, TerrainSlope, TerrainSlopeCoupler, MidflameWind, MidflameWindCoupler
 export FuelModelLookup, FuelModelLookupCoupler
 export EMCCoupler, OneHourFuelMoistureCoupler
+export LevelSetCoupler
 
 using EarthSciMLBase
 using EarthSciMLBase: CoupleType, ConnectorSystem, param_to_var
@@ -29,6 +30,10 @@ struct EMCCoupler
 end
 
 struct OneHourFuelMoistureCoupler
+    sys::Any
+end
+
+struct LevelSetCoupler
     sys::Any
 end
 
@@ -280,4 +285,15 @@ function couple2(fm1::OneHourFuelMoistureCoupler, r::RothermelCoupler)
     fm1, r = fm1.sys, r.sys
     r = param_to_var(r, :Mf)
     return ConnectorSystem([r.Mf ~ fm1.MC1], r, fm1)
+end
+
+# RothermelFireSpread → LevelSetFireSpread (R → S)
+# Couples the Rothermel rate of spread output to the level-set fire spread rate parameter.
+function couple2(r::RothermelCoupler, ls::LevelSetCoupler)
+    r, ls = r.sys, ls.sys
+    ls = param_to_var(ls, :S)
+    # Find the S(t) variable from the substituted equation
+    eq_vars = collect(Symbolics.get_variables(equations(ls)[1]))
+    S_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :S, eq_vars))
+    return ConnectorSystem([S_sym ~ r.R], ls, r)
 end

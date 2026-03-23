@@ -131,3 +131,56 @@ end
     # Rothermel(26) + FuelModelLookup(5) + TerrainSlope(2) + MidflameWind(2) + EMC(1) + OneHourFM(1) + connectors
     @test length(equations(sys)) > 26 + 5 + 2 + 2 + 1 + 1
 end
+
+@testitem "LevelSetFireSpread has CoupleType" setup = [CouplingSetup] tags = [:coupling] begin
+    using DomainSets
+
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, 60.0)),
+        constBC(0.0, x ∈ Interval(0.0, 500.0), y ∈ Interval(0.0, 500.0)),
+    )
+    ls = LevelSetFireSpread(
+        domain;
+        initial_condition = (x, y) -> sqrt((x - 250.0)^2 + (y - 250.0)^2) - 10.0,
+    )
+    @test ls.metadata[EarthSciMLBase.CoupleType] === WildlandFire.LevelSetCoupler
+end
+
+@testitem "Rothermel-LevelSet coupling" setup = [CouplingSetup] tags = [:coupling] begin
+    using DomainSets
+
+    r = RothermelFireSpread()
+
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, 60.0)),
+        constBC(0.0, x ∈ Interval(0.0, 500.0), y ∈ Interval(0.0, 500.0)),
+    )
+    ls = LevelSetFireSpread(
+        domain;
+        initial_condition = (x, y) -> sqrt((x - 250.0)^2 + (y - 250.0)^2) - 10.0,
+    )
+
+    cs = EarthSciMLBase.couple2(
+        WildlandFire.RothermelCoupler(r),
+        WildlandFire.LevelSetCoupler(ls),
+    )
+
+    # The coupling should produce a ConnectorSystem
+    @test cs isa EarthSciMLBase.ConnectorSystem
+
+    # The connector equation should link S to R
+    @test length(cs.eqs) == 1
+    eq = cs.eqs[1]
+    lhs_name = Symbolics.tosymbol(eq.lhs, escape = false)
+    @test lhs_name == :S
+
+    # The modified level-set system should no longer have S as a parameter
+    @test !any(p -> Symbol(p) == :S, cs.from.ps)
+
+    # The Rothermel system should be unchanged
+    @test cs.to isa ModelingToolkit.AbstractSystem
+end
