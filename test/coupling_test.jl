@@ -184,3 +184,53 @@ end
     # The Rothermel system should be unchanged
     @test cs.to isa ModelingToolkit.AbstractSystem
 end
+
+@testitem "Rothermel-LevelSet couple and convert" setup = [CouplingSetup] tags = [:coupling] begin
+    using DomainSets
+
+    r = RothermelFireSpread()
+
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, 10.0)),
+        constBC(0.0, x ∈ Interval(0.0, 100.0), y ∈ Interval(0.0, 100.0)),
+    )
+    ls = LevelSetFireSpread(
+        domain;
+        initial_condition = (x, y) -> sqrt((x - 50.0)^2 + (y - 50.0)^2) - 10.0,
+    )
+
+    # Couple using the EarthSciMLBase.couple function
+    cs = couple(r, ls, domain)
+
+    # CoupledSystem should contain both systems
+    @test length(cs.systems) == 1       # Rothermel (ODE)
+    @test length(cs.pdesystems) == 1    # LevelSet (PDE)
+
+    # Convert to a merged PDESystem
+    pde = convert(PDESystem, cs)
+    @test pde isa PDESystem
+
+    # The merged PDE should have 27 equations: 1 level-set PDE + 26 Rothermel algebraic
+    @test length(equations(pde)) == 27
+
+    # The level-set ψ should be a dependent variable
+    dv_names = [Symbolics.tosymbol(dv, escape = false) for dv in pde.dvs]
+    @test :ψ ∈ dv_names
+
+    # Rothermel R should be a dependent variable (promoted to spatial)
+    @test any(n -> occursin("R", string(n)), string.(dv_names))
+
+    # Discretize and solve on a coarse grid
+    # TODO: This currently fails because MethodOfLines does not handle the
+    # algebraic Rothermel equations well. Fix in a follow-up.
+    using MethodOfLines, OrdinaryDiffEqSSPRK
+    dx = 25.0
+    discretization = MOLFiniteDifference(
+        [pde.ivs[2] => dx, pde.ivs[3] => dx], pde.ivs[1],
+    )
+    prob = MethodOfLines.discretize(pde, discretization; checks = false)
+    sol = solve(prob, SSPRK33(); dt = 0.5, adaptive = false, saveat = 10.0)
+    @test_broken sol.retcode == SciMLBase.ReturnCode.Success
+end
