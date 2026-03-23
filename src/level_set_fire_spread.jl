@@ -91,11 +91,11 @@ function LevelSetFireSpread(
     # Extract domain information
     t_domain = get_tspan(domain)
     spatial_eps = EarthSciMLBase.endpoints(domain)
-    @assert length(spatial_eps) == 2 "LevelSetFireSpread requires exactly 2 spatial dimensions, got $(length(spatial_eps))"
+    @assert length(spatial_eps) >= 2 "LevelSetFireSpread requires at least 2 spatial dimensions, got $(length(spatial_eps))"
     x_domain = spatial_eps[1]
     y_domain = spatial_eps[2]
 
-    # Get spatial variables from domain
+    # Get spatial variables from domain (use only the first 2 for the 2D fire PDE)
     spatial_vars = EarthSciMLBase.pvars(domain)
     x = spatial_vars[1]
     y = spatial_vars[2]
@@ -106,14 +106,33 @@ function LevelSetFireSpread(
     # Level-set function
     @variables ψ(..) [description = "Level-set function (fire front at ψ=0)", unit = u"m"]
 
-    # Spatial derivative operators
+    # Spatial derivative operators with coordinate transforms
+    # For meter domains, transforms are identity (1); for lat-lon, they convert
+    # d/d(rad) to d/d(meter) so the gradient is in physical space.
+    δs = EarthSciMLBase.partialderivatives(domain)
+    transforms = EarthSciMLBase.partialderivative_transforms(domain)
     Dx = Differential(x)
     Dy = Differential(y)
 
+    # Collect symbolic constants/parameters introduced by coordinate transforms
+    # (e.g., lat2meters, lon2m) so they can be included in the PDESystem.
+    ivs_set = Set(Symbolics.unwrap.([t, x, y]))
+    transform_params_set = Set{Any}()
+    transform_params = Num[]
+    for tf in transforms
+        tf isa Integer && continue  # Skip identity transforms (literal 1)
+        for v in Symbolics.get_variables(tf)
+            uv = Symbolics.unwrap(v)
+            if uv ∉ ivs_set && uv ∉ transform_params_set
+                push!(transform_params_set, uv)
+                push!(transform_params, v)
+            end
+        end
+    end
+
     # Gradient components — Eq. 6, Mandel et al. (2011)
-    # ψ has units m, x and y have units m, so Dx(ψ) and Dy(ψ) are dimensionless
-    ψ_x = Dx(ψ(t, x, y))
-    ψ_y = Dy(ψ(t, x, y))
+    ψ_x = δs[1](ψ(t, x, y))
+    ψ_y = δs[2](ψ(t, x, y))
 
     # Level-set equation — Eq. 9, Mandel et al. (2011)
     # ∂ψ/∂t + S‖∇ψ‖ = 0
@@ -148,7 +167,7 @@ function LevelSetFireSpread(
 
     return PDESystem(
         eq, bcs, pde_domains, [t, x, y], [ψ(t, x, y)],
-        [S, ψ_ref]; name = name,
+        [S, ψ_ref, transform_params...]; name = name,
         metadata = Dict(EarthSciMLBase.CoupleType => LevelSetCoupler)
     )
 end
