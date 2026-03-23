@@ -87,12 +87,16 @@ WENO spatial discretization and third-order Runge-Kutta temporal integration.
 
 ```@example levelset
 using DataFrames, ModelingToolkit, Symbolics, DynamicQuantities
-using WildlandFire
+using ModelingToolkit: t
+using WildlandFire, EarthSciMLBase, DomainSets
 
-sys = LevelSetFireSpread(
-    x_domain = (0.0, 100.0),
-    y_domain = (0.0, 100.0),
-    t_domain = (0.0, 10.0),
+@parameters x [unit = u"m"]
+@parameters y [unit = u"m"]
+domain = DomainInfo(
+    constIC(0.0, t ∈ Interval(0.0, 10.0)),
+    constBC(0.0, x ∈ Interval(0.0, 100.0), y ∈ Interval(0.0, 100.0)),
+)
+sys = LevelSetFireSpread(domain;
     initial_condition = (x, y) -> sqrt((x - 50.0)^2 + (y - 50.0)^2) - 10.0,
 )
 
@@ -298,7 +302,7 @@ This is the fundamental analytical solution for the level-set equation
 (Mandel et al. 2011, Sect. 3.4).
 
 ```@example levelset
-using MethodOfLines, DomainSets, OrdinaryDiffEqDefault, Plots
+using MethodOfLines, OrdinaryDiffEqDefault, Plots
 
 r0 = 10.0       # initial radius (m)
 S_val = 1.0      # spread rate (m/s)
@@ -306,10 +310,11 @@ domain_size = 100.0
 center = domain_size / 2.0
 t_end = 10.0
 
-sys = LevelSetFireSpread(
-    x_domain = (0.0, domain_size),
-    y_domain = (0.0, domain_size),
-    t_domain = (0.0, t_end),
+domain_circ = DomainInfo(
+    constIC(0.0, t ∈ Interval(0.0, t_end)),
+    constBC(0.0, x ∈ Interval(0.0, domain_size), y ∈ Interval(0.0, domain_size)),
+)
+sys = LevelSetFireSpread(domain_circ;
     initial_condition = (x, y) -> sqrt((x - center)^2 + (y - center)^2) - r0,
     spread_rate = S_val,
 )
