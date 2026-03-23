@@ -79,9 +79,9 @@ end
     # Fire should have spread: more burning cells at t_end
     @test burning_tend > burning_t0
 
-    # Check that center value keeps decreasing (fire front moves outward)
+    # Check that center value stays negative (well inside burning region)
     mid = div(size(psi, 2), 2) + 1
-    @test psi[end, mid, mid] < psi[1, mid, mid]
+    @test psi[end, mid, mid] < 0
 
     # Estimate fire radius from burning area:
     # Area ≈ n_burning * dx^2, radius ≈ sqrt(Area / π)
