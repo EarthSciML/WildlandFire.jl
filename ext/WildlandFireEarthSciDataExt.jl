@@ -21,6 +21,22 @@ if isdefined(EarthSciData, :LANDFIRECoupler)
     end
 end
 
+if isdefined(EarthSciData, :USGS3DEPCoupler)
+    @eval begin
+        # USGS3DEP dzdx/dzdy → TerrainSlope
+        function couple2(dep::EarthSciData.USGS3DEPCoupler, ts::WildlandFire.TerrainSlopeCoupler)
+            dep, ts = dep.sys, ts.sys
+            ts = param_to_var(ts, :dzdx, :dzdy)
+            return ConnectorSystem(
+                [
+                    ts.dzdx ~ dep.dzdx,
+                    ts.dzdy ~ dep.dzdy,
+                ], ts, dep
+            )
+        end
+    end
+end
+
 if isdefined(EarthSciData, :ERA5Coupler)
     @eval begin
         # ERA5 → MidflameWind (wind components)

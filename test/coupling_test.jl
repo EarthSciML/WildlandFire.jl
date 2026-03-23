@@ -117,6 +117,26 @@ end
     @test sys isa ModelingToolkit.AbstractSystem
 end
 
+@testitem "USGS3DEP-TerrainSlope coupling" setup = [CouplingSetup] tags = [:coupling] begin
+    using EarthSciData
+    using Dates
+
+    domain = DomainInfo(
+        DateTime(2018, 11, 8), DateTime(2018, 11, 9);
+        lonrange = deg2rad(-121.65):deg2rad(0.01):deg2rad(-121.55),
+        latrange = deg2rad(39.73):deg2rad(0.01):deg2rad(39.83),
+        levrange = 1:1,
+    )
+    dep = USGS3DEP(domain; resolution = 10.0)
+    ts = TerrainSlope()
+
+    cs = couple(dep, ts)
+    sys = convert(System, cs; compile = false)
+    @test sys isa ModelingToolkit.AbstractSystem
+    # Should have USGS3DEP equations (3) + TerrainSlope equations (2) + connectors (2)
+    @test length(equations(sys)) >= 3 + 2 + 2
+end
+
 @testitem "Full fire model coupling" setup = [CouplingSetup] tags = [:coupling] begin
     fm = FuelModelLookup()
     ts = TerrainSlope()
