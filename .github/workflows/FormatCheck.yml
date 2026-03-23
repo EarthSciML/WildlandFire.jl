@@ -1,14 +1,9 @@
-name: format-check
-
+name: Runic formatting
 on:
   push:
     branches:
-      - 'master'
-      - 'main'
-      - 'release-'
-    tags: '*'
+      - main
   pull_request:
-
 jobs:
   runic:
     runs-on: ubuntu-latest
