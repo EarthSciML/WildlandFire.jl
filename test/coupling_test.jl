@@ -151,3 +151,131 @@ end
     # Rothermel(26) + FuelModelLookup(5) + TerrainSlope(2) + MidflameWind(2) + EMC(1) + OneHourFM(1) + connectors
     @test length(equations(sys)) > 26 + 5 + 2 + 2 + 1 + 1
 end
+
+@testitem "LevelSetFireSpread has CoupleType" setup = [CouplingSetup] tags = [:coupling] begin
+    using DomainSets
+
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, 60.0)),
+        constBC(0.0, x ∈ Interval(0.0, 500.0), y ∈ Interval(0.0, 500.0)),
+    )
+    ls = LevelSetFireSpread(
+        domain;
+        initial_condition = (x, y) -> sqrt((x - 250.0)^2 + (y - 250.0)^2) - 10.0,
+    )
+    @test ls.metadata[EarthSciMLBase.CoupleType] === WildlandFire.LevelSetCoupler
+end
+
+@testitem "Rothermel-LevelSet coupling" setup = [CouplingSetup] tags = [:coupling] begin
+    using DomainSets
+
+    r = RothermelFireSpread()
+
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, 60.0)),
+        constBC(0.0, x ∈ Interval(0.0, 500.0), y ∈ Interval(0.0, 500.0)),
+    )
+    ls = LevelSetFireSpread(
+        domain;
+        initial_condition = (x, y) -> sqrt((x - 250.0)^2 + (y - 250.0)^2) - 10.0,
+    )
+
+    cs = EarthSciMLBase.couple2(
+        WildlandFire.RothermelCoupler(r),
+        WildlandFire.LevelSetCoupler(ls),
+    )
+
+    # The coupling should produce a ConnectorSystem
+    @test cs isa EarthSciMLBase.ConnectorSystem
+
+    # The connector equation should link S to R
+    @test length(cs.eqs) == 1
+    eq = cs.eqs[1]
+    lhs_name = Symbolics.tosymbol(eq.lhs, escape = false)
+    @test lhs_name == :S
+
+    # The modified level-set system should no longer have S as a parameter
+    @test !any(p -> Symbol(p) == :S, cs.from.ps)
+
+    # The Rothermel system should be unchanged
+    @test cs.to isa ModelingToolkit.AbstractSystem
+end
+
+@testitem "Rothermel-LevelSet couple and convert" setup = [CouplingSetup] tags = [:coupling] begin
+    using DomainSets
+
+    r = RothermelFireSpread()
+
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, 10.0)),
+        constBC(0.0, x ∈ Interval(0.0, 100.0), y ∈ Interval(0.0, 100.0)),
+    )
+    ls = LevelSetFireSpread(
+        domain;
+        initial_condition = (x, y) -> sqrt((x - 50.0)^2 + (y - 50.0)^2) - 10.0,
+    )
+
+    # Couple using the EarthSciMLBase.couple function
+    cs = couple(r, ls, domain)
+
+    # CoupledSystem should contain both systems
+    @test length(cs.systems) == 1       # Rothermel (ODE)
+    @test length(cs.pdesystems) == 1    # LevelSet (PDE)
+
+    # Convert to a merged PDESystem
+    pde = convert(PDESystem, cs)
+    @test pde isa PDESystem
+
+    # The merged PDE should have 27 equations: 1 level-set PDE + 26 Rothermel algebraic
+    @test length(equations(pde)) == 27
+
+    # The level-set ψ should be a dependent variable
+    dv_names = [Symbolics.tosymbol(dv, escape = false) for dv in pde.dvs]
+    @test :ψ ∈ dv_names
+
+    # Rothermel R should be a dependent variable (promoted to spatial)
+    @test any(n -> occursin("R", string(n)), string.(dv_names))
+
+    # Discretize and solve on a coarse grid.
+    # Parameter defaults from @constants metadata must be copied into
+    # initial_conditions for MethodOfLines to find them.
+    using MethodOfLines, OrdinaryDiffEqSSPRK
+    for p in pde.ps
+        if ModelingToolkit.hasdefault(p)
+            pde.initial_conditions[Symbolics.unwrap(p)] = ModelingToolkit.getdefault(p)
+        end
+    end
+    # Set Rothermel fuel model 1 (short grass) inputs
+    for p in pde.ps
+        sym = Symbolics.tosymbol(p, escape = false)
+        if sym == Symbol("RothermelFireSpread₊σ")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 11483.0
+        elseif sym == Symbol("RothermelFireSpread₊w0")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.166
+        elseif sym == Symbol("RothermelFireSpread₊δ")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.3048
+        elseif sym == Symbol("RothermelFireSpread₊Mx")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.12
+        elseif sym == Symbol("RothermelFireSpread₊Mf")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.05
+        elseif sym == Symbol("RothermelFireSpread₊U")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 2.235
+        elseif sym == Symbol("RothermelFireSpread₊tanϕ")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.0
+        end
+    end
+
+    dx = 25.0
+    discretization = MOLFiniteDifference(
+        [pde.ivs[2] => dx, pde.ivs[3] => dx], pde.ivs[1],
+    )
+    prob = MethodOfLines.discretize(pde, discretization; checks = false)
+    sol = solve(prob, SSPRK33(); dt = 0.5, adaptive = false, saveat = 10.0)
+    @test sol.retcode == SciMLBase.ReturnCode.Success
+end
