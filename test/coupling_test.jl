@@ -242,15 +242,40 @@ end
     # Rothermel R should be a dependent variable (promoted to spatial)
     @test any(n -> occursin("R", string(n)), string.(dv_names))
 
-    # Discretize and solve on a coarse grid
-    # TODO: This currently fails because MethodOfLines does not handle the
-    # algebraic Rothermel equations well. Fix in a follow-up.
+    # Discretize and solve on a coarse grid.
+    # Parameter defaults from @constants metadata must be copied into
+    # initial_conditions for MethodOfLines to find them.
     using MethodOfLines, OrdinaryDiffEqSSPRK
+    for p in pde.ps
+        if ModelingToolkit.hasdefault(p)
+            pde.initial_conditions[Symbolics.unwrap(p)] = ModelingToolkit.getdefault(p)
+        end
+    end
+    # Set Rothermel fuel model 1 (short grass) inputs
+    for p in pde.ps
+        sym = Symbolics.tosymbol(p, escape = false)
+        if sym == Symbol("RothermelFireSpread₊σ")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 11483.0
+        elseif sym == Symbol("RothermelFireSpread₊w0")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.166
+        elseif sym == Symbol("RothermelFireSpread₊δ")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.3048
+        elseif sym == Symbol("RothermelFireSpread₊Mx")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.12
+        elseif sym == Symbol("RothermelFireSpread₊Mf")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.05
+        elseif sym == Symbol("RothermelFireSpread₊U")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 2.235
+        elseif sym == Symbol("RothermelFireSpread₊tanϕ")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.0
+        end
+    end
+
     dx = 25.0
     discretization = MOLFiniteDifference(
         [pde.ivs[2] => dx, pde.ivs[3] => dx], pde.ivs[1],
     )
     prob = MethodOfLines.discretize(pde, discretization; checks = false)
     sol = solve(prob, SSPRK33(); dt = 0.5, adaptive = false, saveat = 10.0)
-    @test_broken sol.retcode == SciMLBase.ReturnCode.Success
+    @test sol.retcode == SciMLBase.ReturnCode.Success
 end
