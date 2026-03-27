@@ -104,6 +104,7 @@ sol = solve(prob)
         one_dimless = 1.0, [description = "Dimensionless one", unit = u"1"]
         zero_dimless = 0.0, [description = "Dimensionless zero", unit = u"1"]
         zero_fuel = 0.0, [description = "Zero fuel mass", unit = u"kg/m^2"]
+        eps_fuel = 1e-10, [description = "Small epsilon for fuel comparison", unit = u"kg/m^2"]
 
         # Heat flux extinction depth — Eq. 10, Clark et al. (1996)
         alpha_ext = 50.0, [description = "Heat flux e-folding extinction depth", unit = u"m"]
@@ -135,17 +136,17 @@ sol = solve(prob)
         # Burn rate modulation factor — Eq. 8, Clark et al. (1996)
         # B_ratio = sqrt((|V_A| + 1) / (|V_A| + 4))
         # Note: random factor r_f omitted (r_f ≈ 1 ± 0.05) for deterministic implementation
-        B_ratio ~ sqrt((V_A + one_vel) / (V_A + four_vel)),
+        B_ratio ~ sqrt((abs(V_A) + one_vel) / (abs(V_A) + four_vel)),
 
         # Forward fire spread rate — Eq. 9, Clark et al. (1996)
         # S_f = S_a * exp(k_spread * |V_A|)
-        S_f ~ S_a * exp(k_spread * V_A),
+        S_f ~ S_a * exp(k_spread * abs(V_A)),
 
         # Ground fuel consumption ODEs — derived from burn rates on p. 180
         # Each fuel type consumed at nominal rate * B_ratio while fuel remains
-        D(M_litter) ~ -R_litter * B_ratio * ifelse(M_litter > zero_fuel, one_dimless, zero_dimless),
-        D(M_trash) ~ -R_trash * B_ratio * ifelse(M_trash > zero_fuel, one_dimless, zero_dimless),
-        D(M_scrub) ~ -R_scrub * B_ratio * ifelse(M_scrub > zero_fuel, one_dimless, zero_dimless),
+        D(M_litter) ~ -R_litter * B_ratio * ifelse(M_litter > eps_fuel, one_dimless, zero_dimless),
+        D(M_trash) ~ -R_trash * B_ratio * ifelse(M_trash > eps_fuel, one_dimless, zero_dimless),
+        D(M_scrub) ~ -R_scrub * B_ratio * ifelse(M_scrub > eps_fuel, one_dimless, zero_dimless),
 
         # Cumulative heat flux from ground fuels — p. 180, Clark et al. (1996)
         # Track cumulative heat energy for canopy ignition trigger
@@ -156,14 +157,14 @@ sol = solve(prob)
         canopy_burning ~ ifelse(Q_cumulative > Q_canopy_threshold, one_dimless, zero_dimless),
 
         # Canopy fuel consumption ODE
-        D(M_canopy) ~ -R_canopy * B_ratio * canopy_burning * ifelse(M_canopy > zero_fuel, one_dimless, zero_dimless),
+        D(M_canopy) ~ -R_canopy * B_ratio * canopy_burning * ifelse(M_canopy > eps_fuel, one_dimless, zero_dimless),
 
         # Total burn rates
-        ground_burn_rate ~ R_litter * B_ratio * ifelse(M_litter > zero_fuel, one_dimless, zero_dimless) +
-            R_trash * B_ratio * ifelse(M_trash > zero_fuel, one_dimless, zero_dimless) +
-            R_scrub * B_ratio * ifelse(M_scrub > zero_fuel, one_dimless, zero_dimless),
+        ground_burn_rate ~ R_litter * B_ratio * ifelse(M_litter > eps_fuel, one_dimless, zero_dimless) +
+            R_trash * B_ratio * ifelse(M_trash > eps_fuel, one_dimless, zero_dimless) +
+            R_scrub * B_ratio * ifelse(M_scrub > eps_fuel, one_dimless, zero_dimless),
         total_burn_rate ~ ground_burn_rate +
-            R_canopy * B_ratio * canopy_burning * ifelse(M_canopy > zero_fuel, one_dimless, zero_dimless),
+            R_canopy * B_ratio * canopy_burning * ifelse(M_canopy > eps_fuel, one_dimless, zero_dimless),
 
         # Sensible heat flux at surface — derived from p. 180
         # 97% of combustion heat goes to sensible heat (3% to moisture evaporation)
@@ -171,7 +172,7 @@ sol = solve(prob)
 
         # Latent heat flux at surface — derived from p. 180
         # Water vapor from combustion of cellulose (56% of dry fuel mass) plus evaporated moisture
-        F_l ~ (f_water * total_burn_rate + f_evap * H_c * total_burn_rate / L_v) * L_v,
+        F_l ~ f_water * L_v * total_burn_rate + f_evap * H_c * total_burn_rate,
     ]
 
     return System(eqs, t; name)
