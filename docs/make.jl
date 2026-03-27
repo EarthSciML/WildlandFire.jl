@@ -20,6 +20,7 @@ makedocs(;
         "Level-Set Fire Spread" => "level_set_fire_spread.md",
         "Coupling" => "coupling.md",
         "FSim Wildfire Risk" => "fsim.md",
+        "Clark et al. (1996) Fire Model" => "clark1996.md",
     ],
 )
 

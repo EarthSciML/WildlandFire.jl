@@ -21,6 +21,7 @@ include("fire_spread_direction.jl")
 include("nfdrs.jl")
 include("level_set_fire_spread.jl")
 include("fsim.jl")
+include("clark1996.jl")
 include("coupling.jl")
 
 # Export NFDRS components
@@ -47,5 +48,9 @@ export anderson_fuel_coefficients, ANDERSON_FUEL_DATA
 # Export FSim components
 export FireOccurrenceLogistic, FireContainment
 export BurnProbability, ERCTimeSeries, FlameLengthCategory
+
+# Export Clark et al. (1996) coupled atmosphere-fire model
+export Clark1996FireSpread, Clark1996HeatFluxProfile
+export Clark1996ConvectiveFroudeNumber, Clark1996WindProfile
 
 end # module
