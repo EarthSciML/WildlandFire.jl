@@ -104,7 +104,7 @@ sol = solve(prob)
         one_dimless = 1.0, [description = "Dimensionless one", unit = u"1"]
         zero_dimless = 0.0, [description = "Dimensionless zero", unit = u"1"]
         zero_fuel = 0.0, [description = "Zero fuel mass", unit = u"kg/m^2"]
-        eps_fuel = 1e-10, [description = "Small epsilon for fuel comparison", unit = u"kg/m^2"]
+        eps_fuel = 1.0e-10, [description = "Small epsilon for fuel comparison", unit = u"kg/m^2"]
 
         # Heat flux extinction depth — Eq. 10, Clark et al. (1996)
         alpha_ext = 50.0, [description = "Heat flux e-folding extinction depth", unit = u"m"]
@@ -139,8 +139,8 @@ sol = solve(prob)
         B_ratio ~ sqrt((abs(V_A) + one_vel) / (abs(V_A) + four_vel)),
 
         # Forward fire spread rate — Eq. 9, Clark et al. (1996)
-        # S_f = S_a * exp(k_spread * |V_A|)
-        S_f ~ S_a * exp(k_spread * abs(V_A)),
+        # S_f = S_a * exp(k_spread * |V_A|) if S_f ≤ |V_A|, otherwise S_f = |V_A|
+        S_f ~ min(S_a * exp(k_spread * abs(V_A)), abs(V_A)),
 
         # Ground fuel consumption ODEs — derived from burn rates on p. 180
         # Each fuel type consumed at nominal rate * B_ratio while fuel remains

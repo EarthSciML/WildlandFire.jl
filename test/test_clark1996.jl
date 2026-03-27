@@ -95,7 +95,8 @@ end
     ]
 
     for tc in test_cases
-        S_f_calc = S_a * exp(k * tc.U_0)
+        # Apply the full Eq. 9 with limiting condition
+        S_f_calc = min(S_a * exp(k * tc.U_0), tc.U_0)
         @test isapprox(S_f_calc, tc.S_f_expected, atol = 0.015)
     end
 end
