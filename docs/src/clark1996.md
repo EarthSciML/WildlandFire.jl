@@ -15,7 +15,8 @@ indicates weak coupling where wind dominates.
 The fire model tracks four fuel types — litter, trash, scrub, and canopy — with
 corresponding burn rates and heat flux outputs. It includes an oxygen limitation
 factor (``B_{ratio}``) that modulates burn rates at low wind speeds, and computes both
-sensible and latent heat fluxes from combustion.
+sensible and latent heat fluxes from combustion. The canopy ignites automatically
+when the cumulative ground heat flux exceeds 170 kJ/m² as specified in the paper.
 
 **Reference**: Clark, T.L., Jenkins, M.A., Coen, J.L., and Packham, D.R. (1996). A Coupled
 Atmosphere-Fire Model: Role of the Convective Froude Number and Dynamic Fingering at the
@@ -115,12 +116,12 @@ scatter!(p, U_0_table, S_fa_table, label="Sf_a (actual)", color=:orange, marker=
 p
 ```
 
-### Fuel Consumption Time Series
+### Fuel Consumption Time Series and Automatic Canopy Ignition
 
 Simulation of fuel consumption for the standard experiment conditions (FIR7CR: ``U_0 = 3`` m/s,
 single 420 m fire line). Ground fuels (litter, trash, scrub) are consumed at different rates,
-with litter being the fastest. Canopy fuel consumption is shown both with and without
-canopy ignition.
+with litter being the fastest. The canopy ignites automatically when the cumulative ground
+heat flux reaches 170 kJ/m² as specified on p. 180 of Clark et al. (1996).
 
 ```@example clark1996_impl
 using OrdinaryDiffEqDefault
@@ -128,43 +129,66 @@ using OrdinaryDiffEqDefault
 sys = Clark1996FireSpread()
 compiled = mtkcompile(sys)
 
-# Ground-only burning
-prob_ground = ODEProblem(compiled,
+# Short simulation - before canopy ignition
+prob_short = ODEProblem(compiled,
     [compiled.M_litter => 2.0,
      compiled.M_trash => 0.5,
      compiled.M_scrub => 0.2,
-     compiled.M_canopy => 1.2],
-    (0.0, 200.0),
-    [compiled.V_A => 3.0,
-     compiled.canopy_burning => 0.0])
-sol_ground = solve(prob_ground)
+     compiled.M_canopy => 1.2,
+     compiled.Q_cumulative => 0.0],
+    (0.0, 50.0),  # Short duration
+    [compiled.V_A => 3.0])
+sol_short = solve(prob_short)
 
-# Ground + canopy burning
+# Full simulation - with automatic canopy ignition
 prob_full = ODEProblem(compiled,
     [compiled.M_litter => 2.0,
      compiled.M_trash => 0.5,
      compiled.M_scrub => 0.2,
-     compiled.M_canopy => 1.2],
+     compiled.M_canopy => 1.2,
+     compiled.Q_cumulative => 0.0],
     (0.0, 200.0),
-    [compiled.V_A => 3.0,
-     compiled.canopy_burning => 1.0])
+    [compiled.V_A => 3.0])
 sol_full = solve(prob_full)
 
-p1 = plot(sol_ground.t, sol_ground[compiled.M_litter], label="Litter", lw=2, color=:brown,
+# Plot 1: Short simulation before canopy ignition
+p1 = plot(sol_short.t, sol_short[compiled.M_litter], label="Litter", lw=2, color=:brown,
     xlabel="Time (s)", ylabel="Fuel Mass (kg m⁻²)",
-    title="Ground Fuel Only (U₀ = 3 m/s)")
-plot!(p1, sol_ground.t, sol_ground[compiled.M_trash], label="Trash", lw=2, color=:orange)
-plot!(p1, sol_ground.t, sol_ground[compiled.M_scrub], label="Scrub", lw=2, color=:green)
-plot!(p1, sol_ground.t, sol_ground[compiled.M_canopy], label="Canopy (not burning)", lw=2, color=:darkgreen, ls=:dash)
+    title="Before Canopy Ignition (U₀ = 3 m/s)")
+plot!(p1, sol_short.t, sol_short[compiled.M_trash], label="Trash", lw=2, color=:orange)
+plot!(p1, sol_short.t, sol_short[compiled.M_scrub], label="Scrub", lw=2, color=:green)
+plot!(p1, sol_short.t, sol_short[compiled.M_canopy], label="Canopy", lw=2, color=:darkgreen, ls=:dash)
 
+# Plot 2: Full simulation with automatic canopy ignition
 p2 = plot(sol_full.t, sol_full[compiled.M_litter], label="Litter", lw=2, color=:brown,
     xlabel="Time (s)", ylabel="Fuel Mass (kg m⁻²)",
-    title="Ground + Canopy Burning (U₀ = 3 m/s)")
+    title="With Automatic Canopy Ignition (U₀ = 3 m/s)")
 plot!(p2, sol_full.t, sol_full[compiled.M_trash], label="Trash", lw=2, color=:orange)
 plot!(p2, sol_full.t, sol_full[compiled.M_scrub], label="Scrub", lw=2, color=:green)
 plot!(p2, sol_full.t, sol_full[compiled.M_canopy], label="Canopy", lw=2, color=:darkgreen)
 
 plot(p1, p2, layout=(1,2), size=(900, 400))
+```
+
+### Canopy Ignition Process
+
+The following plot shows the cumulative heat flux and canopy ignition timing. The canopy
+ignites automatically when the cumulative heat flux from ground fuels reaches 170 kJ/m²
+(shown as the horizontal dashed line).
+
+```@example clark1996_impl
+# Create plot showing cumulative heat flux and canopy burning status
+p3 = plot(sol_full.t, sol_full[compiled.Q_cumulative] ./ 1000, label="Cumulative heat flux",
+    lw=2, color=:red, xlabel="Time (s)", ylabel="Energy (kJ m⁻²)",
+    title="Canopy Ignition Process")
+hline!(p3, [170.0], ls=:dash, color=:gray, label="Ignition threshold (170 kJ/m²)")
+
+# Add secondary y-axis for canopy burning indicator
+p4 = plot(sol_full.t, sol_full[compiled.canopy_burning], label="Canopy burning",
+    lw=3, color=:orange, xlabel="Time (s)", ylabel="Canopy Burning (0/1)",
+    title="Canopy Burning Status", ylims=(0, 1.2))
+
+plot(p3, p4, layout=(2,1), size=(600, 600))
 ```
 
 ### Sensible Heat Flux vs Wind Speed

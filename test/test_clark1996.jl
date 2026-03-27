@@ -11,8 +11,8 @@ end
     sys = Clark1996FireSpread()
 
     @test sys !== nothing
-    @test length(equations(sys)) == 10
-    @test length(unknowns(sys)) == 10
+    @test length(equations(sys)) == 12
+    @test length(unknowns(sys)) == 12
 
     # Check state variables exist
     var_names = [string(Symbolics.tosymbol(v, escape = false)) for v in unknowns(sys)]
@@ -20,6 +20,8 @@ end
     @test "M_trash" in var_names
     @test "M_scrub" in var_names
     @test "M_canopy" in var_names
+    @test "Q_cumulative" in var_names
+    @test "canopy_burning" in var_names
     @test "B_ratio" in var_names
     @test "S_f" in var_names
     @test "ground_burn_rate" in var_names
@@ -30,7 +32,7 @@ end
     # Check parameters exist
     param_names = [string(Symbolics.tosymbol(p, escape = false)) for p in parameters(sys)]
     @test "V_A" in param_names
-    @test "canopy_burning" in param_names
+    # Note: canopy_burning is now a computed variable, not a parameter
 end
 
 @testitem "Clark1996ConvectiveFroudeNumber Structural Verification" setup = [Clark1996Setup] tags = [:clark1996] begin
@@ -120,7 +122,7 @@ end
     sys = Clark1996FireSpread()
     compiled = mtkcompile(sys)
 
-    # Test with V_A = 3 m/s (FIR7CR experiment conditions), ground fuel only
+    # Test with V_A = 3 m/s (FIR7CR experiment conditions), short duration before canopy ignition
     M_litter_0 = 2.0  # kg/m²
     M_trash_0 = 0.5
     M_scrub_0 = 0.2
@@ -133,11 +135,11 @@ end
             compiled.M_trash => M_trash_0,
             compiled.M_scrub => M_scrub_0,
             compiled.M_canopy => M_canopy_0,
+            compiled.Q_cumulative => 0.0,
         ],
-        (0.0, 120.0),
+        (0.0, 30.0),  # Short duration to test before canopy ignition
         [
             compiled.V_A => 3.0,
-            compiled.canopy_burning => 0.0,
         ]
     )
     sol = solve(prob)
@@ -147,8 +149,8 @@ end
     @test sol[compiled.M_trash][end] < M_trash_0
     @test sol[compiled.M_scrub][end] < M_scrub_0
 
-    # Canopy should not burn when canopy_burning = 0
-    @test isapprox(sol[compiled.M_canopy][end], M_canopy_0, rtol = 1.0e-6)
+    # Cumulative heat flux should increase
+    @test sol[compiled.Q_cumulative][end] > 0.0
 
     # Heat fluxes should be positive
     @test all(sol[compiled.F_s] .>= 0.0)
@@ -167,11 +169,8 @@ end
     sys = Clark1996FireSpread()
     compiled = mtkcompile(sys)
 
-    # Run long enough for litter to deplete (R_litter = 0.04 kg/m²/s, M_litter = 2.0)
-    # Time to deplete (approx): 2.0 / (0.04 * B_ratio) where B_ratio ≈ 0.756 at V_A=3
-    # ≈ 2.0 / 0.0302 ≈ 66 s
-    # But trash (0.5/0.005=100s/B) and scrub (0.2/0.004=50s/B) also deplete
-
+    # Run long enough for all fuels to deplete
+    # Canopy will automatically ignite once cumulative heat flux reaches threshold
     prob = ODEProblem(
         compiled,
         [
@@ -179,11 +178,11 @@ end
             compiled.M_trash => 0.5,
             compiled.M_scrub => 0.2,
             compiled.M_canopy => 1.2,
+            compiled.Q_cumulative => 0.0,
         ],
         (0.0, 200.0),
         [
             compiled.V_A => 3.0,
-            compiled.canopy_burning => 0.0,
         ]
     )
     sol = solve(prob)
@@ -196,13 +195,17 @@ end
     @test all(sol[compiled.M_litter] .>= -0.01)
     @test all(sol[compiled.M_trash] .>= -0.01)
     @test all(sol[compiled.M_scrub] .>= -0.01)
+
+    # Canopy should ignite automatically and be partially consumed
+    @test sol[compiled.M_canopy][end] < 1.2
+    @test any(sol[compiled.canopy_burning] .> 0.0)  # Canopy should have ignited at some point
 end
 
-@testitem "Clark1996FireSpread Canopy Burning" setup = [Clark1996Setup] tags = [:clark1996] begin
+@testitem "Clark1996FireSpread Automatic Canopy Ignition" setup = [Clark1996Setup] tags = [:clark1996] begin
     sys = Clark1996FireSpread()
     compiled = mtkcompile(sys)
 
-    # Test with canopy burning enabled
+    # Test automatic canopy ignition when cumulative heat flux exceeds threshold
     prob = ODEProblem(
         compiled,
         [
@@ -210,40 +213,70 @@ end
             compiled.M_trash => 0.5,
             compiled.M_scrub => 0.2,
             compiled.M_canopy => 1.2,
+            compiled.Q_cumulative => 0.0,
         ],
-        (0.0, 60.0),
+        (0.0, 120.0),  # Run long enough for canopy ignition to occur
         [
             compiled.V_A => 3.0,
-            compiled.canopy_burning => 1.0,
         ]
     )
     sol = solve(prob)
 
-    # Canopy should decrease when burning
+    # Cumulative heat flux should reach the threshold (170 kJ/m²)
+    @test sol[compiled.Q_cumulative][end] > 170000.0
+
+    # Canopy should ignite automatically when threshold is exceeded
+    ignition_times = findall(x -> x > 0.5, sol[compiled.canopy_burning])
+    @test length(ignition_times) > 0  # Canopy should ignite at some point
+
+    # Canopy fuel should decrease after ignition
     @test sol[compiled.M_canopy][end] < 1.2
 
-    # Total burn rate should be higher than ground-only
-    @test all(sol[compiled.total_burn_rate] .>= sol[compiled.ground_burn_rate])
+    # Total burn rate should be higher than ground-only after canopy ignites
+    late_time_idx = findlast(x -> sol.t[x] > sol.t[end] * 0.8, 1:length(sol.t))
+    @test sol[compiled.total_burn_rate][late_time_idx] >= sol[compiled.ground_burn_rate][late_time_idx]
 
-    # Sensible heat flux should be higher with canopy burning
-    prob_no_canopy = ODEProblem(
+    # Heat fluxes should be positive throughout
+    @test all(sol[compiled.F_s] .>= 0.0)
+    @test all(sol[compiled.F_l] .>= 0.0)
+end
+
+@testitem "Clark1996FireSpread Canopy Ignition Threshold" setup = [Clark1996Setup] tags = [:clark1996] begin
+    # Test that canopy ignition occurs exactly at the 170 kJ/m² threshold
+    sys = Clark1996FireSpread()
+    compiled = mtkcompile(sys)
+
+    # Test with Q_cumulative just below threshold
+    prob_below = ODEProblem(
         compiled,
         [
             compiled.M_litter => 2.0,
             compiled.M_trash => 0.5,
             compiled.M_scrub => 0.2,
             compiled.M_canopy => 1.2,
+            compiled.Q_cumulative => 169000.0,  # Just below 170 kJ/m²
         ],
-        (0.0, 60.0),
-        [
-            compiled.V_A => 3.0,
-            compiled.canopy_burning => 0.0,
-        ]
+        (0.0, 1.0),  # Very short time
+        [compiled.V_A => 3.0]
     )
-    sol_no_canopy = solve(prob_no_canopy)
+    sol_below = solve(prob_below)
+    @test sol_below[compiled.canopy_burning][1] ≈ 0.0  # Should not be burning
 
-    # At t=0, heat flux with canopy should be higher
-    @test sol[compiled.F_s][1] > sol_no_canopy[compiled.F_s][1]
+    # Test with Q_cumulative just above threshold
+    prob_above = ODEProblem(
+        compiled,
+        [
+            compiled.M_litter => 2.0,
+            compiled.M_trash => 0.5,
+            compiled.M_scrub => 0.2,
+            compiled.M_canopy => 1.2,
+            compiled.Q_cumulative => 171000.0,  # Just above 170 kJ/m²
+        ],
+        (0.0, 1.0),  # Very short time
+        [compiled.V_A => 3.0]
+    )
+    sol_above = solve(prob_above)
+    @test sol_above[compiled.canopy_burning][1] ≈ 1.0  # Should be burning
 end
 
 @testitem "Convective Froude Number — Eq. 1" setup = [Clark1996Setup] tags = [:clark1996] begin

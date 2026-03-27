@@ -37,8 +37,10 @@ combustion (56% of dry fuel mass).
 
 # Canopy Ignition
 
-The canopy ignites when the cumulative ground heat flux exceeds a threshold of 170 kJ/m².
-Before ignition, only ground fuels (litter, trash, scrub) burn.
+The canopy automatically ignites when the cumulative ground heat flux exceeds a threshold
+of 170 kJ/m² (as stated on p. 180 of Clark et al., 1996). Before ignition, only ground
+fuels (litter, trash, scrub) burn. The model tracks the cumulative heat energy released
+and triggers canopy burning once the threshold is exceeded.
 
 # Arguments
 - `name`: System name (default `:Clark1996FireSpread`)
@@ -64,10 +66,16 @@ using ModelingToolkit: t, D
 sys = Clark1996FireSpread()
 compiled = mtkcompile(sys)
 
-# Burning at wind speed of 3 m/s
-prob = ODEProblem(compiled, [], (0.0, 120.0),
+# Set initial fuel masses and run at wind speed of 3 m/s
+prob = ODEProblem(compiled,
+    [compiled.M_litter => 2.0, compiled.M_trash => 0.5,
+     compiled.M_scrub => 0.2, compiled.M_canopy => 1.2,
+     compiled.Q_cumulative => 0.0],
+    (0.0, 120.0),
     [compiled.V_A => 3.0])
 sol = solve(prob)
+
+# Canopy ignition occurs automatically when cumulative heat flux reaches 170 kJ/m²
 ```
 """
 @component function Clark1996FireSpread(; name = :Clark1996FireSpread)
@@ -99,11 +107,13 @@ sol = solve(prob)
 
         # Heat flux extinction depth — Eq. 10, Clark et al. (1996)
         alpha_ext = 50.0, [description = "Heat flux e-folding extinction depth", unit = u"m"]
+
+        # Canopy ignition threshold — p. 180, Clark et al. (1996)
+        Q_canopy_threshold = 170000.0, [description = "Cumulative heat flux threshold for canopy ignition", unit = u"J/m^2"]
     end
 
     @parameters begin
         V_A, [description = "Tracer-advecting wind speed at 15 m AGL", unit = u"m/s"]
-        canopy_burning, [description = "Whether canopy is burning (1=yes, 0=no) (dimensionless)", unit = u"1"]
     end
 
     @variables begin
@@ -111,6 +121,8 @@ sol = solve(prob)
         M_trash(t), [description = "Trash fuel mass remaining", unit = u"kg/m^2"]
         M_scrub(t), [description = "Scrub fuel mass remaining", unit = u"kg/m^2"]
         M_canopy(t), [description = "Dry canopy fuel mass remaining", unit = u"kg/m^2"]
+        Q_cumulative(t), [description = "Cumulative ground heat flux for canopy ignition", unit = u"J/m^2"]
+        canopy_burning(t), [description = "Whether canopy is burning (1=yes, 0=no) (dimensionless)", unit = u"1"]
         B_ratio(t), [description = "Burn rate modulation factor (dimensionless)", unit = u"1"]
         S_f(t), [description = "Forward fire spread rate (McArthur)", unit = u"m/s"]
         ground_burn_rate(t), [description = "Total ground fuel burn rate", unit = u"kg/(m^2*s)"]
@@ -129,11 +141,21 @@ sol = solve(prob)
         # S_f = S_a * exp(k_spread * |V_A|)
         S_f ~ S_a * exp(k_spread * V_A),
 
-        # Fuel consumption ODEs — derived from burn rates on p. 180
+        # Ground fuel consumption ODEs — derived from burn rates on p. 180
         # Each fuel type consumed at nominal rate * B_ratio while fuel remains
         D(M_litter) ~ -R_litter * B_ratio * ifelse(M_litter > zero_fuel, one_dimless, zero_dimless),
         D(M_trash) ~ -R_trash * B_ratio * ifelse(M_trash > zero_fuel, one_dimless, zero_dimless),
         D(M_scrub) ~ -R_scrub * B_ratio * ifelse(M_scrub > zero_fuel, one_dimless, zero_dimless),
+
+        # Cumulative heat flux from ground fuels — p. 180, Clark et al. (1996)
+        # Track cumulative heat energy for canopy ignition trigger
+        D(Q_cumulative) ~ (one_dimless - f_evap) * H_c * ground_burn_rate,
+
+        # Canopy ignition logic — p. 180, Clark et al. (1996)
+        # Canopy ignites when cumulative ground heat flux exceeds 170 kJ/m²
+        canopy_burning ~ ifelse(Q_cumulative > Q_canopy_threshold, one_dimless, zero_dimless),
+
+        # Canopy fuel consumption ODE
         D(M_canopy) ~ -R_canopy * B_ratio * canopy_burning * ifelse(M_canopy > zero_fuel, one_dimless, zero_dimless),
 
         # Total burn rates
