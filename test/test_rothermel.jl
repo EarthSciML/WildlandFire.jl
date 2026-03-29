@@ -563,8 +563,10 @@ end
     UE = sol[compiled_sys.UE]
     @test UE > 0
 
-    # Test the inverse relationship: UE = [(φE * β_ratio^E) / C]^(1/B)
-    UE_expected = (φE * 0.5^0.5 / 7.47)^(1 / 0.15)
+    # Test the inverse relationship: UE = UE_ref * [(φE * β_ratio^E) / C]^(1/B)
+    # UE_ref = 0.3048/60 m/s (1 ft/min), matching U_ref in RothermelFireSpread
+    UE_ref = 0.3048 / 60
+    UE_expected = UE_ref * (φE * 0.5^0.5 / 7.47)^(1 / 0.15)
     @test UE ≈ UE_expected rtol = 1.0e-6
 
     # Test with no slope factor
