@@ -70,9 +70,13 @@ sol = solve(prob)
 @component function RothermelFireSpread(; name = :RothermelFireSpread)
     # Reference values for non-dimensionalization of quantities raised to non-integer powers
     # Following CLAUDE.md guidance: divide by reference, raise to power, multiply back
+    #
+    # U_ref converts m/s to ft/min for the wind factor equation, whose empirical
+    # coefficients were calibrated with U in ft/min (Rothermel 1972).
+    # 1 ft/min = 0.3048/60 m/s ≈ 0.00508 m/s.
     @constants begin
         σ_ref = 1.0, [description = "Reference SAV ratio for non-dimensionalization", unit = u"1/m"]
-        U_ref = 1.0, [description = "Reference wind speed for non-dimensionalization", unit = u"m/s"]
+        U_ref = 0.3048 / 60, [description = "Reference wind speed (1 ft/min in m/s)", unit = u"m/s"]
         IB_ref = 1.0, [description = "Reference fireline intensity for non-dimensionalization", unit = u"W/m"]
         one = 1.0, [description = "Dimensionless one for unit balancing", unit = u"1"]
     end
@@ -403,9 +407,9 @@ CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Stat
         UE(t), [description = "Effective midflame wind speed", unit = u"m/s"]
     end
 
-    # Reference for non-dimensionalization
+    # Reference for non-dimensionalization (must match U_ref in RothermelFireSpread)
     @constants begin
-        UE_ref = 1.0, [description = "Reference wind speed for unit conversion", unit = u"m/s"]
+        UE_ref = 0.3048 / 60, [description = "Reference wind speed (1 ft/min in m/s)", unit = u"m/s"]
     end
 
     eqs = [
