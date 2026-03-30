@@ -149,7 +149,6 @@ compiled_sys = mtkcompile(sys)
 R0_val = 0.01  # m/s
 φw_val = 5.0   # wind factor
 φs_val = 2.0   # slope factor
-t_val = 60.0   # elapsed time (s)
 
 # Sweep wind direction from 0 to 2pi
 ω_values = range(0, 2π, length=37)
@@ -162,7 +161,6 @@ for ω_val in ω_values
         compiled_sys.φw => φw_val,
         compiled_sys.φs => φs_val,
         compiled_sys.ω => ω_val,
-        compiled_sys.elapsed_time => t_val,
         compiled_sys.β_ratio => 0.5,
         compiled_sys.C_coeff => 7.47,
         compiled_sys.B_coeff => 0.15566,

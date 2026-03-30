@@ -3,22 +3,33 @@
                        initial_condition, boundary_conditions=nothing,
                        spread_rate=1.0)
 
-Create a level-set fire front propagation PDE system.
+Create a level-set fire front propagation PDE system with anisotropic (elliptical) spread.
 
-This implements a simplified level-set method for tracking fire front evolution on a 2D
-domain, based on the Hamilton-Jacobi equation from Mandel et al. (2011) and inspired by
-the advanced algorithm of Muñoz-Esparza et al. (2018). The fire front is represented
-implicitly as the zero contour of a level-set function ψ(x, y, t), where ψ ≤ 0 denotes
-the burning region and ψ > 0 denotes unburned fuel.
+This implements the level-set method for tracking fire front evolution on a 2D domain,
+based on the Hamilton-Jacobi equation from Mandel et al. (2011) with direction-dependent
+spread rate from the elliptical fire shape model (Andrews 2018, Table 26). The fire front
+is represented implicitly as the zero contour of a level-set function ψ(x, y, t), where
+ψ ≤ 0 denotes the burning region and ψ > 0 denotes unburned fuel.
 
-The level-set function evolves according to the Hamilton-Jacobi equation (Eq. 9,
-Mandel et al. 2011):
+The level-set function evolves according to the anisotropic Hamilton-Jacobi equation:
 
 ```math
-\\frac{\\partial \\psi}{\\partial t} + S \\|\\nabla \\psi\\| = 0
+\\frac{\\partial \\psi}{\\partial t} + S(\\hat{n}) \\|\\nabla \\psi\\| = 0
 ```
 
-where S is the fire spread rate (m/s).
+where the direction-dependent spread rate is given by the elliptical fire shape model:
+
+```math
+S(\\gamma) = R_H \\frac{1 - e}{1 - e \\cos(\\gamma)}
+```
+
+Here ``\\hat{n} = \\nabla\\psi / \\|\\nabla\\psi\\|`` is the outward fire front normal,
+``\\gamma`` is the angle between ``\\hat{n}`` and the head fire direction ``\\alpha``,
+``R_H`` is the head fire rate of spread, and ``e = \\sqrt{Z^2 - 1}/Z`` is the
+eccentricity derived from the fire length-to-width ratio ``Z``.
+
+When ``Z = 1`` (no wind or slope asymmetry), ``e = 0`` and the equation reduces to the
+isotropic case ``S = R_H``.
 
 ## Implementation Details
 
@@ -36,10 +47,10 @@ even higher accuracy, consider adding:
   Negative values indicate initial fire region, positive values indicate unburned fuel.
 - `boundary_conditions`: Optional vector of boundary condition equations. If not provided,
   Neumann (zero-gradient) boundary conditions are used.
-- `spread_rate`: Default value for the fire spread rate parameter S (m/s). Default is 1.0.
+- `spread_rate`: Default value for the head fire rate of spread parameter R_H (m/s). Default is 1.0.
 
 # Returns
-A `PDESystem` representing the level-set fire spread equation.
+A `PDESystem` representing the level-set fire spread equation with anisotropic spread.
 
 # References
 
@@ -50,6 +61,11 @@ method. *J. Adv. Model. Earth Syst.*, 10, 908–926. doi:10.1002/2017MS001108
 Mandel, J., Beezley, J.D., and Kochanski, A.K. (2011). Coupled atmosphere-wildland fire
 modeling with WRF 3.3 and SFIRE 2011. *Geosci. Model Dev.*, 4, 591–610.
 doi:10.5194/gmd-4-591-2011
+
+Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associated
+developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins,
+CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station.
+Table 26.
 
 # Example
 
@@ -69,8 +85,8 @@ domain = DomainInfo(
 # Circular ignition at center (radius 10m)
 initial_condition(x, y) = sqrt((x - 250.0)^2 + (y - 250.0)^2) - 10.0
 
-# Create PDE system
-sys = LevelSetFireSpread(domain; initial_condition)
+# Create PDE system with anisotropic spread (Z > 1 for elliptical fire)
+sys = LevelSetFireSpread(domain; initial_condition, spread_rate=0.5)
 
 # Discretize and solve
 dx = 5.0
@@ -100,8 +116,16 @@ function LevelSetFireSpread(
     x = spatial_vars[1]
     y = spatial_vars[2]
 
-    # Fire spread rate with default value
-    @parameters S = spread_rate [description = "Fire spread rate", unit = u"m/s"]
+    # Fire spread parameters
+    @parameters R_H = spread_rate [description = "Head fire rate of spread", unit = u"m/s"]
+    @parameters Z = 1.0 [description = "Fire length-to-width ratio (dimensionless)", unit = u"1"]
+    @parameters α = 0.0 [description = "Direction of maximum spread relative to upslope", unit = u"rad"]
+
+    @constants begin
+        one = 1.0, [description = "Dimensionless one for unit balancing", unit = u"1"]
+        ψ_ref = 1.0, [description = "Reference length for initial condition", unit = u"m"]
+        grad_eps = 1.0e-10, [description = "Small gradient for numerical stability (dimensionless)", unit = u"1"]
+    end
 
     # Level-set function
     @variables ψ(..) [description = "Level-set function (fire front at ψ=0)", unit = u"m"]
@@ -134,18 +158,27 @@ function LevelSetFireSpread(
     ψ_x = δs[1](ψ(t, x, y))
     ψ_y = δs[2](ψ(t, x, y))
 
-    # Level-set equation — Eq. 9, Mandel et al. (2011)
-    # ∂ψ/∂t + S‖∇ψ‖ = 0
-    # ‖∇ψ‖ = sqrt(ψ_x² + ψ_y²) is dimensionless
-    # D(ψ) has units m/s, S has units m/s, so S * ‖∇ψ‖ has units m/s
-    eq = [
-        D(ψ(t, x, y)) ~ -S * sqrt(ψ_x^2 + ψ_y^2),  # Eq. 9
-    ]
+    # Anisotropic level-set equation — Mandel et al. (2011) Eq. 9 with
+    # direction-dependent spread rate from Andrews (2018) Table 26.
+    #
+    # The angle γ between the gradient direction and the head fire direction α:
+    #   γ = atan(ψ_y, ψ_x) - α
+    #
+    # Eccentricity from length-to-width ratio (Andrews 2018, Table 26):
+    #   e = sqrt(Z² - 1) / Z
+    #
+    # Direction-dependent spread rate (elliptical fire shape model):
+    #   S(γ) = R_H * (1 - e) / (1 - e * cos(γ))
+    #
+    # When Z = 1 (isotropic): e = 0, S(γ) = R_H for all directions.
+    e_val = sqrt(Z^2 - one) / Z
+    γ = atan(ψ_y + grad_eps, ψ_x + grad_eps) - α
+    S_γ = R_H * (one - e_val) / (one - e_val * cos(γ))
 
-    # Domain definitions
-    @constants begin
-        ψ_ref = 1.0, [description = "Reference length for initial condition", unit = u"m"]
-    end
+    # ∂ψ/∂t + S(γ)‖∇ψ‖ = 0
+    eq = [
+        D(ψ(t, x, y)) ~ -S_γ * sqrt(ψ_x^2 + ψ_y^2),
+    ]
 
     pde_domains = EarthSciMLBase.domains(domain)
 
@@ -167,7 +200,7 @@ function LevelSetFireSpread(
 
     return PDESystem(
         eq, bcs, pde_domains, [t, x, y], [ψ(t, x, y)],
-        [S, ψ_ref, transform_params...]; name = name,
+        [R_H, Z, α, ψ_ref, one, grad_eps, transform_params...]; name = name,
         metadata = Dict(EarthSciMLBase.CoupleType => LevelSetCoupler)
     )
 end

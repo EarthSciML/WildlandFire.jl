@@ -29,20 +29,20 @@ end
 
     # Check that all expected variables exist
     var_names = [string(Symbolics.tosymbol(v, escape = false)) for v in unknowns(sys)]
-    expected_vars = ["D_S", "D_W", "X", "Y", "D_H", "R_H", "α", "φ_E", "U_E", "Z"]
+    expected_vars = ["φ_combined", "R_H", "α", "φ_E", "U_E", "Z"]
     for v in expected_vars
         @test v in var_names
     end
 
     # Check that all expected parameters exist
     param_names = [string(Symbolics.tosymbol(p, escape = false)) for p in parameters(sys)]
-    expected_params = ["R0", "φw", "φs", "ω", "elapsed_time", "β_ratio", "C_coeff", "B_coeff", "E_coeff"]
+    expected_params = ["R0", "φw", "φs", "ω", "β_ratio", "C_coeff", "B_coeff", "E_coeff"]
     for p in expected_params
         @test p in param_names
     end
 
-    # Verify equation count (10 equations for 10 unknowns)
-    @test length(equations(sys)) == 10
+    # Verify equation count (6 equations for 6 unknowns)
+    @test length(equations(sys)) == 6
 end
 
 @testitem "FireSpreadDirection - Wind Aligned with Slope" setup = [FireSpreadDirectionSetup] tags = [:fire_spread_direction] begin
@@ -57,7 +57,6 @@ end
     φw_val = 5.0   # wind factor
     φs_val = 2.0   # slope factor
     ω_val = 0.0    # wind aligned with slope (upslope)
-    t_val = 60.0   # elapsed time
     β_ratio_val = 0.5
     C_val = 7.47
     B_val = 0.15566
@@ -69,7 +68,6 @@ end
             compiled_sys.φw => φw_val,
             compiled_sys.φs => φs_val,
             compiled_sys.ω => ω_val,
-            compiled_sys.elapsed_time => t_val,
             compiled_sys.β_ratio => β_ratio_val,
             compiled_sys.C_coeff => C_val,
             compiled_sys.B_coeff => B_val,
@@ -78,27 +76,18 @@ end
     )
     sol = solve(prob)
 
-    # When ω = 0, Y = 0 and X = D_S + D_W
-    @test ustrip(sol[compiled_sys.Y]) ≈ 0.0 atol = 1.0e-10
-
     # Direction of max spread should be 0 (aligned with slope)
     @test ustrip(sol[compiled_sys.α]) ≈ 0.0 atol = 1.0e-10
 
-    # D_S and D_W calculations
-    expected_D_S = R0_val * φs_val * t_val
-    expected_D_W = R0_val * φw_val * t_val
-    @test ustrip(sol[compiled_sys.D_S]) ≈ expected_D_S rtol = 1.0e-6
-    @test ustrip(sol[compiled_sys.D_W]) ≈ expected_D_W rtol = 1.0e-6
+    # When ω = 0: φ_combined = sqrt((φs + φw)² + 0²) = φs + φw
+    expected_φ_combined = φw_val + φs_val
+    @test ustrip(sol[compiled_sys.φ_combined]) ≈ expected_φ_combined rtol = 1.0e-6
 
-    # When aligned, D_H = D_S + D_W
-    expected_D_H = expected_D_S + expected_D_W
-    @test ustrip(sol[compiled_sys.D_H]) ≈ expected_D_H rtol = 1.0e-6
-
-    # R_H = R0 + D_H/t
-    expected_R_H = R0_val + expected_D_H / t_val
+    # R_H = R0 * (1 + φ_combined) = R0 * (1 + φw + φs)
+    expected_R_H = R0_val * (1 + expected_φ_combined)
     @test ustrip(sol[compiled_sys.R_H]) ≈ expected_R_H rtol = 1.0e-6
 
-    # φ_E = R_H/R0 - 1 = (φw + φs)
+    # φ_E = φ_combined = (φw + φs)
     expected_φ_E = φw_val + φs_val
     @test ustrip(sol[compiled_sys.φ_E]) ≈ expected_φ_E rtol = 1.0e-6
 end
@@ -113,7 +102,6 @@ end
     φw_val = 5.0
     φs_val = 2.0
     ω_val = π / 2  # perpendicular
-    t_val = 60.0
     β_ratio_val = 0.5
     C_val = 7.47
     B_val = 0.15566
@@ -125,7 +113,6 @@ end
             compiled_sys.φw => φw_val,
             compiled_sys.φs => φs_val,
             compiled_sys.ω => ω_val,
-            compiled_sys.elapsed_time => t_val,
             compiled_sys.β_ratio => β_ratio_val,
             compiled_sys.C_coeff => C_val,
             compiled_sys.B_coeff => B_val,
@@ -135,21 +122,17 @@ end
     sol = solve(prob)
 
     # When ω = π/2:
-    # X = D_S + D_W*cos(π/2) = D_S + 0 = D_S
-    # Y = D_W*sin(π/2) = D_W
-    expected_D_S = R0_val * φs_val * t_val
-    expected_D_W = R0_val * φw_val * t_val
+    # φ_combined = sqrt(φs² + φw²)
+    expected_φ_combined = sqrt(φs_val^2 + φw_val^2)
+    @test ustrip(sol[compiled_sys.φ_combined]) ≈ expected_φ_combined rtol = 1.0e-6
 
-    @test ustrip(sol[compiled_sys.X]) ≈ expected_D_S rtol = 1.0e-6
-    @test ustrip(sol[compiled_sys.Y]) ≈ expected_D_W rtol = 1.0e-6
-
-    # D_H = sqrt(D_S² + D_W²)
-    expected_D_H = sqrt(expected_D_S^2 + expected_D_W^2)
-    @test ustrip(sol[compiled_sys.D_H]) ≈ expected_D_H rtol = 1.0e-6
-
-    # α = asin(|Y|/D_H) = asin(D_W/D_H)
-    expected_α = asin(expected_D_W / expected_D_H)
+    # α = asin(|φw * sin(ω)| / φ_combined) = asin(φw / sqrt(φs² + φw²))
+    expected_α = asin(φw_val / expected_φ_combined)
     @test ustrip(sol[compiled_sys.α]) ≈ expected_α rtol = 1.0e-6
+
+    # R_H = R0 * (1 + φ_combined)
+    expected_R_H = R0_val * (1 + expected_φ_combined)
+    @test ustrip(sol[compiled_sys.R_H]) ≈ expected_R_H rtol = 1.0e-6
 end
 
 @testitem "FireSpreadDirection - Length-to-Width Ratio" setup = [FireSpreadDirectionSetup] tags = [:fire_spread_direction] begin
@@ -165,7 +148,6 @@ end
             compiled_sys.φw => 0.1,  # very low wind
             compiled_sys.φs => 0.1,  # very low slope
             compiled_sys.ω => 0.0,
-            compiled_sys.elapsed_time => 60.0,
             compiled_sys.β_ratio => 0.5,
             compiled_sys.C_coeff => 7.47,
             compiled_sys.B_coeff => 0.15566,
@@ -458,7 +440,6 @@ end
             compiled_dir.φw => 5.0,
             compiled_dir.φs => 2.0,
             compiled_dir.ω => π / 4,
-            compiled_dir.elapsed_time => 60.0,
             compiled_dir.β_ratio => 0.5,
             compiled_dir.C_coeff => 7.47,
             compiled_dir.B_coeff => 0.15566,

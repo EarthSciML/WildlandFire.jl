@@ -30,8 +30,8 @@ end
     @test length(sys.ivs) == 3          # t, x, y
     @test length(sys.dvs) == 1          # ψ(t, x, y)
 
-    # Parameters include S and psi_ref
-    @test length(sys.ps) == 2
+    # Parameters: R_H, Z, α, ψ_ref, one, grad_eps
+    @test length(sys.ps) == 6
 end
 
 @testitem "LevelSetFireSpread - Circular Spread (Isotropic)" setup = [LevelSetSetup] tags = [:levelset] begin
@@ -96,6 +96,78 @@ end
     # Tolerance allows for discretization error on a coarse grid (dx=5m)
     # WENO reduces errors vs standard FD but coarser grid increases spatial error
     @test abs(r_tend - r_expected) / r_expected < 0.35
+end
+
+@testitem "LevelSetFireSpread - Elliptical Spread (Anisotropic)" setup = [LevelSetSetup] tags = [:levelset] begin
+    # When Z > 1, fire should spread faster in the head fire direction (α)
+    # than in the perpendicular direction. With α = 0 (head fire along +x),
+    # the fire should be elongated in x.
+    # Andrews (2018) Table 26: S(γ) = R_H * (1-e) / (1 - e*cos(γ))
+    # with e = sqrt(Z²-1)/Z
+
+    r0 = 10.0       # initial radius (m)
+    R_H_val = 1.0    # head fire rate of spread (m/s)
+    Z_val = 2.0      # length-to-width ratio (elliptical)
+    domain_size = 100.0
+    center = domain_size / 2.0
+    t_end = 5.0
+
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, t_end)),
+        constBC(0.0, x ∈ Interval(0.0, domain_size), y ∈ Interval(0.0, domain_size)),
+    )
+
+    # Set initial conditions for ψ_ref, one, grad_eps explicitly in the PDESystem
+    sys = LevelSetFireSpread(
+        domain;
+        initial_condition = (x, y) -> sqrt((x - center)^2 + (y - center)^2) - r0,
+        spread_rate = R_H_val,
+    )
+
+    # Override Z and α in the PDESystem's initial_conditions
+    for p in sys.ps
+        sym = Symbolics.tosymbol(p, escape = false)
+        if sym == :Z
+            sys.initial_conditions[Symbolics.unwrap(p)] = Z_val
+        elseif sym == :α
+            sys.initial_conditions[Symbolics.unwrap(p)] = 0.0  # head fire along +x
+        end
+    end
+
+    dx = 5.0
+    discretization = MOLFiniteDifference(
+        [sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1];
+        advection_scheme = WENOScheme()
+    )
+    prob = MethodOfLines.discretize(sys, discretization; checks = false)
+    sol = solve(prob; saveat = t_end)
+
+    @test sol.retcode == SciMLBase.ReturnCode.Success
+
+    psi = sol[sys.dvs[1]]
+    x_grid = sol[sys.ivs[2]]
+    y_grid = sol[sys.ivs[3]]
+
+    # Find extent of burning region (ψ ≤ 0) in x and y at final time
+    mid_y = div(length(y_grid), 2) + 1
+    mid_x = div(length(x_grid), 2) + 1
+
+    # Burning extent in x direction (along head fire)
+    burning_x = [i for i in 1:length(x_grid) if psi[end, :, mid_y][i] <= 0]
+    # Burning extent in y direction (flanking)
+    burning_y = [j for j in 1:length(y_grid) if psi[end, mid_x, :][j] <= 0]
+
+    x_extent = isempty(burning_x) ? 0.0 : (x_grid[maximum(burning_x)] - x_grid[minimum(burning_x)])
+    y_extent = isempty(burning_y) ? 0.0 : (y_grid[maximum(burning_y)] - y_grid[minimum(burning_y)])
+
+    # With Z = 2, the fire should be elongated in x (head fire direction)
+    # The extent in x should be greater than in y
+    @test x_extent > y_extent
+
+    # The ratio of extents should approximate Z (within discretization error)
+    @test x_extent / y_extent > 1.2  # Z=2, so expect ratio > 1 (generous tolerance for coarse grid)
 end
 
 @testitem "LevelSetFireSpread - Custom Boundary Conditions" setup = [LevelSetSetup] tags = [:levelset] begin

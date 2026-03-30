@@ -2,6 +2,7 @@ export RothermelCoupler, TerrainSlope, TerrainSlopeCoupler, MidflameWind, Midfla
 export FuelModelLookup, FuelModelLookupCoupler
 export EMCCoupler, OneHourFuelMoistureCoupler
 export LevelSetCoupler, FuelConsumptionCoupler
+export FireSpreadDirectionCoupler
 
 using EarthSciMLBase
 using EarthSciMLBase: CoupleType, ConnectorSystem, param_to_var
@@ -38,6 +39,10 @@ struct LevelSetCoupler
 end
 
 struct FuelConsumptionCoupler
+    sys::Any
+end
+
+struct FireSpreadDirectionCoupler
     sys::Any
 end
 
@@ -310,15 +315,43 @@ function couple2(fm1::OneHourFuelMoistureCoupler, r::RothermelCoupler)
     return ConnectorSystem([r.Mf ~ fm1.MC1], r, fm1)
 end
 
-# RothermelFireSpread → LevelSetFireSpread (R → S)
-# Couples the Rothermel rate of spread output to the level-set fire spread rate parameter.
-function couple2(r::RothermelCoupler, ls::LevelSetCoupler)
-    r, ls = r.sys, ls.sys
-    ls = param_to_var(ls, :S)
-    # Find the S(t) variable from the substituted equation
+# RothermelFireSpread → FireSpreadDirection (Rothermel outputs → direction inputs)
+function couple2(r::RothermelCoupler, fsd::FireSpreadDirectionCoupler)
+    r, fsd = r.sys, fsd.sys
+    fsd = param_to_var(fsd, :R0, :φw, :φs, :β_ratio, :C_coeff, :B_coeff, :E_coeff)
+    return ConnectorSystem(
+        [
+            fsd.R0 ~ r.R0,
+            fsd.φw ~ r.φw,
+            fsd.φs ~ r.φs,
+            fsd.β_ratio ~ r.β_ratio,
+            fsd.C_coeff ~ r.C_coeff,
+            fsd.B_coeff ~ r.B_coeff,
+            fsd.E_coeff ~ r.E_coeff,
+        ], fsd, r
+    )
+end
+
+# MidflameWind → FireSpreadDirection (wind direction)
+function couple2(mw::MidflameWindCoupler, fsd::FireSpreadDirectionCoupler)
+    mw, fsd = mw.sys, fsd.sys
+    fsd = param_to_var(fsd, :ω)
+    return ConnectorSystem([fsd.ω ~ mw.ω], fsd, mw)
+end
+
+# FireSpreadDirection → LevelSetFireSpread (R_H, Z, α → level-set parameters)
+function couple2(fsd::FireSpreadDirectionCoupler, ls::LevelSetCoupler)
+    fsd, ls = fsd.sys, ls.sys
+    ls = param_to_var(ls, :R_H, :Z, :α)
+    # Find the promoted variables from the substituted equation
     eq_vars = collect(Symbolics.get_variables(equations(ls)[1]))
-    S_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :S, eq_vars))
-    return ConnectorSystem([S_sym ~ r.R], ls, r)
+    R_H_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :R_H, eq_vars))
+    Z_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :Z, eq_vars))
+    α_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :α, eq_vars))
+    return ConnectorSystem(
+        [R_H_sym ~ fsd.R_H, Z_sym ~ fsd.Z, α_sym ~ fsd.α],
+        ls, fsd
+    )
 end
 
 # LevelSetFireSpread → FuelConsumption (ψ → is_burning)
