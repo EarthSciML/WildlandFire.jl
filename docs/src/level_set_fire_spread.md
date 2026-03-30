@@ -348,17 +348,19 @@ For ``w = 1000`` s, fuel burns to 60% of its original quantity in 600 s
 
 ```@example levelset
 fc = FuelConsumption()
-fc_nns = ModelingToolkit.toggle_namespacing(fc, false)
-compiled_fc = mtkcompile(fc; inputs = [fc_nns.is_burning])
+compiled_fc = mtkcompile(fc)
 
 T_f_val = 10.0
-prob_fc = ODEProblem(compiled_fc,
-    merge(Dict(compiled_fc.F => 1.0), Dict(compiled_fc.T_f => T_f_val, compiled_fc.is_burning => 1.0)),
-    (0.0, 40.0))
+prob_fc = ODEProblem(
+    compiled_fc,
+    Dict(compiled_fc.F => 1.0),
+    (0.0, 40.0),
+    Dict(compiled_fc.T_f => T_f_val, compiled_fc.is_burning => 1.0, compiled_fc.w0_initial => 1.0),
+)
 sol_fc = solve(prob_fc)
 
 t_plot = 0:0.1:40
-F_numerical = [sol_fc(ti)[1] for ti in t_plot]
+F_numerical = [sol_fc(ti, idxs = compiled_fc.F) for ti in t_plot]
 F_analytical = exp.(-t_plot ./ T_f_val)
 
 plot(t_plot, F_numerical, label = "Numerical", linewidth = 2)
