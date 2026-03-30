@@ -386,3 +386,192 @@ end
     param_names = [Symbolics.tosymbol(p, escape = false) for p in parameters(cs.from)]
     @test :w0_initial ∉ param_names
 end
+
+@testitem "EMC-OneHourFuelMoisture numerical verification" setup = [CouplingSetup] tags = [:coupling] begin
+    using ModelingToolkit: mtkcompile
+    using OrdinaryDiffEqDefault
+
+    emc = EquilibriumMoistureContent()
+    fm1 = OneHourFuelMoisture()
+    cs = couple(emc, fm1)
+    sys = convert(System, cs; compile = false)
+    compiled = mtkcompile(sys)
+
+    # TEMP=294.26K (70°F), RH=30%, no fuel sticks, no rain
+    # Expected EMC ≈ 0.060 (from Cohen & Deeming 1985, Eq. 1b)
+    # Expected MC1 = 1.03 × EMC ≈ 0.062
+    temp_K = (70.0 + 459.67) * 5 / 9  # 70°F to K
+    prob = ODEProblem(
+        compiled,
+        Dict(
+            compiled.EquilibriumMoistureContent₊TEMP => temp_K,
+            compiled.EquilibriumMoistureContent₊RH => 0.3,
+            compiled.OneHourFuelMoisture₊use_fuel_sticks => 0.0,
+            compiled.OneHourFuelMoisture₊is_raining => 0.0,
+            compiled.OneHourFuelMoisture₊MC10 => 0.0,
+        ),
+        (0.0, 1.0),
+    )
+    sol = solve(prob)
+
+    emc_val = sol[compiled.EquilibriumMoistureContent₊EMC][end]
+    mc1_val = sol[compiled.OneHourFuelMoisture₊MC1][end]
+
+    @test emc_val ≈ 0.06 atol = 0.005
+    @test mc1_val ≈ 1.03 * emc_val atol = 0.001
+end
+
+@testitem "OneHourFuelMoisture-Rothermel dry conditions" setup = [CouplingSetup] tags = [:coupling] begin
+    using ModelingToolkit: mtkcompile
+    using OrdinaryDiffEqDefault
+
+    fm1 = OneHourFuelMoisture()
+    r = RothermelFireSpread()
+    cs = couple(fm1, r)
+    sys = convert(System, cs; compile = false)
+    compiled = mtkcompile(sys)
+
+    # Dry conditions: EMCPRM=0.04 → MC1=0.0412, well below Mx=0.12
+    # Fuel Model 1 (short grass) parameters
+    prob = ODEProblem(
+        compiled,
+        Dict(
+            compiled.OneHourFuelMoisture₊EMCPRM => 0.04,
+            compiled.OneHourFuelMoisture₊use_fuel_sticks => 0.0,
+            compiled.OneHourFuelMoisture₊is_raining => 0.0,
+            compiled.OneHourFuelMoisture₊MC10 => 0.0,
+            compiled.RothermelFireSpread₊σ => 11483.5,
+            compiled.RothermelFireSpread₊w0 => 0.166,
+            compiled.RothermelFireSpread₊δ => 0.3048,
+            compiled.RothermelFireSpread₊Mx => 0.12,
+            compiled.RothermelFireSpread₊h => 18608000.0,
+            compiled.RothermelFireSpread₊U => 0.0,
+            compiled.RothermelFireSpread₊tanϕ => 0.0,
+        ),
+        (0.0, 1.0),
+    )
+    sol = solve(prob)
+
+    mc1_val = sol[compiled.OneHourFuelMoisture₊MC1][end]
+    R_val = sol[compiled.RothermelFireSpread₊R][end]
+    IR_val = sol[compiled.RothermelFireSpread₊IR][end]
+
+    # MC1 should be 1.03 * 0.04 = 0.0412
+    @test mc1_val ≈ 0.0412 atol = 0.001
+    # Fire should spread (R > 0, IR > 0) in dry conditions
+    @test R_val > 0
+    @test IR_val > 0
+end
+
+@testitem "OneHourFuelMoisture-Rothermel moisture extinction" setup = [CouplingSetup] tags = [:coupling] begin
+    using ModelingToolkit: mtkcompile
+    using OrdinaryDiffEqDefault
+
+    fm1 = OneHourFuelMoisture()
+    r = RothermelFireSpread()
+    cs = couple(fm1, r)
+    sys = convert(System, cs; compile = false)
+    compiled = mtkcompile(sys)
+
+    # Wet conditions: EMCPRM=0.15 → MC1=0.1545, exceeds Mx=0.12
+    # At moisture extinction: rM=1.0, η_M=0, IR=0, R=0
+    prob = ODEProblem(
+        compiled,
+        Dict(
+            compiled.OneHourFuelMoisture₊EMCPRM => 0.15,
+            compiled.OneHourFuelMoisture₊use_fuel_sticks => 0.0,
+            compiled.OneHourFuelMoisture₊is_raining => 0.0,
+            compiled.OneHourFuelMoisture₊MC10 => 0.0,
+            compiled.RothermelFireSpread₊σ => 11483.5,
+            compiled.RothermelFireSpread₊w0 => 0.166,
+            compiled.RothermelFireSpread₊δ => 0.3048,
+            compiled.RothermelFireSpread₊Mx => 0.12,
+            compiled.RothermelFireSpread₊h => 18608000.0,
+            compiled.RothermelFireSpread₊U => 0.0,
+            compiled.RothermelFireSpread₊tanϕ => 0.0,
+        ),
+        (0.0, 1.0),
+    )
+    sol = solve(prob)
+
+    mc1_val = sol[compiled.OneHourFuelMoisture₊MC1][end]
+    R_val = sol[compiled.RothermelFireSpread₊R][end]
+    IR_val = sol[compiled.RothermelFireSpread₊IR][end]
+
+    # MC1 = 1.03 * 0.15 = 0.1545 exceeds Mx = 0.12
+    @test mc1_val > 0.12
+    # Fire should NOT spread at moisture extinction
+    @test R_val ≈ 0.0 atol = 1.0e-8
+    @test IR_val ≈ 0.0 atol = 1.0e-8
+end
+
+@testitem "Full EMC chain -- moisture extinction from high humidity" setup = [CouplingSetup] tags = [:coupling] begin
+    using ModelingToolkit: mtkcompile
+    using OrdinaryDiffEqDefault
+
+    emc = EquilibriumMoistureContent()
+    fm1 = OneHourFuelMoisture()
+    r = RothermelFireSpread()
+    cs = couple(emc, fm1, r)
+    sys = convert(System, cs; compile = false)
+    compiled = mtkcompile(sys)
+
+    # Fuel Model 1 (short grass) base parameters
+    base_params = Dict(
+        compiled.OneHourFuelMoisture₊use_fuel_sticks => 0.0,
+        compiled.OneHourFuelMoisture₊is_raining => 0.0,
+        compiled.OneHourFuelMoisture₊MC10 => 0.0,
+        compiled.RothermelFireSpread₊σ => 11483.5,
+        compiled.RothermelFireSpread₊w0 => 0.166,
+        compiled.RothermelFireSpread₊δ => 0.3048,
+        compiled.RothermelFireSpread₊Mx => 0.12,
+        compiled.RothermelFireSpread₊h => 18608000.0,
+        compiled.RothermelFireSpread₊U => 2.235,
+        compiled.RothermelFireSpread₊tanϕ => 0.0,
+    )
+
+    # Dry case: TEMP=313.15K (104°F), RH=5% → EMC very low → R > 0
+    dry_params = merge(
+        base_params, Dict(
+            compiled.EquilibriumMoistureContent₊TEMP => 313.15,
+            compiled.EquilibriumMoistureContent₊RH => 0.05,
+        )
+    )
+    prob_dry = ODEProblem(compiled, dry_params, (0.0, 1.0))
+    sol_dry = solve(prob_dry)
+    R_dry = sol_dry[compiled.RothermelFireSpread₊R][end]
+    @test R_dry > 0
+
+    # Wet case: TEMP=280.15K (45°F), RH=90% → EMC >> Mx → R ≈ 0
+    wet_params = merge(
+        base_params, Dict(
+            compiled.EquilibriumMoistureContent₊TEMP => 280.15,
+            compiled.EquilibriumMoistureContent₊RH => 0.9,
+        )
+    )
+    prob_wet = ODEProblem(compiled, wet_params, (0.0, 1.0))
+    sol_wet = solve(prob_wet)
+    R_wet = sol_wet[compiled.RothermelFireSpread₊R][end]
+    @test R_wet ≈ 0.0 atol = 1.0e-10
+
+    # Sweep: R should decrease monotonically as RH increases
+    RH_vals = 0.05:0.1:0.95
+    R_vals = Float64[]
+    for rh in RH_vals
+        params = merge(
+            base_params, Dict(
+                compiled.EquilibriumMoistureContent₊TEMP => 294.26,
+                compiled.EquilibriumMoistureContent₊RH => rh,
+            )
+        )
+        prob = ODEProblem(compiled, params, (0.0, 1.0))
+        sol = solve(prob)
+        push!(R_vals, sol[compiled.RothermelFireSpread₊R][end])
+    end
+    # Monotonically non-increasing
+    for i in 2:length(R_vals)
+        @test R_vals[i] <= R_vals[i - 1] + 1.0e-12
+    end
+    # At high RH, fire should be extinguished
+    @test R_vals[end] ≈ 0.0 atol = 1.0e-10
+end
