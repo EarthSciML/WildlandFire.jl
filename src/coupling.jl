@@ -1,7 +1,7 @@
 export RothermelCoupler, TerrainSlope, TerrainSlopeCoupler, MidflameWind, MidflameWindCoupler
 export FuelModelLookup, FuelModelLookupCoupler
 export EMCCoupler, OneHourFuelMoistureCoupler
-export LevelSetCoupler
+export LevelSetCoupler, FuelConsumptionCoupler
 
 using EarthSciMLBase
 using EarthSciMLBase: CoupleType, ConnectorSystem, param_to_var
@@ -34,6 +34,10 @@ struct OneHourFuelMoistureCoupler
 end
 
 struct LevelSetCoupler
+    sys::Any
+end
+
+struct FuelConsumptionCoupler
     sys::Any
 end
 
@@ -237,19 +241,27 @@ end
 
 # ---- couple2 methods (inter-component, no EarthSciData dependency) -----------
 
-# FuelModelLookup → RothermelFireSpread (fuel parameters)
+# FuelModelLookup → RothermelFireSpread (fuel parameters except w0, which is routed
+# through FuelConsumption for fuel depletion feedback)
 function couple2(fm::FuelModelLookupCoupler, r::RothermelCoupler)
     fm, r = fm.sys, r.sys
-    r = param_to_var(r, :σ, :w0, :δ, :Mx, :h)
+    r = param_to_var(r, :σ, :δ, :Mx, :h)
     return ConnectorSystem(
         [
             r.σ ~ fm.σ,
-            r.w0 ~ fm.w0,
             r.δ ~ fm.δ,
             r.Mx ~ fm.Mx,
             r.h ~ fm.h,
         ], r, fm
     )
+end
+
+# FuelModelLookup → FuelConsumption (w0 → w0_initial)
+# Routes the fuel load through FuelConsumption so it can be scaled by fuel depletion.
+function couple2(fm::FuelModelLookupCoupler, fc::FuelConsumptionCoupler)
+    fm, fc = fm.sys, fc.sys
+    fc = param_to_var(fc, :w0_initial)
+    return ConnectorSystem([fc.w0_initial ~ fm.w0], fc, fm)
 end
 
 # TerrainSlope → RothermelFireSpread (slope)
@@ -296,4 +308,31 @@ function couple2(r::RothermelCoupler, ls::LevelSetCoupler)
     eq_vars = collect(Symbolics.get_variables(equations(ls)[1]))
     S_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :S, eq_vars))
     return ConnectorSystem([S_sym ~ r.R], ls, r)
+end
+
+# LevelSetFireSpread → FuelConsumption (ψ → is_burning)
+# Drives the burning state from the level-set function using a smooth Heaviside
+# approximation: is_burning = 0.5 * (1 - tanh(ψ/ε)), where ε is a smoothing width.
+# When ψ < 0 (burning region), is_burning ≈ 1; when ψ > 0 (unburned), is_burning ≈ 0.
+function couple2(ls::LevelSetCoupler, fc::FuelConsumptionCoupler)
+    ls, fc = ls.sys, fc.sys
+    fc = param_to_var(fc, :is_burning)
+    # Extract ψ from the PDE dependent variables (first dv is ψ(t, x, y))
+    ψ_sym = ls.dvs[1]
+    # Smooth Heaviside: is_burning = 0.5 * (1 - tanh(ψ/ε))
+    # ε_h provides meter units to cancel ψ's meters, making the tanh argument dimensionless
+    @constants ε_h = 1.0, [description = "Heaviside smoothing width", unit = u"m"]
+    return ConnectorSystem(
+        [fc.is_burning ~ 0.5 * (1.0 - tanh(ψ_sym / ε_h))],
+        fc, ls
+    )
+end
+
+# FuelConsumption → RothermelFireSpread (w0_effective → w0)
+# Scales the Rothermel fuel load by the remaining fuel fraction, causing the fire
+# to stop spreading at locations where fuel has been consumed (F → 0).
+function couple2(fc::FuelConsumptionCoupler, r::RothermelCoupler)
+    fc, r = fc.sys, r.sys
+    r = param_to_var(r, :w0)
+    return ConnectorSystem([r.w0 ~ fc.w0_effective], r, fc)
 end

@@ -184,22 +184,28 @@ end
 @testitem "FuelConsumption - Structural Verification" setup = [LevelSetSetup] tags = [:levelset] begin
     fc = FuelConsumption()
     @test fc !== nothing
-    @test length(equations(fc)) == 1   # dF/dt = -is_burning * F / T_f
-    @test length(unknowns(fc)) == 2    # F, is_burning
+    @test length(equations(fc)) == 2   # dF/dt and w0_effective
+    @test length(unknowns(fc)) == 2    # F, w0_effective
+
+    # is_burning should be a parameter (not a variable)
+    param_names = [Symbolics.tosymbol(p, escape = false) for p in parameters(fc)]
+    @test :is_burning ∈ param_names
+    @test :T_f ∈ param_names
+    @test :w0_initial ∈ param_names
 end
 
 @testitem "FuelConsumption - Exponential Decay" setup = [LevelSetSetup] tags = [:levelset] begin
     # Eq. 3, Mandel et al. (2011): F(t) = exp(-t/T_f)
     # Test that fuel fraction decays exponentially when burning
     fc = FuelConsumption()
-    fc_nns = ModelingToolkit.toggle_namespacing(fc, false)
-    compiled_sys = mtkcompile(fc; inputs = [fc_nns.is_burning])
+    compiled_sys = mtkcompile(fc)
 
     T_f_val = 10.0  # 10 second burn time
     prob = ODEProblem(
         compiled_sys,
-        merge(Dict(compiled_sys.F => 1.0), Dict(compiled_sys.T_f => T_f_val, compiled_sys.is_burning => 1.0)),
+        Dict(compiled_sys.F => 1.0),
         (0.0, 30.0),
+        Dict(compiled_sys.T_f => T_f_val, compiled_sys.is_burning => 1.0, compiled_sys.w0_initial => 1.0),
     )
     sol = solve(prob)
 
@@ -208,29 +214,29 @@ end
     # Check exponential decay at several time points
     for t_check in [T_f_val, 2 * T_f_val, 3 * T_f_val]
         F_expected = exp(-t_check / T_f_val)
-        F_computed = sol(t_check)[1]
+        F_computed = sol(t_check, idxs = compiled_sys.F)
         @test isapprox(F_computed, F_expected, rtol = 1.0e-4)
     end
 
     # At t = T_f, F should be approximately 1/e ≈ 0.3679
-    @test isapprox(sol(T_f_val)[1], 1 / exp(1), rtol = 1.0e-4)
+    @test isapprox(sol(T_f_val, idxs = compiled_sys.F), 1 / exp(1), rtol = 1.0e-4)
 end
 
 @testitem "FuelConsumption - Not Burning" setup = [LevelSetSetup] tags = [:levelset] begin
     # When is_burning = 0, fuel should not decay
     fc = FuelConsumption()
-    fc_nns = ModelingToolkit.toggle_namespacing(fc, false)
-    compiled_sys = mtkcompile(fc; inputs = [fc_nns.is_burning])
+    compiled_sys = mtkcompile(fc)
 
     prob = ODEProblem(
         compiled_sys,
-        merge(Dict(compiled_sys.F => 1.0), Dict(compiled_sys.T_f => 10.0, compiled_sys.is_burning => 0.0)),
+        Dict(compiled_sys.F => 1.0),
         (0.0, 100.0),
+        Dict(compiled_sys.T_f => 10.0, compiled_sys.is_burning => 0.0, compiled_sys.w0_initial => 1.0),
     )
     sol = solve(prob)
 
     @test sol.retcode == SciMLBase.ReturnCode.Success
-    @test isapprox(sol(100.0)[1], 1.0, atol = 1.0e-10)
+    @test isapprox(sol(100.0, idxs = compiled_sys.F), 1.0, atol = 1.0e-10)
 end
 
 @testitem "FireHeatFlux - Structural Verification" setup = [LevelSetSetup] tags = [:levelset] begin
