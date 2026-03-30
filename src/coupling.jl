@@ -39,6 +39,9 @@ end
 
 # ---- Fuel model lookup functions (registered for symbolic use) ---------------
 
+# LANDFIRE non-burnable fuel model codes (urban, snow/ice, agriculture, water, barren).
+const _NONBURNABLE_CODES = Set([91, 92, 93, 98, 99])
+
 # Build lookup tables from ANDERSON_FUEL_DATA once at module load time.
 const _FUEL_SAVR = let
     d = Dict{Int, Float64}()
@@ -79,6 +82,9 @@ const _FUEL_HEAT = let
         # ANDERSON_FUEL_DATA.h is in BTU/lb; convert to J/kg
         d[k] = v.h * 2326.0
     end
+    for code in _NONBURNABLE_CODES
+        d[code] = 0.0
+    end
     d
 end
 
@@ -92,7 +98,7 @@ fuel_savr(code) = _lookup_fuel(_FUEL_SAVR, code, 3500.0 / 0.3048)
 fuel_load(code) = _lookup_fuel(_FUEL_LOAD, code, 0.166)
 fuel_depth(code) = _lookup_fuel(_FUEL_DEPTH, code, 0.305)
 fuel_mce(code) = _lookup_fuel(_FUEL_MCE, code, 0.12)
-fuel_heat(code) = _lookup_fuel(_FUEL_HEAT, code, 8000.0 * 2326.0)
+fuel_heat(code) = _lookup_fuel(_FUEL_HEAT, code, 0.0)
 
 # Register for use in symbolic equations.
 @register_symbolic fuel_savr(code)
@@ -118,6 +124,11 @@ parameters using the Anderson 13 fuel model data.
 
 Takes `fuel_model` as input (dimensionless integer code from LANDFIRE) and
 outputs the five core Rothermel parameters: `σ`, `w0`, `δ`, `Mx`, `h`.
+
+Non-burnable LANDFIRE codes (91=urban, 92=snow/ice, 93=agriculture, 98=water,
+99=barren) and unrecognized codes return zero heat content (`h=0`), which
+guarantees the Rothermel model computes zero reaction intensity (`IR=0`) and
+therefore zero rate of spread (`R=0`).
 """
 @component function FuelModelLookup(; name = :FuelModelLookup)
     @constants begin
