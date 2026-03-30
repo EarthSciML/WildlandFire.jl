@@ -44,8 +44,31 @@ end
     @test WildlandFire.fuel_load(1.0) ≈ 0.166  rtol = 0.01
     @test WildlandFire.fuel_depth(1.0) ≈ 0.305  rtol = 0.01
     @test WildlandFire.fuel_mce(1.0) ≈ 0.12  rtol = 0.01
-    # Non-burnable code should return default
+    # Non-burnable code 98 (water): SAVR stays at FM1 default to avoid division by zero
     @test WildlandFire.fuel_savr(98.0) ≈ 3500.0 / 0.3048  rtol = 0.01
+    # Heat content should be zero for non-burnable codes
+    @test WildlandFire.fuel_heat(98.0) == 0.0
+end
+
+@testitem "Non-burnable fuel lookup" setup = [CouplingSetup] tags = [:coupling] begin
+    # All standard non-burnable LANDFIRE FBFM13 codes
+    for code in [91.0, 92.0, 93.0, 98.0, 99.0]
+        # Heat content must be zero to ensure IR=0 and therefore R=0
+        @test WildlandFire.fuel_heat(code) == 0.0
+        # SAVR, depth, load, and Mx must remain positive to avoid division by zero in Rothermel
+        @test WildlandFire.fuel_savr(code) > 0.0
+        @test WildlandFire.fuel_depth(code) > 0.0
+        @test WildlandFire.fuel_load(code) > 0.0
+        @test WildlandFire.fuel_mce(code) > 0.0
+    end
+
+    # Unrecognized codes should also return zero heat content
+    @test WildlandFire.fuel_heat(0.0) == 0.0
+    @test WildlandFire.fuel_heat(999.0) == 0.0
+
+    # Valid fuel models (1-13) should still return nonzero heat
+    @test WildlandFire.fuel_heat(1.0) > 0.0
+    @test WildlandFire.fuel_heat(13.0) > 0.0
 end
 
 @testitem "RothermelFireSpread has CoupleType" setup = [CouplingSetup] tags = [:coupling] begin

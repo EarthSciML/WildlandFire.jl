@@ -619,3 +619,29 @@ end
     @test R_US > 0.5   # Minimum reasonable spread rate
     @test R_US < 20.0  # Maximum reasonable spread rate for short grass without wind
 end
+
+@testitem "Non-burnable fuel yields R=0" setup = [RothermelSetup] tags = [:rothermel] begin
+    # Non-burnable codes return h=0 while keeping other parameters at FM1 defaults.
+    # With h=0, IR = Γ' * wn * h * η_M * η_s = 0, so R0 = 0/(positive) = 0 and R = 0.
+    sys = RothermelFireSpread()
+    compiled_sys = mtkcompile(sys)
+
+    prob = NonlinearProblem(
+        compiled_sys, Dict(
+            compiled_sys.σ => σ_SI,            # FM1 default (keeps denominators safe)
+            compiled_sys.w0 => w0_SI,          # FM1 default (keeps ρb > 0)
+            compiled_sys.δ => δ_SI,            # FM1 default (keeps ρb denominator safe)
+            compiled_sys.Mx => 0.12,           # FM1 default (keeps rM denominator safe)
+            compiled_sys.Mf => 0.05,
+            compiled_sys.U => 2.235,           # Nonzero wind to test that R is still zero
+            compiled_sys.tanϕ => 0.3,          # Nonzero slope to test that R is still zero
+            compiled_sys.h => 0.0,             # Non-burnable: zero heat content
+        )
+    )
+
+    sol = solve(prob)
+
+    @test sol[compiled_sys.IR] == 0.0   # No reaction intensity
+    @test sol[compiled_sys.R0] == 0.0   # No base spread rate
+    @test sol[compiled_sys.R] == 0.0    # No spread rate even with wind and slope
+end
