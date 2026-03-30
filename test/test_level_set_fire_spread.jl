@@ -30,8 +30,8 @@ end
     @test length(sys.ivs) == 3          # t, x, y
     @test length(sys.dvs) == 1          # ψ(t, x, y)
 
-    # Parameters include S and psi_ref
-    @test length(sys.ps) == 2
+    # Parameters: R_H, Z, α, ψ_ref, one, grad_eps
+    @test length(sys.ps) == 6
 end
 
 @testitem "LevelSetFireSpread - Circular Spread (Isotropic)" setup = [LevelSetSetup] tags = [:levelset] begin

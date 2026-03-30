@@ -10,9 +10,15 @@ rate of maximum fire spread.
 
 # Model Description
 
-The slope vector has magnitude D_S and direction 0 (upslope). The wind vector has magnitude
-D_W in direction ω from upslope. The resultant vector gives the direction of maximum spread (α)
-and the head fire rate of spread (R_H).
+The slope factor vector has magnitude φs in direction 0 (upslope). The wind factor vector
+has magnitude φw in direction ω from upslope. The resultant gives the direction of maximum
+spread (α) and the head fire rate of spread (R_H). The intermediate distance variables from
+Andrews (2018) Table 26 cancel algebraically, so the equations are expressed directly in
+terms of the dimensionless factors:
+
+```math
+R_H = R_0 \\left(1 + \\sqrt{(\\varphi_s + \\varphi_w \\cos\\omega)^2 + (\\varphi_w \\sin\\omega)^2}\\right)
+```
 
 Key outputs:
 - `R_H`: Rate of spread in direction of maximum spread (head fire)
@@ -46,7 +52,6 @@ prob = NonlinearProblem(compiled_sys, Dict(
     compiled_sys.C_coeff => 7.47,  # Wind coefficient C
     compiled_sys.B_coeff => 0.5,   # Wind coefficient B
     compiled_sys.E_coeff => 0.5,   # Wind coefficient E
-    compiled_sys.elapsed_time => 60.0  # Elapsed time (s)
 ))
 sol = solve(prob)
 ```
@@ -59,7 +64,7 @@ sol = solve(prob)
         # Since 1 m/s = 2.23694 mi/h: Z = 1 + 0.25 * 2.23694 * U_E = 1 + 0.559 * U_E (U_E in m/s)
         c_Z = 0.559235, [description = "Length-to-width ratio coefficient (SI)", unit = u"s/m"]
         U_ref = 1.0, [description = "Reference wind speed", unit = u"m/s"]
-        D_min = 1.0e-10, [description = "Minimum distance to avoid division by zero", unit = u"m"]
+        φ_min = 1.0e-10, [description = "Minimum combined factor to avoid division by zero (dimensionless)", unit = u"1"]
     end
 
     # Input parameters from RothermelFireSpread
@@ -68,7 +73,6 @@ sol = solve(prob)
         φw, [description = "Wind factor (dimensionless)", unit = u"1"]
         φs, [description = "Slope factor (dimensionless)", unit = u"1"]
         ω, [description = "Wind direction relative to upslope", unit = u"rad"]
-        elapsed_time, [description = "Elapsed time for vector calculations", unit = u"s"]
         # Parameters needed for effective wind speed calculation
         β_ratio, [description = "Relative packing ratio β/β_op (dimensionless)", unit = u"1"]
         C_coeff, [description = "Wind coefficient C (dimensionless)", unit = u"1"]
@@ -76,13 +80,9 @@ sol = solve(prob)
         E_coeff, [description = "Wind coefficient E (dimensionless)", unit = u"1"]
     end
 
-    # Intermediate variables - vector components
+    # Intermediate variable
     @variables begin
-        D_S(t), [description = "Slope vector magnitude", unit = u"m"]
-        D_W(t), [description = "Wind vector magnitude", unit = u"m"]
-        X(t), [description = "X-component of resultant vector", unit = u"m"]
-        Y(t), [description = "Y-component of resultant vector", unit = u"m"]
-        D_H(t), [description = "Head fire distance magnitude", unit = u"m"]
+        φ_combined(t), [description = "Combined wind+slope factor magnitude (dimensionless)", unit = u"1"]
     end
 
     # Output variables
@@ -95,26 +95,18 @@ sol = solve(prob)
     end
 
     eqs = [
-        # Slope and wind vector magnitudes - Table 26, Andrews (2018)
-        D_S ~ R0 * φs * elapsed_time,                    # Eq. D_S
-        D_W ~ R0 * φw * elapsed_time,                    # Eq. D_W
-
-        # Resultant vector components - Table 26, Andrews (2018)
-        X ~ D_S + D_W * cos(ω),                          # Eq. X
-        Y ~ D_W * sin(ω),                                # Eq. Y
-
-        # Head fire distance magnitude - Table 26, Andrews (2018)
-        D_H ~ sqrt(X^2 + Y^2),                           # Eq. D_H
+        # Combined wind+slope factor magnitude - derived from Table 26, Andrews (2018)
+        # Algebraically equivalent to D_H / (R0 * elapsed_time) after elapsed_time cancels
+        φ_combined ~ sqrt((φs + φw * cos(ω))^2 + (φw * sin(ω))^2),
 
         # Rate of spread in direction of maximum spread - Table 26, Andrews (2018)
-        R_H ~ R0 + D_H / elapsed_time,                   # Eq. R_H
+        R_H ~ R0 * (one + φ_combined),                   # Eq. R_H
 
         # Direction of maximum spread relative to upslope - Table 26, Andrews (2018)
-        # Note: Using atan2-like behavior with abs(Y) to handle quadrants
-        α ~ asin(abs(Y) / max(D_H, D_min)),              # Eq. α
+        α ~ asin(abs(φw * sin(ω)) / max(φ_combined, φ_min)),  # Eq. α
 
         # Effective wind factor - Table 26, Andrews (2018)
-        φ_E ~ R_H / R0 - one,                            # Eq. φ_E
+        φ_E ~ φ_combined,                                # Eq. φ_E = R_H/R0 - 1
 
         # Effective wind speed - Table 26, Andrews (2018)
         # U_E = [φ_E * (β/β_op)^E / C]^(1/B)
@@ -126,7 +118,10 @@ sol = solve(prob)
         Z ~ one + c_Z * U_E,                             # Eq. Z
     ]
 
-    return System(eqs, t; name)
+    return System(
+        eqs, t; name,
+        metadata = Dict(EarthSciMLBase.CoupleType => FireSpreadDirectionCoupler)
+    )
 end
 
 

@@ -5,14 +5,28 @@
 The level-set method for fire front propagation tracks the fire perimeter implicitly
 as the zero contour of a level-set function ``\psi(x, y, t)``. The burning region is
 defined by ``\psi \leq 0`` and unburned fuel by ``\psi > 0``. The fire front evolves
-according to the Hamilton-Jacobi equation (Eq. 9, Mandel et al. 2011):
+according to the anisotropic Hamilton-Jacobi equation (based on Eq. 9, Mandel et al. 2011):
 
 ```math
-\frac{\partial \psi}{\partial t} + S \|\nabla \psi\| = 0
+\frac{\partial \psi}{\partial t} + S(\hat{n}) \|\nabla \psi\| = 0
 ```
 
-where ``S`` is the fire spread rate (m/s). This approach enables natural handling
-of merging fire fronts, complex terrain, and spatially varying spread rates.
+where the direction-dependent spread rate is given by the elliptical fire shape model
+(Andrews 2018, Table 26):
+
+```math
+S(\gamma) = R_H \frac{1 - e}{1 - e \cos(\gamma)}
+```
+
+Here ``\hat{n} = \nabla\psi / \|\nabla\psi\|`` is the outward fire front normal,
+``\gamma`` is the angle between ``\hat{n}`` and the head fire direction ``\alpha``,
+``R_H`` is the head fire rate of spread, and ``e = \sqrt{Z^2 - 1}/Z`` is the
+eccentricity derived from the fire length-to-width ratio ``Z``. When ``Z = 1``
+(no wind or slope asymmetry), ``e = 0`` and the equation reduces to the isotropic
+case ``S = R_H``.
+
+This approach enables natural handling of merging fire fronts, complex terrain,
+and realistic wind-driven elliptical fire shapes.
 
 The implementation also includes fuel consumption and fire heat flux models that
 couple the fire front to atmospheric and fuel state.
@@ -21,19 +35,18 @@ couple the fire front to atmospheric and fuel state.
 
 This implementation provides the core level-set fire spread algorithm using ModelingToolkit.jl
 and MethodOfLines.jl for spatial discretization. While based on Muñoz-Esparza et al. (2018),
-this simplified version differs from the full WRF-Fire implementation in several key aspects:
+this version differs from the full WRF-Fire implementation in one key aspect:
 
 **Current Implementation:**
 - Fifth-order WENO (Weighted Essentially Non-Oscillatory) spatial discretization via MethodOfLines.jl
 - Adaptive temporal integration via OrdinaryDiffEq.jl
-- Constant fire spread rate ``S`` (suitable for idealized cases)
+- Anisotropic (elliptical) fire spread coupled through `FireSpreadDirection`
 
 **Future work (full Muñoz-Esparza et al. 2018 algorithm):**
 - Level-set reinitialization equation to maintain signed distance property
-- Spatially-varying spread rate coupled to wind and slope
 
-This implementation provides accurate solutions for circular fire spread with constant
-spread rate using the WENO scheme recommended by Muñoz-Esparza et al. (2018).
+This implementation provides accurate solutions for both circular and elliptical fire
+spread using the WENO scheme recommended by Muñoz-Esparza et al. (2018).
 
 ## Accuracy Considerations
 
@@ -63,20 +76,21 @@ anderson_fuel_coefficients
 
 ### Level-Set PDE System
 
-The `LevelSetFireSpread` function returns a `PDESystem` representing the level-set
-equation on a 2D spatial domain with time. This implementation uses:
+The `LevelSetFireSpread` function returns a `PDESystem` representing the anisotropic
+level-set equation on a 2D spatial domain with time. This implementation uses:
 
 - **Spatial Discretization**: MethodOfLines.jl with fifth-order WENO scheme
 - **Temporal Integration**: OrdinaryDiffEq.jl with adaptive time stepping
 - **Boundary Conditions**: Neumann (zero gradient) by default, following Mandel et al. (2011) Sect. 3.4
+- **Anisotropic Spread**: Elliptical fire shape model from Andrews (2018) Table 26
 
-The Hamilton-Jacobi equation (Eq. 9, Mandel et al. 2011) is discretized as:
+The anisotropic Hamilton-Jacobi equation is discretized as:
 ```math
-\frac{\partial \psi}{\partial t} = -S \sqrt{\left(\frac{\partial \psi}{\partial x}\right)^2 + \left(\frac{\partial \psi}{\partial y}\right)^2}
+\frac{\partial \psi}{\partial t} = -S(\gamma) \sqrt{\left(\frac{\partial \psi}{\partial x}\right)^2 + \left(\frac{\partial \psi}{\partial y}\right)^2}
 ```
 
-This follows the spatial and temporal discretization scheme recommended by
-Muñoz-Esparza et al. (2018).
+where the direction-dependent speed ``S(\gamma) = R_H (1-e)/(1-e\cos\gamma)`` uses the
+angle ``\gamma = \text{atan2}(\psi_y, \psi_x) - \alpha`` between the gradient and head fire direction.
 
 ```@example levelset
 using DataFrames, ModelingToolkit, Symbolics, DynamicQuantities

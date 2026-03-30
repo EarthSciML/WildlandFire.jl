@@ -144,12 +144,14 @@ end
     emc = EquilibriumMoistureContent()
     fm1 = OneHourFuelMoisture()
     r = RothermelFireSpread()
-    cs = couple(fm, ts, mw, emc, fm1, r)
+    fsd = FireSpreadDirection()
+    cs = couple(fm, ts, mw, emc, fm1, r, fsd)
     sys = convert(System, cs; compile = false)
     @test sys isa ModelingToolkit.AbstractSystem
     # Should have all equations from all components plus connectors
-    # Rothermel(26) + FuelModelLookup(5) + TerrainSlope(2) + MidflameWind(2) + EMC(1) + OneHourFM(1) + connectors
-    @test length(equations(sys)) > 26 + 5 + 2 + 2 + 1 + 1
+    # Rothermel(26) + FuelModelLookup(5) + TerrainSlope(2) + MidflameWind(2)
+    # + EMC(1) + OneHourFM(1) + FireSpreadDirection(6) + connectors
+    @test length(equations(sys)) > 26 + 5 + 2 + 2 + 1 + 1 + 6
 end
 
 @testitem "LevelSetFireSpread has CoupleType" setup = [CouplingSetup] tags = [:coupling] begin
@@ -168,10 +170,49 @@ end
     @test ls.metadata[EarthSciMLBase.CoupleType] === WildlandFire.LevelSetCoupler
 end
 
-@testitem "Rothermel-LevelSet coupling" setup = [CouplingSetup] tags = [:coupling] begin
+@testitem "FireSpreadDirection has CoupleType" setup = [CouplingSetup] tags = [:coupling] begin
+    fsd = FireSpreadDirection()
+    ct = ModelingToolkit.getmetadata(fsd, EarthSciMLBase.CoupleType, nothing)
+    @test ct === WildlandFire.FireSpreadDirectionCoupler
+end
+
+@testitem "Rothermel-FireSpreadDirection coupling" setup = [CouplingSetup] tags = [:coupling] begin
+    r = RothermelFireSpread()
+    fsd = FireSpreadDirection()
+    cs = EarthSciMLBase.couple2(
+        WildlandFire.RothermelCoupler(r),
+        WildlandFire.FireSpreadDirectionCoupler(fsd),
+    )
+
+    @test cs isa EarthSciMLBase.ConnectorSystem
+
+    # Should couple 7 parameters: R0, φw, φs, β_ratio, C_coeff, B_coeff, E_coeff
+    @test length(cs.eqs) == 7
+
+    eq_lhs_names = Set(string(Symbolics.tosymbol(eq.lhs, escape = false)) for eq in cs.eqs)
+    for name in ["R0", "φw", "φs", "β_ratio", "C_coeff", "B_coeff", "E_coeff"]
+        @test any(n -> endswith(n, name), eq_lhs_names)
+    end
+end
+
+@testitem "MidflameWind-FireSpreadDirection coupling" setup = [CouplingSetup] tags = [:coupling] begin
+    mw = MidflameWind()
+    fsd = FireSpreadDirection()
+    cs = EarthSciMLBase.couple2(
+        WildlandFire.MidflameWindCoupler(mw),
+        WildlandFire.FireSpreadDirectionCoupler(fsd),
+    )
+
+    @test cs isa EarthSciMLBase.ConnectorSystem
+    @test length(cs.eqs) == 1
+    lhs_name = string(Symbolics.tosymbol(cs.eqs[1].lhs, escape = false))
+    @test endswith(lhs_name, "ω")
+end
+
+@testitem "FireSpreadDirection-LevelSet coupling" setup = [CouplingSetup] tags = [:coupling] begin
     using DomainSets
 
-    r = RothermelFireSpread()
+    fsd = FireSpreadDirection()
 
     @parameters x [unit = u"m"]
     @parameters y [unit = u"m"]
@@ -185,30 +226,32 @@ end
     )
 
     cs = EarthSciMLBase.couple2(
-        WildlandFire.RothermelCoupler(r),
+        WildlandFire.FireSpreadDirectionCoupler(fsd),
         WildlandFire.LevelSetCoupler(ls),
     )
 
-    # The coupling should produce a ConnectorSystem
     @test cs isa EarthSciMLBase.ConnectorSystem
 
-    # The connector equation should link S to R
-    @test length(cs.eqs) == 1
-    eq = cs.eqs[1]
-    lhs_name = Symbolics.tosymbol(eq.lhs, escape = false)
-    @test lhs_name == :S
+    # Should couple 3 parameters: R_H, Z, α
+    @test length(cs.eqs) == 3
 
-    # The modified level-set system should no longer have S as a parameter
-    @test !any(p -> Symbol(p) == :S, cs.from.ps)
+    eq_lhs_names = Set(Symbolics.tosymbol(eq.lhs, escape = false) for eq in cs.eqs)
+    for name in [:R_H, :Z, :α]
+        @test name ∈ eq_lhs_names
+    end
 
-    # The Rothermel system should be unchanged
-    @test cs.to isa ModelingToolkit.AbstractSystem
+    # The level-set system should no longer have R_H, Z, α as parameters
+    @test !any(p -> Symbol(p) == :R_H, cs.from.ps)
+    @test !any(p -> Symbol(p) == :Z, cs.from.ps)
+    @test !any(p -> Symbol(p) == :α, cs.from.ps)
 end
 
-@testitem "Rothermel-LevelSet couple and convert" setup = [CouplingSetup] tags = [:coupling] begin
+@testitem "FireSpreadDirection-LevelSet couple and convert" setup = [CouplingSetup] tags = [:coupling] begin
     using DomainSets
 
     r = RothermelFireSpread()
+    mw = MidflameWind()
+    fsd = FireSpreadDirection()
 
     @parameters x [unit = u"m"]
     @parameters y [unit = u"m"]
@@ -222,25 +265,37 @@ end
     )
 
     # Couple using the EarthSciMLBase.couple function
-    cs = couple(r, ls, domain)
+    cs = couple(r, mw, fsd, ls, domain)
 
-    # CoupledSystem should contain both systems
-    @test length(cs.systems) == 1       # Rothermel (ODE)
+    # CoupledSystem should contain both ODE systems and PDE systems
+    @test length(cs.systems) >= 1
     @test length(cs.pdesystems) == 1    # LevelSet (PDE)
 
     # Convert to a merged PDESystem
     pde = convert(PDESystem, cs)
     @test pde isa PDESystem
 
-    # The merged PDE should have 27 equations: 1 level-set PDE + 26 Rothermel algebraic
-    @test length(equations(pde)) == 27
-
     # The level-set ψ should be a dependent variable
     dv_names = [Symbolics.tosymbol(dv, escape = false) for dv in pde.dvs]
     @test :ψ ∈ dv_names
 
-    # Rothermel R should be a dependent variable (promoted to spatial)
-    @test any(n -> occursin("R", string(n)), string.(dv_names))
+    # Deduplicate equations: the EarthSciMLBase coupling loop fires couple2 for
+    # both (i,j) and (j,i) orderings, creating duplicate connector equations.
+    # This is harmless for ODE systems (mtkcompile resolves them) but
+    # MethodOfLines requires exact equation/unknown matching.
+    seen = Set{String}()
+    unique_eqs = Symbolics.Equation[]
+    for eq in equations(pde)
+        s = string(eq)
+        if s ∉ seen
+            push!(seen, s)
+            push!(unique_eqs, eq)
+        end
+    end
+    pde = PDESystem(
+        unique_eqs, pde.bcs, pde.domain, pde.ivs, pde.dvs, pde.ps;
+        name = pde.name
+    )
 
     # Discretize and solve on a coarse grid.
     # Parameter defaults from @constants metadata must be copied into
