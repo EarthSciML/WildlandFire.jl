@@ -223,6 +223,14 @@ where ``t_i`` is the ignition time and ``T_f`` is the fuel burn time constant.
 The fuel weight parameter ``w`` relates to ``T_f`` by:
 ``T_f \\approx w / 0.8514``
 
+The effective fuel load is computed as ``w_{0,\\text{eff}} = F \\cdot w_{0,\\text{initial}}``,
+which can be coupled to `RothermelFireSpread` to reduce the fire spread rate as fuel
+is consumed.
+
+When coupled to `LevelSetFireSpread`, the `is_burning` parameter is driven by the
+level-set function ψ via a smooth Heaviside approximation:
+``\\text{is\\_burning} = 0.5 (1 - \\tanh(\\psi / \\varepsilon))``
+
 # Reference
 
 Mandel, J., Beezley, J.D., and Kochanski, A.K. (2011). Coupled atmosphere-wildland fire
@@ -232,20 +240,24 @@ doi:10.5194/gmd-4-591-2011
 @component function FuelConsumption(; name = :FuelConsumption)
     @parameters begin
         T_f, [description = "Fuel burn time constant (1/e decay time)", unit = u"s"]
+        w0_initial, [description = "Initial oven-dry fuel load", unit = u"kg/m^2"]
+        is_burning = 0.0, [description = "Whether the fuel is burning (1=yes, 0=no) (dimensionless)", unit = u"1"]
     end
 
     @variables begin
         F(t), [description = "Fuel fraction remaining (1=full, 0=consumed)", unit = u"1"]
-        is_burning(t), [description = "Whether the fuel is burning (1=yes, 0=no) (dimensionless)", unit = u"1"]
+        w0_effective(t), [description = "Effective fuel load after consumption", unit = u"kg/m^2"]
     end
 
-    # Fuel fraction decreases exponentially — Eq. 3, Mandel et al. (2011)
-    # dF/dt = -F/T_f when burning, 0 otherwise
     eqs = [
-        D(F) ~ -is_burning * F / T_f,  # Eq. 3 (differential form)
+        D(F) ~ -is_burning * F / T_f,  # Eq. 3, Mandel et al. (2011), differential form
+        w0_effective ~ F * w0_initial,   # Fuel load feedback
     ]
 
-    return System(eqs, t; name)
+    return System(
+        eqs, t; name,
+        metadata = Dict(CoupleType => FuelConsumptionCoupler)
+    )
 end
 
 
