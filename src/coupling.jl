@@ -358,42 +358,18 @@ function couple2(mw::MidflameWindCoupler, fsd::FireSpreadDirectionCoupler)
 end
 
 # FireSpreadDirection → LevelSetFireSpread (R_H, Z, α → level-set parameters)
-#
-# Directly substitutes level-set parameters with variables from the
-# FireSpreadDirection system. This avoids the equation/DV mismatch that
-# param_to_var + connector equations would create when merge_pdesystems
-# deduplicates DVs by symbol name but keeps all equations.
 function couple2(fsd::FireSpreadDirectionCoupler, ls::LevelSetCoupler)
-    fsd_sys, ls_sys = fsd.sys, ls.sys
-
-    # Find R_H, Z, α variables in the source system (works for both ODE and PDE)
-    src_vars = fsd_sys isa ModelingToolkit.PDESystem ? fsd_sys.dvs : unknowns(fsd_sys)
-    _find_var(sym) = only(filter(
-        v -> Symbolics.tosymbol(v, escape = false) == sym, src_vars))
-    R_H_var = _find_var(:R_H)
-    Z_var = _find_var(:Z)
-    α_var = _find_var(:α)
-
-    # Find the corresponding parameters in the level-set system
-    R_H_p = only(filter(p -> Symbolics.tosymbol(p, escape = false) == :R_H, ls_sys.ps))
-    Z_p = only(filter(p -> Symbolics.tosymbol(p, escape = false) == :Z, ls_sys.ps))
-    α_p = only(filter(p -> Symbolics.tosymbol(p, escape = false) == :α, ls_sys.ps))
-
-    # Substitute parameters with source variables in equations and BCs
-    subs = Dict(
-        Symbolics.unwrap(R_H_p) => Symbolics.unwrap(R_H_var),
-        Symbolics.unwrap(Z_p) => Symbolics.unwrap(Z_var),
-        Symbolics.unwrap(α_p) => Symbolics.unwrap(α_var),
+    fsd, ls = fsd.sys, ls.sys
+    ls = param_to_var(ls, :R_H, :Z, :α)
+    # Find the promoted variables from the substituted equation
+    eq_vars = collect(Symbolics.get_variables(equations(ls)[1]))
+    R_H_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :R_H, eq_vars))
+    Z_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :Z, eq_vars))
+    α_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :α, eq_vars))
+    return ConnectorSystem(
+        [R_H_sym ~ fsd.R_H, Z_sym ~ fsd.Z, α_sym ~ fsd.α],
+        ls, fsd
     )
-    new_eqs = [Symbolics.substitute(eq.lhs, subs) ~ Symbolics.substitute(eq.rhs, subs)
-                for eq in equations(ls_sys)]
-    new_bcs = [Symbolics.substitute(bc.lhs, subs) ~ Symbolics.substitute(bc.rhs, subs)
-                for bc in ls_sys.bcs]
-    new_ps = [p for p in ls_sys.ps if Symbolics.unwrap(p) ∉ keys(subs)]
-
-    new_ls = PDESystem(new_eqs, new_bcs, ls_sys.domain, ls_sys.ivs, ls_sys.dvs, new_ps;
-        name = nameof(ls_sys), metadata = ls_sys.metadata)
-    return ConnectorSystem(Equation[], new_ls, fsd_sys)
 end
 
 # LevelSetFireSpread → FuelConsumption (ψ → is_burning)
