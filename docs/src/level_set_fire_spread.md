@@ -315,7 +315,7 @@ This is the fundamental analytical solution for the level-set equation
 (Mandel et al. 2011, Sect. 3.4).
 
 ```@example levelset
-using MethodOfLines, OrdinaryDiffEqDefault, Plots
+using MethodOfLines, OrdinaryDiffEqDefault, OrdinaryDiffEqRosenbrock, Plots
 
 r0 = 10.0       # initial radius (m)
 S_val = 1.0      # spread rate (m/s)
@@ -398,7 +398,7 @@ disc_ellip = MOLFiniteDifference(
     [sys_ellip.ivs[2] => dx, sys_ellip.ivs[3] => dx], sys_ellip.ivs[1];
     advection_scheme = WENOScheme())
 prob_ellip = MethodOfLines.discretize(sys_ellip, disc_ellip; checks = false)
-sol_ellip = solve(prob_ellip; saveat = [0.0, t_end / 2, t_end])
+sol_ellip = solve(prob_ellip, Rosenbrock23(); saveat = [0.0, t_end / 2, t_end])
 
 psi_e = sol_ellip[sys_ellip.dvs[1]]
 x_grid_e = sol_ellip[sys_ellip.ivs[2]]
