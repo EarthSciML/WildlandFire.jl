@@ -159,11 +159,20 @@ end
     dep = USGS3DEP(domain; resolution = 10.0)
     ts = TerrainSlope()
 
-    cs = couple(dep, ts)
-    sys = convert(System, cs; compile = false)
-    @test sys isa ModelingToolkit.AbstractSystem
-    # Should have USGS3DEP equations (3) + TerrainSlope equations (2) + connectors (2)
-    @test length(equations(sys)) >= 3 + 2 + 2
+    # Test the couple2 method directly.
+    # convert(System, ...) is not supported for USGS3DEP because it has
+    # spatial coordinate dependencies (lon, lat) that require PDE-level promotion.
+    cs = EarthSciMLBase.couple2(
+        EarthSciData.USGS3DEPCoupler(dep),
+        WildlandFire.TerrainSlopeCoupler(ts),
+    )
+    @test cs isa EarthSciMLBase.ConnectorSystem
+    @test length(cs.eqs) == 2  # dzdx and dzdy
+
+    # Verify the connector equations link the right variables
+    eq_lhs_names = Set(string(Symbolics.tosymbol(eq.lhs, escape = false)) for eq in cs.eqs)
+    @test any(n -> occursin("dzdx", n), eq_lhs_names)
+    @test any(n -> occursin("dzdy", n), eq_lhs_names)
 end
 
 @testitem "Full fire model coupling" setup = [CouplingSetup] tags = [:coupling] begin
@@ -322,8 +331,16 @@ end
             push!(unique_eqs, eq)
         end
     end
+    # Filter BCs: keep only those for the level-set variable ψ.
+    # ODE variables promoted to PDE get constIC/constBC entries that
+    # MethodOfLines rejects because they are algebraically defined.
+    filtered_bcs = filter(pde.bcs) do bc
+        lhs_str = string(bc.lhs)
+        occursin("ψ", lhs_str)
+    end
+
     pde = PDESystem(
-        unique_eqs, pde.bcs, pde.domain, pde.ivs, pde.dvs, pde.ps;
+        unique_eqs, filtered_bcs, pde.domain, pde.ivs, pde.dvs, pde.ps;
         name = pde.name
     )
 
