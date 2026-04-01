@@ -97,6 +97,15 @@ const _FUEL_HEAT = let
     d
 end
 
+# T_f = weight / 0.8514 (fuel burn time constant in seconds)
+const _FUEL_WEIGHT = let
+    d = Dict{Int, Float64}()
+    for (k, v) in ANDERSON_FUEL_DATA
+        d[k] = v.weight / 0.8514
+    end
+    d
+end
+
 function _lookup_fuel(table::Dict{Int, Float64}, code::Real, default::Float64)
     c = round(Int, code)
     return get(table, c, default)
@@ -108,6 +117,7 @@ fuel_load(code) = _lookup_fuel(_FUEL_LOAD, code, 0.166)
 fuel_depth(code) = _lookup_fuel(_FUEL_DEPTH, code, 0.305)
 fuel_mce(code) = _lookup_fuel(_FUEL_MCE, code, 0.12)
 fuel_heat(code) = _lookup_fuel(_FUEL_HEAT, code, 0.0)
+fuel_weight(code) = _lookup_fuel(_FUEL_WEIGHT, code, 7.0 / 0.8514)
 
 # Register for use in symbolic equations.
 @register_symbolic fuel_savr(code)
@@ -115,6 +125,7 @@ fuel_heat(code) = _lookup_fuel(_FUEL_HEAT, code, 0.0)
 @register_symbolic fuel_depth(code)
 @register_symbolic fuel_mce(code)
 @register_symbolic fuel_heat(code)
+@register_symbolic fuel_weight(code)
 
 # Unit-validation pass-throughs for ModelingToolkit.
 fuel_savr(::DynamicQuantities.AbstractQuantity) = 1.0
@@ -122,6 +133,7 @@ fuel_load(::DynamicQuantities.AbstractQuantity) = 1.0
 fuel_depth(::DynamicQuantities.AbstractQuantity) = 1.0
 fuel_mce(::DynamicQuantities.AbstractQuantity) = 1.0
 fuel_heat(::DynamicQuantities.AbstractQuantity) = 1.0
+fuel_weight(::DynamicQuantities.AbstractQuantity) = 1.0
 
 # ---- FuelModelLookup component -----------------------------------------------
 
@@ -132,7 +144,8 @@ A component that maps an integer fuel model code to continuous Rothermel fuel
 parameters using the Anderson 13 fuel model data.
 
 Takes `fuel_model` as input (dimensionless integer code from LANDFIRE) and
-outputs the five core Rothermel parameters: `σ`, `w0`, `δ`, `Mx`, `h`.
+outputs the five core Rothermel parameters (`σ`, `w0`, `δ`, `Mx`, `h`) plus the
+fuel burn time constant `T_f` for use by `FuelConsumption`.
 
 Non-burnable LANDFIRE codes (91=urban, 92=snow/ice, 93=agriculture, 98=water,
 99=barren) and unrecognized codes return zero heat content (`h=0`), which
@@ -145,6 +158,7 @@ therefore zero rate of spread (`R=0`).
         w0_unit = 1.0, [description = "Fuel load unit", unit = u"kg/m^2"]
         δ_unit = 1.0, [description = "Fuel depth unit", unit = u"m"]
         h_unit = 1.0, [description = "Heat content unit", unit = u"J/kg"]
+        T_f_unit = 1.0, [description = "Fuel burn time unit", unit = u"s"]
         one = 1.0, [description = "Dimensionless one", unit = u"1"]
     end
 
@@ -158,6 +172,7 @@ therefore zero rate of spread (`R=0`).
         δ(t), [description = "Fuel bed depth", unit = u"m"]
         Mx(t), [description = "Dead fuel moisture of extinction (dimensionless)", unit = u"1"]
         h(t), [description = "Low heat content", unit = u"J/kg"]
+        T_f(t), [description = "Fuel burn time constant", unit = u"s"]
     end
 
     eqs = [
@@ -166,6 +181,7 @@ therefore zero rate of spread (`R=0`).
         δ ~ fuel_depth(fuel_model) * δ_unit,
         Mx ~ fuel_mce(fuel_model) * one,
         h ~ fuel_heat(fuel_model) * h_unit,
+        T_f ~ fuel_weight(fuel_model) * T_f_unit,
     ]
 
     return System(
@@ -257,14 +273,16 @@ end
 
 # ---- couple2 methods (inter-component, no EarthSciData dependency) -----------
 
-# FuelModelLookup → RothermelFireSpread (fuel parameters except w0, which is routed
-# through FuelConsumption for fuel depletion feedback)
+# FuelModelLookup → RothermelFireSpread (all fuel parameters including w0)
+# Per Mandel et al. (2011) Section 3.2, fire spread rate depends on original
+# fuel model properties, not remaining fuel fraction after consumption.
 function couple2(fm::FuelModelLookupCoupler, r::RothermelCoupler)
     fm, r = fm.sys, r.sys
-    r = param_to_var(r, :σ, :δ, :Mx, :h)
+    r = param_to_var(r, :σ, :w0, :δ, :Mx, :h)
     return ConnectorSystem(
         [
             r.σ ~ fm.σ,
+            r.w0 ~ fm.w0,
             r.δ ~ fm.δ,
             r.Mx ~ fm.Mx,
             r.h ~ fm.h,
@@ -272,12 +290,12 @@ function couple2(fm::FuelModelLookupCoupler, r::RothermelCoupler)
     )
 end
 
-# FuelModelLookup → FuelConsumption (w0 → w0_initial)
-# Routes the fuel load through FuelConsumption so it can be scaled by fuel depletion.
+# FuelModelLookup → FuelConsumption (w0 → w0_initial, T_f → T_f)
+# Provides initial fuel load and burn time constant for fuel consumption and heat flux.
 function couple2(fm::FuelModelLookupCoupler, fc::FuelConsumptionCoupler)
     fm, fc = fm.sys, fc.sys
-    fc = param_to_var(fc, :w0_initial)
-    return ConnectorSystem([fc.w0_initial ~ fm.w0], fc, fm)
+    fc = param_to_var(fc, :w0_initial, :T_f)
+    return ConnectorSystem([fc.w0_initial ~ fm.w0, fc.T_f ~ fm.T_f], fc, fm)
 end
 
 # TerrainSlope → RothermelFireSpread (slope)
@@ -370,13 +388,4 @@ function couple2(ls::LevelSetCoupler, fc::FuelConsumptionCoupler)
         [fc.is_burning ~ 0.5 * (1.0 - tanh(ψ_sym / ε_h))],
         fc, ls
     )
-end
-
-# FuelConsumption → RothermelFireSpread (w0_effective → w0)
-# Scales the Rothermel fuel load by the remaining fuel fraction, causing the fire
-# to stop spreading at locations where fuel has been consumed (F → 0).
-function couple2(fc::FuelConsumptionCoupler, r::RothermelCoupler)
-    fc, r = fc.sys, r.sys
-    r = param_to_var(r, :w0)
-    return ConnectorSystem([r.w0 ~ fc.w0_effective], r, fc)
 end

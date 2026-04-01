@@ -150,7 +150,13 @@ F(t) = \exp\left(-\frac{t - t_i}{T_f}\right), \quad t > t_i
 ```
 
 where ``t_i`` is the ignition time and ``T_f = w / 0.8514`` is the fuel burn time
-constant derived from the fuel weight parameter ``w``.
+constant derived from the fuel weight parameter ``w``. The burn time constant is
+provided by `FuelModelLookup` via coupling, so it varies spatially by fuel type.
+
+The effective fuel load ``w_{0,\text{eff}} = F \cdot w_{0,\text{initial}}`` is used
+by `FireHeatFlux` to compute sensible and latent heat fluxes released to the
+atmosphere. Per Mandel et al. (2011) Section 3.2, the fire spread rate depends on
+the original fuel model properties, not the remaining fuel fraction.
 
 ```@example levelset
 fc = FuelConsumption()

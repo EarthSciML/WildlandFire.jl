@@ -264,6 +264,10 @@ end
     @test :is_burning ∈ param_names
     @test :T_f ∈ param_names
     @test :w0_initial ∈ param_names
+
+    # F should default to 1.0 (full fuel)
+    F_var = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :F, unknowns(fc)))
+    @test ModelingToolkit.getdefault(F_var) == 1.0
 end
 
 @testitem "FuelConsumption - Exponential Decay" setup = [LevelSetSetup] tags = [:levelset] begin
