@@ -359,16 +359,48 @@ end
 
 # FireSpreadDirection → LevelSetFireSpread (R_H, Z, α → level-set parameters)
 function couple2(fsd::FireSpreadDirectionCoupler, ls::LevelSetCoupler)
-    fsd, ls = fsd.sys, ls.sys
-    ls = param_to_var(ls, :R_H, :Z, :α)
-    # Find the promoted variables from the substituted equation
-    eq_vars = collect(Symbolics.get_variables(equations(ls)[1]))
+    fsd_sys, ls_sys = fsd.sys, ls.sys
+
+    if ls_sys isa ModelingToolkit.PDESystem && fsd_sys isa ModelingToolkit.PDESystem
+        # PDE-level coupling: directly substitute level-set parameters with
+        # DVs from the promoted ODE group. This avoids the equation/DV mismatch
+        # that param_to_var + connector equations would create, since
+        # merge_pdesystems deduplicates DVs by symbol name but not equations.
+        _find_dv(dvs, sym) = only(filter(
+            dv -> Symbolics.tosymbol(dv, escape = false) == sym, dvs))
+        R_H_dv = _find_dv(fsd_sys.dvs, :R_H)
+        Z_dv = _find_dv(fsd_sys.dvs, :Z)
+        α_dv = _find_dv(fsd_sys.dvs, :α)
+
+        R_H_p = only(filter(p -> Symbolics.tosymbol(p, escape = false) == :R_H, ls_sys.ps))
+        Z_p = only(filter(p -> Symbolics.tosymbol(p, escape = false) == :Z, ls_sys.ps))
+        α_p = only(filter(p -> Symbolics.tosymbol(p, escape = false) == :α, ls_sys.ps))
+
+        subs = Dict(
+            Symbolics.unwrap(R_H_p) => Symbolics.unwrap(R_H_dv),
+            Symbolics.unwrap(Z_p) => Symbolics.unwrap(Z_dv),
+            Symbolics.unwrap(α_p) => Symbolics.unwrap(α_dv),
+        )
+        new_eqs = [Symbolics.substitute(eq.lhs, subs) ~ Symbolics.substitute(eq.rhs, subs)
+                    for eq in equations(ls_sys)]
+        new_bcs = [Symbolics.substitute(bc.lhs, subs) ~ Symbolics.substitute(bc.rhs, subs)
+                    for bc in ls_sys.bcs]
+        new_ps = [p for p in ls_sys.ps if Symbolics.unwrap(p) ∉ keys(subs)]
+
+        new_ls = PDESystem(new_eqs, new_bcs, ls_sys.domain, ls_sys.ivs, ls_sys.dvs, new_ps;
+            name = nameof(ls_sys), metadata = ls_sys.metadata)
+        return ConnectorSystem(Equation[], new_ls, fsd_sys)
+    end
+
+    # ODE-level coupling: use param_to_var + connector equations.
+    ls_sys = param_to_var(ls_sys, :R_H, :Z, :α)
+    eq_vars = collect(Symbolics.get_variables(equations(ls_sys)[1]))
     R_H_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :R_H, eq_vars))
     Z_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :Z, eq_vars))
     α_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :α, eq_vars))
     return ConnectorSystem(
-        [R_H_sym ~ fsd.R_H, Z_sym ~ fsd.Z, α_sym ~ fsd.α],
-        ls, fsd
+        [R_H_sym ~ fsd_sys.R_H, Z_sym ~ fsd_sys.Z, α_sym ~ fsd_sys.α],
+        ls_sys, fsd_sys
     )
 end
 
