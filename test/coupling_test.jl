@@ -310,10 +310,7 @@ end
     @test length(cs.systems) >= 1
     @test length(cs.pdesystems) == 1    # LevelSet (PDE)
 
-    # Convert to a merged PDESystem.
-    # This exercises the param_to_var + connector pattern at the PDE level.
-    # Once EarthSciML/EarthSciMLBase.jl#190 is resolved, the equation/DV
-    # count should match and the discretization below should succeed.
+    # Convert to a merged PDESystem
     pde = convert(PDESystem, cs)
     @test pde isa PDESystem
 
@@ -321,19 +318,67 @@ end
     dv_names = [Symbolics.tosymbol(dv, escape = false) for dv in pde.dvs]
     @test :ψ ∈ dv_names
 
-    # Verify that the merged system has equations from all components
-    @test length(equations(pde)) > 1
+    # Equation/DV count must match for MethodOfLines (fixed in EarthSciMLBase v0.25.4, #190)
+    @test length(equations(pde)) == length(pde.dvs)
 
-    # Verify that coupling brought Rothermel/FireSpreadDirection variables into the PDE
-    eq_str = join(string.(equations(pde)), "\n")
-    @test occursin("R_H", eq_str)
-    @test occursin("φ_combined", eq_str)
+    # Deduplicate equations (couple2 may fire for both (i,j) and (j,i) orderings)
+    seen = Set{String}()
+    unique_eqs = Symbolics.Equation[]
+    for eq in equations(pde)
+        s = string(eq)
+        if s ∉ seen
+            push!(seen, s)
+            push!(unique_eqs, eq)
+        end
+    end
 
-    # The equation/DV count should match for MethodOfLines discretization.
-    # Currently blocked by EarthSciMLBase.jl#190: param_to_var creates
-    # variables with only t-dependency and merge_pdesystems doesn't resolve
-    # connectors between same-named DVs, producing extra equations.
-    @test_broken length(equations(pde)) == length(pde.dvs)
+    # Filter BCs: keep only those for the level-set variable ψ.
+    # ODE variables promoted to PDE get constIC/constBC entries that
+    # MethodOfLines rejects because they are algebraically defined.
+    filtered_bcs = filter(pde.bcs) do bc
+        lhs_str = string(bc.lhs)
+        occursin("ψ", lhs_str)
+    end
+
+    pde = PDESystem(
+        unique_eqs, filtered_bcs, pde.domain, pde.ivs, pde.dvs, pde.ps;
+        name = pde.name
+    )
+
+    # Discretize and solve on a coarse grid.
+    using MethodOfLines, OrdinaryDiffEqSSPRK
+    for p in pde.ps
+        if ModelingToolkit.hasdefault(p)
+            pde.initial_conditions[Symbolics.unwrap(p)] = ModelingToolkit.getdefault(p)
+        end
+    end
+    # Set Rothermel fuel model 1 (short grass) inputs
+    for p in pde.ps
+        sym = Symbolics.tosymbol(p, escape = false)
+        if sym == Symbol("RothermelFireSpread₊σ")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 11483.0
+        elseif sym == Symbol("RothermelFireSpread₊w0")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.166
+        elseif sym == Symbol("RothermelFireSpread₊δ")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.3048
+        elseif sym == Symbol("RothermelFireSpread₊Mx")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.12
+        elseif sym == Symbol("RothermelFireSpread₊Mf")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.05
+        elseif sym == Symbol("RothermelFireSpread₊U")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 2.235
+        elseif sym == Symbol("RothermelFireSpread₊tanϕ")
+            pde.initial_conditions[Symbolics.unwrap(p)] = 0.0
+        end
+    end
+
+    dx = 25.0
+    discretization = MOLFiniteDifference(
+        [pde.ivs[2] => dx, pde.ivs[3] => dx], pde.ivs[1],
+    )
+    prob = MethodOfLines.discretize(pde, discretization; checks = false)
+    sol = solve(prob, SSPRK33(); dt = 0.5, adaptive = false, saveat = 10.0)
+    @test sol.retcode == SciMLBase.ReturnCode.Success
 end
 
 @testitem "FuelConsumption has CoupleType" setup = [CouplingSetup] tags = [:coupling] begin
