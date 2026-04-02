@@ -201,7 +201,7 @@ function LevelSetFireSpread(
     return PDESystem(
         eq, bcs, pde_domains, [t, x, y], [ψ(t, x, y)],
         [R_H, Z, α, ψ_ref, one, grad_eps, transform_params...]; name = name,
-        metadata = Dict(EarthSciMLBase.CoupleType => LevelSetCoupler)
+        metadata = Dict(EarthSciMLBase.CoupleType => LevelSetCoupler, EarthSciMLBase.SysDomainInfo => domain)
     )
 end
 
