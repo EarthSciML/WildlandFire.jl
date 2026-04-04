@@ -147,6 +147,19 @@ sol = solve(prob)
         c_FL = 0.00323, [description = "Flame length coefficient (SI, empirical)", unit = u"m"]
     end
 
+    # Floor constants to prevent division-by-zero and Inf from negative-power
+    # expressions when fuel parameters are zero (non-burnable cells, fuel depletion).
+    # Only denominators and negative-power bases are guarded; numerators remain
+    # unguarded so that IR → 0 and R → 0 naturally when fuel is absent.
+    @constants begin
+        σ_floor = 1.0e-6, [description = "Minimum SAV ratio to avoid division by zero", unit = u"1/m"]
+        δ_floor = 1.0e-10, [description = "Minimum fuel depth to avoid division by zero", unit = u"m"]
+        β_floor = 1.0e-10, [description = "Minimum packing ratio to avoid negative-power singularity (dimensionless)", unit = u"1"]
+        β_ratio_floor = 1.0e-10, [description = "Minimum relative packing ratio to avoid negative-power singularity (dimensionless)", unit = u"1"]
+        ρb_floor = 1.0e-10, [description = "Minimum bulk density to avoid division by zero", unit = u"kg/m^3"]
+        Mx_floor = 1.0e-10, [description = "Minimum moisture of extinction to avoid division by zero (dimensionless)", unit = u"1"]
+    end
+
     # Input parameters - fuel array properties (SI units)
     # Note: Default values use literal numbers for Julia LTS compatibility
     @parameters begin
@@ -195,6 +208,7 @@ sol = solve(prob)
         E_coeff(t), [description = "Wind coefficient E (dimensionless)", unit = u"1"]
         φw(t), [description = "Wind factor (dimensionless)", unit = u"1"]
         φs(t), [description = "Slope factor (dimensionless)", unit = u"1"]
+        φs_coeff(t), [description = "Slope factor coefficient 5.275*β^(-0.3) (dimensionless)", unit = u"1"]
     end
 
     # Intermediate variables - heat sink (denominator)
@@ -216,21 +230,21 @@ sol = solve(prob)
     eqs = [
         # Fuel bed calculations - Table 3, Andrews (2018)
         wn ~ w0 * (one - S_T),                              # Eq. wn, Net fuel load
-        ρb ~ w0 / δ,                                        # Eq. ρb, Bulk density
+        ρb ~ w0 / max(δ, δ_floor),                             # Eq. ρb, Bulk density
         β ~ ρb / ρ_p,                                       # Eq. β, Packing ratio
         # Non-dimensionalize σ for fractional power: (σ/σ_ref)^(-0.8189)
-        β_op ~ c_beta_op * (σ / σ_ref)^(-0.8189),           # Eq. βop, Optimum packing ratio (SI)
+        β_op ~ c_beta_op * max(σ / σ_ref, σ_floor / σ_ref)^(-0.8189), # Eq. βop, Optimum packing ratio (SI)
         β_ratio ~ β / β_op,                                 # Eq. β/βop, Relative packing ratio
 
         # Reaction intensity components - Table 3, Andrews (2018) (SI coefficients)
         # Non-dimensionalize σ for fractional power: (σ/σ_ref)^1.5
         # Γ_max has units 1/s from c_Gamma_mult
         Γ_max ~ c_Gamma_mult * (σ / σ_ref)^1.5 / (c_Gamma_denom1 + c_Gamma_denom2 * (σ / σ_ref)^1.5),  # Eq. Γmax
-        A_coeff ~ c_A * (σ / σ_ref)^(-0.7913),              # Eq. A, Coefficient A (SI)
+        A_coeff ~ c_A * max(σ / σ_ref, σ_floor / σ_ref)^(-0.7913), # Eq. A, Coefficient A (SI)
         Γ_prime ~ Γ_max * β_ratio^A_coeff * exp(A_coeff * (one - β_ratio)), # Eq. Γ', Optimum reaction velocity
 
         # Damping coefficients - Table 3, Andrews (2018)
-        rM ~ min(Mf / Mx, one),                             # Eq. rM, Moisture ratio (capped at 1.0)
+        rM ~ min(Mf / max(Mx, Mx_floor), one),               # Eq. rM, Moisture ratio (capped at 1.0)
         η_M ~ one - c_etaM_1 * rM + c_etaM_2 * rM^2 - c_etaM_3 * rM^3, # Eq. ηM, Moisture damping coefficient
         η_s ~ min(c_etas * S_e^(-0.19), one),               # Eq. ηs, Mineral damping coefficient (capped at 1.0)
 
@@ -249,19 +263,20 @@ sol = solve(prob)
 
         # Wind and slope factors - Table 3, Andrews (2018)
         # Non-dimensionalize U for fractional power B_coeff
-        φw ~ C_coeff * (U / U_ref)^B_coeff * β_ratio^(-E_coeff),     # Eq. φw, Wind factor
-        φs ~ c_phis * β^(-0.3) * tanϕ^2,                   # Eq. φs, Slope factor
+        φw ~ C_coeff * (U / U_ref)^B_coeff * max(β_ratio, β_ratio_floor)^(-E_coeff), # Eq. φw, Wind factor
+        φs_coeff ~ c_phis * max(β, β_floor)^(-0.3),            # Slope factor coefficient for normal-projection
+        φs ~ φs_coeff * tanϕ^2,                               # Eq. φs, Slope factor
 
         # Heat sink - Table 3, Andrews (2018) (SI coefficients)
-        ε ~ exp(-c_eps / σ),                               # Eq. ε, Effective heating number
+        ε ~ exp(-c_eps / max(σ, σ_floor)),                   # Eq. ε, Effective heating number
         Qig ~ c_Qig_1 + c_Qig_2 * Mf,                      # Eq. Qig, Heat of preignition
 
         # Rate of spread - Eq. 1, Table 3, Andrews (2018)
-        R0 ~ (IR * ξ) / (ρb * ε * Qig),                    # Eq. R (no-wind no-slope)
+        R0 ~ (IR * ξ) / (max(ρb, ρb_floor) * ε * Qig),     # Eq. R (no-wind no-slope)
         R ~ R0 * (one + φw + φs),                          # Eq. R (with wind and slope)
 
         # Related models - Table 7, Andrews (2018) (SI coefficients)
-        t_r ~ c_tr / σ,                                    # Eq. tr, Residence time
+        t_r ~ c_tr / max(σ, σ_floor),                       # Eq. tr, Residence time
         HA ~ IR * t_r,                                     # Eq. HA, Heat per unit area
         IB ~ HA * R,                                       # Eq. IB, Fireline intensity (Byram)
         # Non-dimensionalize IB for fractional power
@@ -352,6 +367,7 @@ CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Stat
         c_Mx_1 = 2.9, [description = "Live Mx coefficient 1 (dimensionless)", unit = u"1"]
         c_Mx_2 = 0.226, [description = "Live Mx coefficient 2 (dimensionless)", unit = u"1"]
         one = 1.0, [description = "One constant for calculation", unit = u"1"]
+        Mx_dead_floor = 1.0e-10, [description = "Minimum dead fuel moisture of extinction to avoid division by zero (dimensionless)", unit = u"1"]
     end
 
     @parameters begin
@@ -367,7 +383,7 @@ CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Stat
     eqs = [
         # Live fuel moisture of extinction - Eq. Mxlive, Table 6b, Andrews (2018)
         # Minimum value is the dead fuel moisture of extinction
-        Mx_live ~ max(Mx_dead, c_Mx_1 * W_ratio * (one - Mf_dead / Mx_dead) - c_Mx_2),
+        Mx_live ~ max(Mx_dead, c_Mx_1 * W_ratio * (one - Mf_dead / max(Mx_dead, Mx_dead_floor)) - c_Mx_2),
     ]
 
     return System(eqs, t; name)

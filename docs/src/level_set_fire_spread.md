@@ -5,28 +5,29 @@
 The level-set method for fire front propagation tracks the fire perimeter implicitly
 as the zero contour of a level-set function ``\psi(x, y, t)``. The burning region is
 defined by ``\psi \leq 0`` and unburned fuel by ``\psi > 0``. The fire front evolves
-according to the anisotropic Hamilton-Jacobi equation (based on Eq. 9, Mandel et al. 2011):
+according to the Hamilton-Jacobi equation (Eq. 9, Mandel et al. 2011):
 
 ```math
 \frac{\partial \psi}{\partial t} + S(\hat{n}) \|\nabla \psi\| = 0
 ```
 
-where the direction-dependent spread rate is given by the elliptical fire shape model
-(Andrews 2018, Table 26):
+The direction-dependent spread rate is computed by projecting the midflame wind
+vector and terrain gradient onto the fire front normal ``\hat{n} = \nabla\psi / \|\nabla\psi\|``
+(Mandel 2011, Eq. 2; Muñoz-Esparza 2018, Eq. 10):
 
 ```math
-S(\gamma) = R_H \frac{1 - e}{1 - e \cos(\gamma)}
+S(\hat{n}) = R_0 \left(1 + C \left(\frac{\max(0,\, \mathbf{u}_f \cdot \hat{n})}{U_{\text{ref}}}\right)^B \beta_{\text{ratio}}^{-E}
+  + \phi_{s,\text{coeff}} \, \max(0,\, \nabla z \cdot \hat{n})^2 \right)
 ```
 
-Here ``\hat{n} = \nabla\psi / \|\nabla\psi\|`` is the outward fire front normal,
-``\gamma`` is the angle between ``\hat{n}`` and the head fire direction ``\alpha``,
-``R_H`` is the head fire rate of spread, and ``e = \sqrt{Z^2 - 1}/Z`` is the
-eccentricity derived from the fire length-to-width ratio ``Z``. When ``Z = 1``
-(no wind or slope asymmetry), ``e = 0`` and the equation reduces to the isotropic
-case ``S = R_H``.
+where ``R_0`` is the no-wind no-slope rate of spread, ``C``, ``B``, ``E`` are Rothermel
+wind factor coefficients, ``\beta_{\text{ratio}}`` is the relative packing ratio,
+``\phi_{s,\text{coeff}} = 5.275 \beta^{-0.3}`` is the slope factor coefficient,
+``\mathbf{u}_f`` is the midflame wind vector, and ``\nabla z`` is the terrain gradient.
+When wind and slope are zero, the equation reduces to the isotropic case ``S = R_0``.
 
 This approach enables natural handling of merging fire fronts, complex terrain,
-and realistic wind-driven elliptical fire shapes.
+and realistic wind-driven fire shapes.
 
 The implementation also includes fuel consumption and fire heat flux models that
 couple the fire front to atmospheric and fuel state.
@@ -40,7 +41,7 @@ this version differs from the full WRF-Fire implementation in one key aspect:
 **Current Implementation:**
 - Fifth-order WENO (Weighted Essentially Non-Oscillatory) spatial discretization via MethodOfLines.jl
 - Adaptive temporal integration via OrdinaryDiffEq.jl
-- Anisotropic (elliptical) fire spread coupled through `FireSpreadDirection`
+- Anisotropic spread via Mandel/Esparza normal-projection of wind and slope, coupled through `RothermelFireSpread`, `MidflameWind`, and `TerrainSlope`
 
 **Future work (full Muñoz-Esparza et al. 2018 algorithm):**
 - Level-set reinitialization equation to maintain signed distance property
@@ -82,15 +83,15 @@ level-set equation on a 2D spatial domain with time. This implementation uses:
 - **Spatial Discretization**: MethodOfLines.jl with fifth-order WENO scheme
 - **Temporal Integration**: OrdinaryDiffEq.jl with adaptive time stepping
 - **Boundary Conditions**: Neumann (zero gradient) by default, following Mandel et al. (2011) Sect. 3.4
-- **Anisotropic Spread**: Elliptical fire shape model from Andrews (2018) Table 26
+- **Anisotropic Spread**: Mandel/Esparza normal-projection of wind and slope onto fire front normal
 
-The anisotropic Hamilton-Jacobi equation is discretized as:
+The Hamilton-Jacobi equation is discretized as:
 ```math
-\frac{\partial \psi}{\partial t} = -S(\gamma) \sqrt{\left(\frac{\partial \psi}{\partial x}\right)^2 + \left(\frac{\partial \psi}{\partial y}\right)^2}
+\frac{\partial \psi}{\partial t} = -S(\hat{n}) \sqrt{\left(\frac{\partial \psi}{\partial x}\right)^2 + \left(\frac{\partial \psi}{\partial y}\right)^2}
 ```
 
-where the direction-dependent speed ``S(\gamma) = R_H (1-e)/(1-e\cos\gamma)`` uses the
-angle ``\gamma = \text{atan2}(\psi_y, \psi_x) - \alpha`` between the gradient and head fire direction.
+where the direction-dependent speed ``S(\hat{n})`` is computed by projecting wind and
+terrain slope onto the fire front normal (Mandel 2011, Eq. 2; Muñoz-Esparza 2018, Eq. 10).
 
 ```@example levelset
 using DataFrames, ModelingToolkit, Symbolics, DynamicQuantities
@@ -352,68 +353,72 @@ savefig("circular_spread.png"); nothing # hide
 
 ![Circular fire spread: the level-set method propagates the ψ=0 contour outward at rate S, producing approximately circular expansion from a circular initial condition (Eq. 9, Mandel et al. 2011).](circular_spread.png)
 
-### Elliptical Fire Spread (Anisotropic)
+### Wind-Driven Fire Spread (Anisotropic)
 
-When wind or slope creates asymmetric fire behavior (``Z > 1``), the fire shape
-becomes elliptical. The direction-dependent spread rate ``S(\gamma) = R_H (1-e)/(1-e\cos\gamma)``
-(Andrews 2018, Table 26) produces faster spread in the head fire direction (``\alpha``)
-and slower spread in the backing direction. Here we demonstrate this with ``Z = 2``
-and head fire direction along the +x axis (``\alpha = 0``):
+When wind is present, the fire spreads faster in the downwind direction because
+the normal wind component ``\mathbf{u}_f \cdot \hat{n}`` is larger. Here we
+demonstrate with a 5 m/s wind in the +x direction using Rothermel coefficients
+for fuel model 1 (short grass):
 
 ```@example levelset
 r0 = 10.0       # initial radius (m)
-R_H_val = 1.0    # head fire rate of spread (m/s)
-Z_val = 2.0      # length-to-width ratio
-domain_size = 150.0
+R_0_val = 0.1    # no-wind no-slope spread rate (m/s)
+domain_size = 200.0
 center = domain_size / 2.0
 t_end = 10.0
 
-domain_ellip = DomainInfo(
+domain_wind = DomainInfo(
     constIC(0.0, t ∈ Interval(0.0, t_end)),
     constBC(0.0, x ∈ Interval(0.0, domain_size), y ∈ Interval(0.0, domain_size)),
 )
-sys_ellip = LevelSetFireSpread(domain_ellip;
+sys_wind = LevelSetFireSpread(domain_wind;
     initial_condition = (x, y) -> sqrt((x - center)^2 + (y - center)^2) - r0,
-    spread_rate = R_H_val,
+    spread_rate = R_0_val,
 )
 
-# Set Z > 1 for elliptical spread, α = 0 for head fire along +x
-for p in sys_ellip.ps
+# Set wind in +x direction and Rothermel wind coefficients
+for p in sys_wind.ps
     sym = Symbolics.tosymbol(p, escape = false)
-    if sym == :Z
-        sys_ellip.initial_conditions[Symbolics.unwrap(p)] = Z_val
-    elseif sym == :α
-        sys_ellip.initial_conditions[Symbolics.unwrap(p)] = 0.0
+    if sym == :u_x
+        sys_wind.initial_conditions[Symbolics.unwrap(p)] = 5.0   # 5 m/s eastward wind
+    elseif sym == :C_wind
+        sys_wind.initial_conditions[Symbolics.unwrap(p)] = 7.47
+    elseif sym == :B_wind
+        sys_wind.initial_conditions[Symbolics.unwrap(p)] = 0.15566
+    elseif sym == :E_wind
+        sys_wind.initial_conditions[Symbolics.unwrap(p)] = 0.715
+    elseif sym == :β_ratio
+        sys_wind.initial_conditions[Symbolics.unwrap(p)] = 0.5
     end
 end
 
 dx = 5.0
-disc_ellip = MOLFiniteDifference(
-    [sys_ellip.ivs[2] => dx, sys_ellip.ivs[3] => dx], sys_ellip.ivs[1];
+disc_wind = MOLFiniteDifference(
+    [sys_wind.ivs[2] => dx, sys_wind.ivs[3] => dx], sys_wind.ivs[1];
     advection_scheme = WENOScheme())
-prob_ellip = MethodOfLines.discretize(sys_ellip, disc_ellip; checks = false)
-sol_ellip = solve(prob_ellip; saveat = [0.0, t_end / 2, t_end])
+prob_wind = MethodOfLines.discretize(sys_wind, disc_wind; checks = false)
+sol_wind = solve(prob_wind; saveat = [0.0, t_end / 2, t_end])
 
-psi_e = sol_ellip[sys_ellip.dvs[1]]
-x_grid_e = sol_ellip[sys_ellip.ivs[2]]
-y_grid_e = sol_ellip[sys_ellip.ivs[3]]
+psi_w = sol_wind[sys_wind.dvs[1]]
+x_grid_w = sol_wind[sys_wind.ivs[2]]
+y_grid_w = sol_wind[sys_wind.ivs[3]]
 
-p1 = contour(x_grid_e, y_grid_e, psi_e[1, :, :]', levels = [0.0],
+p1 = contour(x_grid_w, y_grid_w, psi_w[1, :, :]', levels = [0.0],
     title = "t = 0 s", xlabel = "x (m)", ylabel = "y (m)",
     aspect_ratio = :equal, linewidth = 2, label = "Fire front")
-p2 = contour(x_grid_e, y_grid_e, psi_e[2, :, :]', levels = [0.0],
+p2 = contour(x_grid_w, y_grid_w, psi_w[2, :, :]', levels = [0.0],
     title = "t = $(t_end/2) s", xlabel = "x (m)", ylabel = "y (m)",
     aspect_ratio = :equal, linewidth = 2, label = "Fire front")
-p3 = contour(x_grid_e, y_grid_e, psi_e[end, :, :]', levels = [0.0],
+p3 = contour(x_grid_w, y_grid_w, psi_w[end, :, :]', levels = [0.0],
     title = "t = $t_end s", xlabel = "x (m)", ylabel = "y (m)",
     aspect_ratio = :equal, linewidth = 2, label = "Fire front")
 
 plot(p1, p2, p3, layout = (1, 3), size = (900, 300),
-    plot_title = "Elliptical Fire Spread (Z = $Z_val, α = 0)")
-savefig("elliptical_spread.png"); nothing # hide
+    plot_title = "Wind-Driven Fire Spread (u_x = 5 m/s)")
+savefig("wind_driven_spread.png"); nothing # hide
 ```
 
-![Elliptical fire spread: with Z = 2 and head fire along +x (α = 0), the fire elongates in the downwind direction. The backing fire (−x) spreads more slowly, producing the characteristic elliptical shape (Andrews 2018, Table 26).](elliptical_spread.png)
+![Wind-driven fire spread: with 5 m/s wind in the +x direction, the fire elongates downwind. The normal-projection approach (Mandel 2011, Eq. 2) naturally produces faster spread where wind aligns with the fire front normal.](wind_driven_spread.png)
 
 ### Fuel Consumption Dynamics (Eq. 3)
 

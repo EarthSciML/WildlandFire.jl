@@ -126,8 +126,8 @@ end
     expected_φ_combined = sqrt(φs_val^2 + φw_val^2)
     @test ustrip(sol[compiled_sys.φ_combined]) ≈ expected_φ_combined rtol = 1.0e-6
 
-    # α = asin(|φw * sin(ω)| / φ_combined) = asin(φw / sqrt(φs² + φw²))
-    expected_α = asin(φw_val / expected_φ_combined)
+    # α = atan(φw * sin(ω), φs + φw * cos(ω)) = atan(φw, φs) when ω = π/2
+    expected_α = atan(φw_val * sin(π / 2), φs_val + φw_val * cos(π / 2))
     @test ustrip(sol[compiled_sys.α]) ≈ expected_α rtol = 1.0e-6
 
     # R_H = R0 * (1 + φ_combined)

@@ -30,8 +30,8 @@ end
 
     # Verify system structure
     @test sys !== nothing
-    @test length(equations(sys)) == 26
-    @test length(unknowns(sys)) == 26
+    @test length(equations(sys)) == 27
+    @test length(unknowns(sys)) == 27
 
     # Check key output variables exist
     var_names = [string(Symbolics.tosymbol(v, escape = false)) for v in unknowns(sys)]
@@ -644,4 +644,123 @@ end
     @test sol[compiled_sys.IR] == 0.0   # No reaction intensity
     @test sol[compiled_sys.R0] == 0.0   # No base spread rate
     @test sol[compiled_sys.R] == 0.0    # No spread rate even with wind and slope
+end
+
+# ---------- Zero-parameter robustness (Issue #56) ----------
+
+@testitem "Zero fuel load (w0=0) yields finite R=0" setup = [RothermelSetup] tags = [:rothermel] begin
+    # When fuel is fully consumed (w0→0), all outputs must be finite with R=0.
+    sys = RothermelFireSpread()
+    compiled_sys = mtkcompile(sys)
+
+    prob = NonlinearProblem(
+        compiled_sys, Dict(
+            compiled_sys.σ => σ_SI,
+            compiled_sys.w0 => 0.0,         # No fuel load
+            compiled_sys.δ => δ_SI,
+            compiled_sys.Mx => 0.12,
+            compiled_sys.Mf => 0.05,
+            compiled_sys.U => 2.235,
+            compiled_sys.tanϕ => 0.3,
+            compiled_sys.h => 18608000.0,
+        )
+    )
+    sol = solve(prob)
+
+    @test isfinite(sol[compiled_sys.R])
+    @test sol[compiled_sys.R] == 0.0
+    @test isfinite(sol[compiled_sys.R0])
+    @test sol[compiled_sys.R0] == 0.0
+    @test isfinite(sol[compiled_sys.IR])
+    @test sol[compiled_sys.IR] == 0.0
+    @test isfinite(sol[compiled_sys.φw])
+    @test isfinite(sol[compiled_sys.φs])
+    @test isfinite(sol[compiled_sys.t_r])
+    @test isfinite(sol[compiled_sys.F_L])
+    @test isfinite(sol[compiled_sys.IB])
+end
+
+@testitem "Zero SAV ratio (σ=0) yields finite R=0" setup = [RothermelSetup] tags = [:rothermel] begin
+    # Non-burnable surface with σ=0: all outputs must be finite with R=0.
+    sys = RothermelFireSpread()
+    compiled_sys = mtkcompile(sys)
+
+    prob = NonlinearProblem(
+        compiled_sys, Dict(
+            compiled_sys.σ => 0.0,          # No surface area
+            compiled_sys.w0 => w0_SI,
+            compiled_sys.δ => δ_SI,
+            compiled_sys.Mx => 0.12,
+            compiled_sys.Mf => 0.05,
+            compiled_sys.U => 2.235,
+            compiled_sys.tanϕ => 0.3,
+            compiled_sys.h => 18608000.0,
+        )
+    )
+    sol = solve(prob)
+
+    @test isfinite(sol[compiled_sys.R])
+    @test sol[compiled_sys.R] ≈ 0.0 atol = 1.0e-10
+    @test isfinite(sol[compiled_sys.R0])
+    @test isfinite(sol[compiled_sys.IR])
+    @test isfinite(sol[compiled_sys.φw])
+    @test isfinite(sol[compiled_sys.φs])
+    @test isfinite(sol[compiled_sys.t_r])
+    @test isfinite(sol[compiled_sys.F_L])
+    @test isfinite(sol[compiled_sys.IB])
+end
+
+@testitem "All zero fuel parameters yield finite R=0" setup = [RothermelSetup] tags = [:rothermel] begin
+    # Completely non-burnable: σ=0, w0=0, δ=0, h=0.
+    sys = RothermelFireSpread()
+    compiled_sys = mtkcompile(sys)
+
+    prob = NonlinearProblem(
+        compiled_sys, Dict(
+            compiled_sys.σ => 0.0,
+            compiled_sys.w0 => 0.0,
+            compiled_sys.δ => 0.0,
+            compiled_sys.Mx => 0.12,
+            compiled_sys.Mf => 0.05,
+            compiled_sys.U => 2.235,
+            compiled_sys.tanϕ => 0.3,
+            compiled_sys.h => 0.0,
+        )
+    )
+    sol = solve(prob)
+
+    @test isfinite(sol[compiled_sys.R])
+    @test sol[compiled_sys.R] == 0.0
+    @test isfinite(sol[compiled_sys.R0])
+    @test isfinite(sol[compiled_sys.IR])
+    @test isfinite(sol[compiled_sys.φw])
+    @test isfinite(sol[compiled_sys.φs])
+    @test isfinite(sol[compiled_sys.t_r])
+    @test isfinite(sol[compiled_sys.F_L])
+    @test isfinite(sol[compiled_sys.IB])
+end
+
+@testitem "Zero moisture of extinction (Mx=0) yields finite results" setup = [RothermelSetup] tags = [:rothermel] begin
+    # Edge case: Mx=0 should not cause division by zero in rM.
+    sys = RothermelFireSpread()
+    compiled_sys = mtkcompile(sys)
+
+    prob = NonlinearProblem(
+        compiled_sys, Dict(
+            compiled_sys.σ => σ_SI,
+            compiled_sys.w0 => w0_SI,
+            compiled_sys.δ => δ_SI,
+            compiled_sys.Mx => 0.0,         # Zero extinction moisture
+            compiled_sys.Mf => 0.05,
+            compiled_sys.U => 0.0,
+            compiled_sys.tanϕ => 0.0,
+            compiled_sys.h => 18608000.0,
+        )
+    )
+    sol = solve(prob)
+
+    @test isfinite(sol[compiled_sys.R])
+    @test isfinite(sol[compiled_sys.R0])
+    @test isfinite(sol[compiled_sys.IR])
+    @test isfinite(sol[compiled_sys.rM])
 end

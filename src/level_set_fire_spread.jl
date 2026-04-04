@@ -3,69 +3,49 @@
                        initial_condition, boundary_conditions=nothing,
                        spread_rate=1.0)
 
-Create a level-set fire front propagation PDE system with anisotropic (elliptical) spread.
+Create a level-set fire front propagation PDE system using the Mandel et al. (2011) /
+Muñoz-Esparza et al. (2018) normal-projection approach.
 
-This implements the level-set method for tracking fire front evolution on a 2D domain,
-based on the Hamilton-Jacobi equation from Mandel et al. (2011) with direction-dependent
-spread rate from the elliptical fire shape model (Andrews 2018, Table 26). The fire front
-is represented implicitly as the zero contour of a level-set function ψ(x, y, t), where
-ψ ≤ 0 denotes the burning region and ψ > 0 denotes unburned fuel.
-
-The level-set function evolves according to the anisotropic Hamilton-Jacobi equation:
+The fire front is tracked implicitly as the zero contour of a level-set function
+ψ(x, y, t), where ψ ≤ 0 is the burning region and ψ > 0 is unburned fuel. The
+level-set evolves according to the Hamilton-Jacobi equation (Mandel 2011, Eq. 9):
 
 ```math
 \\frac{\\partial \\psi}{\\partial t} + S(\\hat{n}) \\|\\nabla \\psi\\| = 0
 ```
 
-where the direction-dependent spread rate is given by the elliptical fire shape model:
+The direction-dependent spread rate is evaluated by projecting wind and terrain slope
+onto the fire front normal ``\\hat{n} = \\nabla\\psi / \\|\\nabla\\psi\\|``
+(Mandel 2011, Eq. 2; Muñoz-Esparza 2018, Eq. 10):
 
 ```math
-S(\\gamma) = R_H \\frac{1 - e}{1 - e \\cos(\\gamma)}
+S(\\hat{n}) = R_0 \\left(1 + C \\left(\\frac{\\max(0,\\, \\mathbf{u}_f \\cdot \\hat{n})}{U_{\\text{ref}}}\\right)^B \\beta_{\\text{ratio}}^{-E}
+  + \\phi_{s,\\text{coeff}} \\, \\max(0,\\, \\nabla z \\cdot \\hat{n})^2 \\right)
 ```
 
-Here ``\\hat{n} = \\nabla\\psi / \\|\\nabla\\psi\\|`` is the outward fire front normal,
-``\\gamma`` is the angle between ``\\hat{n}`` and the head fire direction ``\\alpha``,
-``R_H`` is the head fire rate of spread, and ``e = \\sqrt{Z^2 - 1}/Z`` is the
-eccentricity derived from the fire length-to-width ratio ``Z``.
-
-When ``Z = 1`` (no wind or slope asymmetry), ``e = 0`` and the equation reduces to the
-isotropic case ``S = R_H``.
+When wind and slope are zero the equation reduces to the isotropic case ``S = R_0``.
 
 ## Implementation Details
 
-This implementation uses MethodOfLines.jl for spatial discretization with a fifth-order
-WENO (Weighted Essentially Non-Oscillatory) advection scheme, following the
-recommendations of Muñoz-Esparza et al. (2018). For production fire modeling requiring
-even higher accuracy, consider adding:
-- Level-set reinitialization for maintaining signed distance property
+Uses MethodOfLines.jl with WENO spatial discretization following Muñoz-Esparza et al.
+(2018). For production use, consider adding level-set reinitialization.
 
 # Arguments
-- `domain`: A `DomainInfo` object specifying the spatial (x, y) and temporal (t) domains.
-  Must have exactly 2 spatial dimensions.
+- `domain`: A `DomainInfo` with at least 2 spatial dimensions.
 - `name`: System name (default `:LevelSetFireSpread`)
-- `initial_condition`: Function `(x, y) -> ψ₀` giving the initial level-set field.
-  Negative values indicate initial fire region, positive values indicate unburned fuel.
-- `boundary_conditions`: Optional vector of boundary condition equations. If not provided,
-  Neumann (zero-gradient) boundary conditions are used.
-- `spread_rate`: Default value for the head fire rate of spread parameter R_H (m/s). Default is 1.0.
-
-# Returns
-A `PDESystem` representing the level-set fire spread equation with anisotropic spread.
+- `initial_condition`: Function `(x, y) -> ψ₀`. Negative = burning, positive = unburned.
+- `boundary_conditions`: Optional BC equations. Default: Neumann (zero-gradient).
+- `spread_rate`: Default no-wind no-slope rate of spread R_0 (m/s). Default 1.0.
 
 # References
-
-Muñoz-Esparza, D., Kosović, B., Jiménez, P.A., and Coen, J.L. (2018). An accurate
-fire-spread algorithm in the Weather Research and Forecasting model using the level-set
-method. *J. Adv. Model. Earth Syst.*, 10, 908–926. doi:10.1002/2017MS001108
 
 Mandel, J., Beezley, J.D., and Kochanski, A.K. (2011). Coupled atmosphere-wildland fire
 modeling with WRF 3.3 and SFIRE 2011. *Geosci. Model Dev.*, 4, 591–610.
 doi:10.5194/gmd-4-591-2011
 
-Andrews, Patricia L. 2018. The Rothermel surface fire spread model and associated
-developments: A comprehensive explanation. Gen. Tech. Rep. RMRS-GTR-371. Fort Collins,
-CO: U.S. Department of Agriculture, Forest Service, Rocky Mountain Research Station.
-Table 26.
+Muñoz-Esparza, D., Kosović, B., Jiménez, P.A., and Coen, J.L. (2018). An accurate
+fire-spread algorithm in the Weather Research and Forecasting model using the level-set
+method. *J. Adv. Model. Earth Syst.*, 10, 908–926. doi:10.1002/2017MS001108
 
 # Example
 
@@ -74,21 +54,15 @@ using WildlandFire, EarthSciMLBase, ModelingToolkit, DynamicQuantities
 using ModelingToolkit: t
 using MethodOfLines, DomainSets, OrdinaryDiffEqDefault
 
-# Domain: 500m x 500m, 60 seconds
 @parameters x [unit = u"m"]
 @parameters y [unit = u"m"]
 domain = DomainInfo(
     constIC(0.0, t ∈ Interval(0.0, 60.0)),
     constBC(0.0, x ∈ Interval(0.0, 500.0), y ∈ Interval(0.0, 500.0)),
 )
-
-# Circular ignition at center (radius 10m)
 initial_condition(x, y) = sqrt((x - 250.0)^2 + (y - 250.0)^2) - 10.0
-
-# Create PDE system with anisotropic spread (Z > 1 for elliptical fire)
 sys = LevelSetFireSpread(domain; initial_condition, spread_rate=0.5)
 
-# Discretize and solve
 dx = 5.0
 discretization = MOLFiniteDifference([sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1];
     advection_scheme = WENOScheme())
@@ -116,35 +90,48 @@ function LevelSetFireSpread(
     x = spatial_vars[1]
     y = spatial_vars[2]
 
-    # Fire spread parameters
-    @parameters R_H = spread_rate [description = "Head fire rate of spread", unit = u"m/s"]
-    @parameters Z = 1.0 [description = "Fire length-to-width ratio (dimensionless)", unit = u"1"]
-    @parameters α = 0.0 [description = "Direction of maximum spread relative to upslope", unit = u"rad"]
+    # Rothermel fire spread coefficients — Mandel (2011) Eq. 2
+    @parameters R_0 = spread_rate [description = "No-wind no-slope rate of spread", unit = u"m/s"]
+    @parameters C_wind = 1.0 [description = "Wind coefficient C (dimensionless)", unit = u"1"]
+    @parameters B_wind = 0.5 [description = "Wind exponent B (dimensionless)", unit = u"1"]
+    @parameters E_wind = 0.5 [description = "Wind coefficient E (dimensionless)", unit = u"1"]
+    @parameters β_ratio = 1.0 [description = "Relative packing ratio β/β_op (dimensionless)", unit = u"1"]
+    @parameters φs_coeff = 0.0 [description = "Slope factor coefficient 5.275*β^(-0.3) (dimensionless)", unit = u"1"]
+
+    # Wind vector at midflame height
+    @parameters u_x = 0.0 [description = "Midflame wind x-component", unit = u"m/s"]
+    @parameters u_y = 0.0 [description = "Midflame wind y-component", unit = u"m/s"]
+
+    # Terrain gradient
+    @parameters dzdx = 0.0 [description = "Terrain gradient in x direction (dimensionless)", unit = u"1"]
+    @parameters dzdy = 0.0 [description = "Terrain gradient in y direction (dimensionless)", unit = u"1"]
 
     @constants begin
         one = 1.0, [description = "Dimensionless one for unit balancing", unit = u"1"]
         ψ_ref = 1.0, [description = "Reference length for initial condition", unit = u"m"]
-        grad_eps = 1.0e-10, [description = "Small gradient for numerical stability (dimensionless)", unit = u"1"]
+        grad_eps = 1.0e-10, [description = "Small value for numerical stability (dimensionless)", unit = u"1"]
+        # Reference wind speed: 1 ft/min in m/s — matches Rothermel calibration units
+        U_ref = 0.3048 / 60, [description = "Reference wind speed (1 ft/min in m/s)", unit = u"m/s"]
+        zero_ms = 0.0, [description = "Zero wind speed", unit = u"m/s"]
+        zero_1 = 0.0, [description = "Zero dimensionless", unit = u"1"]
+        β_ratio_floor = 1.0e-10, [description = "Minimum β_ratio to avoid singularity (dimensionless)", unit = u"1"]
     end
 
     # Level-set function
     @variables ψ(..) [description = "Level-set function (fire front at ψ=0)", unit = u"m"]
 
     # Spatial derivative operators with coordinate transforms
-    # For meter domains, transforms are identity (1); for lat-lon, they convert
-    # d/d(rad) to d/d(meter) so the gradient is in physical space.
     δs = EarthSciMLBase.partialderivatives(domain)
     transforms = EarthSciMLBase.partialderivative_transforms(domain)
     Dx = Differential(x)
     Dy = Differential(y)
 
     # Collect symbolic constants/parameters introduced by coordinate transforms
-    # (e.g., lat2meters, lon2m) so they can be included in the PDESystem.
     ivs_set = Set(Symbolics.unwrap.([t, x, y]))
     transform_params_set = Set{Any}()
     transform_params = Num[]
     for tf in transforms
-        tf isa Integer && continue  # Skip identity transforms (literal 1)
+        tf isa Integer && continue
         for v in Symbolics.get_variables(tf)
             uv = Symbolics.unwrap(v)
             if uv ∉ ivs_set && uv ∉ transform_params_set
@@ -158,26 +145,36 @@ function LevelSetFireSpread(
     ψ_x = δs[1](ψ(t, x, y))
     ψ_y = δs[2](ψ(t, x, y))
 
-    # Anisotropic level-set equation — Mandel et al. (2011) Eq. 9 with
-    # direction-dependent spread rate from Andrews (2018) Table 26.
-    #
-    # The angle γ between the gradient direction and the head fire direction α:
-    #   γ = atan(ψ_y, ψ_x) - α
-    #
-    # Eccentricity from length-to-width ratio (Andrews 2018, Table 26):
-    #   e = sqrt(Z² - 1) / Z
-    #
-    # Direction-dependent spread rate (elliptical fire shape model):
-    #   S(γ) = R_H * (1 - e) / (1 - e * cos(γ))
-    #
-    # When Z = 1 (isotropic): e = 0, S(γ) = R_H for all directions.
-    e_val = sqrt(Z^2 - one) / Z
-    γ = atan(ψ_y + grad_eps, ψ_x + grad_eps) - α
-    S_γ = R_H * (one - e_val) / (one - e_val * cos(γ))
+    # Gradient magnitude with regularization to avoid division by zero
+    grad_ψ = sqrt(ψ_x^2 + ψ_y^2)
+    grad_ψ_safe = grad_ψ + grad_eps
 
-    # ∂ψ/∂t + S(γ)‖∇ψ‖ = 0
+    # Normal-projection fire spread rate — Mandel (2011) Eq. 2, Esparza (2018) Eq. 10
+    #
+    # Fire front normal: n = ∇ψ / |∇ψ|
+    # Normal wind component: U_n = u_f · n
+    # Normal slope component: tanφ_n = ∇z · n
+    #
+    # Wind factor: φ_W(n) = C * (max(0, U_n) / U_ref)^B * β_ratio^(-E)
+    # Slope factor: φ_S(n) = φs_coeff * max(0, tanφ_n)²
+    # Spread rate: S(n) = R_0 * (1 + φ_W(n) + φ_S(n))
+
+    # Project wind and slope onto fire front normal
+    U_n = (u_x * ψ_x + u_y * ψ_y) / grad_ψ_safe + zero_ms
+    tanφ_n = (dzdx * ψ_x + dzdy * ψ_y) / grad_ψ_safe + zero_1
+
+    # Wind factor in normal direction (Rothermel form)
+    φ_W_n = C_wind * (max(zero_ms, U_n) / U_ref)^B_wind * max(β_ratio, β_ratio_floor)^(-E_wind)
+
+    # Slope factor in normal direction
+    φ_S_n = φs_coeff * max(zero_1, tanφ_n)^2
+
+    # Total spread rate — Mandel (2011) Eq. 1
+    S_n = R_0 * (one + φ_W_n + φ_S_n)
+
+    # Level-set equation: ∂ψ/∂t + S(n)|∇ψ| = 0 — Mandel (2011) Eq. 9
     eq = [
-        D(ψ(t, x, y)) ~ -S_γ * sqrt(ψ_x^2 + ψ_y^2),
+        D(ψ(t, x, y)) ~ -S_n * grad_ψ,
     ]
 
     pde_domains = EarthSciMLBase.domains(domain)
@@ -200,7 +197,12 @@ function LevelSetFireSpread(
 
     return PDESystem(
         eq, bcs, pde_domains, [t, x, y], [ψ(t, x, y)],
-        [R_H, Z, α, ψ_ref, one, grad_eps, transform_params...]; name = name,
+        [
+            R_0, C_wind, B_wind, E_wind, β_ratio, φs_coeff,
+            u_x, u_y, dzdx, dzdy,
+            ψ_ref, one, grad_eps, U_ref, zero_ms, zero_1, β_ratio_floor,
+            transform_params...,
+        ]; name = name,
         metadata = Dict(EarthSciMLBase.CoupleType => LevelSetCoupler)
     )
 end

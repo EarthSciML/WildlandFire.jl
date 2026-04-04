@@ -200,11 +200,15 @@ Outputs:
     @variables begin
         tanϕ(t), [description = "Slope steepness (dimensionless, rise/run)", unit = u"1"]
         slope_aspect(t), [description = "Aspect angle from east (upslope direction)", unit = u"rad"]
+        dzdx_out(t), [description = "Elevation gradient in x direction (output)", unit = u"1"]
+        dzdy_out(t), [description = "Elevation gradient in y direction (output)", unit = u"1"]
     end
 
     eqs = [
         tanϕ ~ sqrt(dzdx^2 + dzdy^2) + zero_1,
         slope_aspect ~ atan(dzdy, dzdx) + zero_rad,
+        dzdx_out ~ dzdx + zero_1,
+        dzdy_out ~ dzdy + zero_1,
     ]
 
     return System(
@@ -242,11 +246,15 @@ timber fuel types (Baughman & Albini, 1980).
     @variables begin
         U(t), [description = "Wind speed at midflame height", unit = u"m/s"]
         ω(t), [description = "Wind direction relative to upslope", unit = u"rad"]
+        u_mf_x(t), [description = "Midflame wind x-component (eastward)", unit = u"m/s"]
+        u_mf_y(t), [description = "Midflame wind y-component (northward)", unit = u"m/s"]
     end
 
     eqs = [
         U ~ wind_reduction * sqrt(u_wind^2 + v_wind^2) + zero_ms,
         ω ~ atan(v_wind, u_wind) - slope_aspect + zero_rad,
+        u_mf_x ~ wind_reduction * u_wind + zero_ms,
+        u_mf_y ~ wind_reduction * v_wind + zero_ms,
     ]
 
     return System(
@@ -339,18 +347,46 @@ function couple2(mw::MidflameWindCoupler, fsd::FireSpreadDirectionCoupler)
     return ConnectorSystem([fsd.ω ~ mw.ω], fsd, mw)
 end
 
-# FireSpreadDirection → LevelSetFireSpread (R_H, Z, α → level-set parameters)
-function couple2(fsd::FireSpreadDirectionCoupler, ls::LevelSetCoupler)
-    fsd, ls = fsd.sys, ls.sys
-    ls = param_to_var(ls, :R_H, :Z, :α)
-    # Find the promoted variables from the substituted equation
+# RothermelFireSpread → LevelSetFireSpread (Rothermel coefficients for Mandel normal-projection)
+function couple2(r::RothermelCoupler, ls::LevelSetCoupler)
+    r, ls = r.sys, ls.sys
+    ls = param_to_var(ls, :R_0, :C_wind, :B_wind, :E_wind, :β_ratio, :φs_coeff)
     eq_vars = collect(Symbolics.get_variables(equations(ls)[1]))
-    R_H_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :R_H, eq_vars))
-    Z_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :Z, eq_vars))
-    α_sym = only(filter(v -> Symbolics.tosymbol(v, escape = false) == :α, eq_vars))
+    find_sym(name) = only(filter(v -> Symbolics.tosymbol(v, escape = false) == name, eq_vars))
     return ConnectorSystem(
-        [R_H_sym ~ fsd.R_H, Z_sym ~ fsd.Z, α_sym ~ fsd.α],
-        ls, fsd
+        [
+            find_sym(:R_0) ~ r.R0,
+            find_sym(:C_wind) ~ r.C_coeff,
+            find_sym(:B_wind) ~ r.B_coeff,
+            find_sym(:E_wind) ~ r.E_coeff,
+            find_sym(:β_ratio) ~ r.β_ratio,
+            find_sym(:φs_coeff) ~ r.φs_coeff,
+        ],
+        ls, r
+    )
+end
+
+# MidflameWind → LevelSetFireSpread (wind vector components)
+function couple2(mw::MidflameWindCoupler, ls::LevelSetCoupler)
+    mw, ls = mw.sys, ls.sys
+    ls = param_to_var(ls, :u_x, :u_y)
+    eq_vars = collect(Symbolics.get_variables(equations(ls)[1]))
+    find_sym(name) = only(filter(v -> Symbolics.tosymbol(v, escape = false) == name, eq_vars))
+    return ConnectorSystem(
+        [find_sym(:u_x) ~ mw.u_mf_x, find_sym(:u_y) ~ mw.u_mf_y],
+        ls, mw
+    )
+end
+
+# TerrainSlope → LevelSetFireSpread (terrain gradient components)
+function couple2(ts::TerrainSlopeCoupler, ls::LevelSetCoupler)
+    ts, ls = ts.sys, ls.sys
+    ls = param_to_var(ls, :dzdx, :dzdy)
+    eq_vars = collect(Symbolics.get_variables(equations(ls)[1]))
+    find_sym(name) = only(filter(v -> Symbolics.tosymbol(v, escape = false) == name, eq_vars))
+    return ConnectorSystem(
+        [find_sym(:dzdx) ~ ts.dzdx_out, find_sym(:dzdy) ~ ts.dzdy_out],
+        ls, ts
     )
 end
 
