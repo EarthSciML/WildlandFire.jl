@@ -151,7 +151,13 @@ F(t) = \exp\left(-\frac{t - t_i}{T_f}\right), \quad t > t_i
 ```
 
 where ``t_i`` is the ignition time and ``T_f = w / 0.8514`` is the fuel burn time
-constant derived from the fuel weight parameter ``w``.
+constant derived from the fuel weight parameter ``w``. The burn time constant is
+provided by `FuelModelLookup` via coupling, so it varies spatially by fuel type.
+
+The effective fuel load ``w_{0,\text{eff}} = F \cdot w_{0,\text{initial}}`` is used
+by `FireHeatFlux` to compute sensible and latent heat fluxes released to the
+atmosphere. Per Mandel et al. (2011) Section 3.2, the fire spread rate depends on
+the original fuel model properties, not the remaining fuel fraction.
 
 ```@example levelset
 fc = FuelConsumption()
@@ -310,7 +316,7 @@ This is the fundamental analytical solution for the level-set equation
 (Mandel et al. 2011, Sect. 3.4).
 
 ```@example levelset
-using MethodOfLines, OrdinaryDiffEqDefault, Plots
+using MethodOfLines, OrdinaryDiffEqDefault, OrdinaryDiffEqRosenbrock, Plots
 
 r0 = 10.0       # initial radius (m)
 S_val = 1.0      # spread rate (m/s)
@@ -397,7 +403,7 @@ disc_wind = MOLFiniteDifference(
     [sys_wind.ivs[2] => dx, sys_wind.ivs[3] => dx], sys_wind.ivs[1];
     advection_scheme = WENOScheme())
 prob_wind = MethodOfLines.discretize(sys_wind, disc_wind; checks = false)
-sol_wind = solve(prob_wind; saveat = [0.0, t_end / 2, t_end])
+sol_wind = solve(prob_wind, Rosenbrock23(); saveat = [0.0, t_end / 2, t_end])
 
 psi_w = sol_wind[sys_wind.dvs[1]]
 x_grid_w = sol_wind[sys_wind.ivs[2]]

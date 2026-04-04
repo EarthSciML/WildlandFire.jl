@@ -109,12 +109,14 @@ All available `couple2` methods for connecting components:
 | Source | Target | Connection |
 |--------|--------|------------|
 | `FuelModelLookup.(σ, w0, δ, Mx, h)` | `RothermelFireSpread.(σ, w0, δ, Mx, h)` | Fuel properties |
+| `FuelModelLookup.(w0, T_f)` | `FuelConsumption.(w0_initial, T_f)` | Fuel load and burn time |
 | `TerrainSlope.tanϕ` | `RothermelFireSpread.tanϕ` | Slope steepness |
 | `MidflameWind.U` | `RothermelFireSpread.U` | Wind speed |
 | `TerrainSlope.slope_aspect` | `MidflameWind.slope_aspect` | Slope aspect |
 | `EquilibriumMoistureContent.EMC` | `OneHourFuelMoisture.EMCPRM` | Equilibrium moisture |
 | `OneHourFuelMoisture.MC1` | `RothermelFireSpread.Mf` | Fuel moisture |
 | `RothermelFireSpread.R` | `LevelSetFireSpread.S` | Spread rate |
+| `LevelSetFireSpread.ψ` | `FuelConsumption.is_burning` | Burning state |
 
 ### EarthSciData Extension
 

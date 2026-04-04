@@ -160,6 +160,48 @@ end
     @test ustrip(sol[compiled_sys.U_E]) ≥ 0.0
 end
 
+@testitem "FireSpreadDirection - Realistic U_E and Z values" setup = [FireSpreadDirectionSetup] tags = [:fire_spread_direction] begin
+    # Regression test for issue #50: U_ref must be 0.3048/60 m/s (1 ft/min)
+    # With typical fire conditions, U_E and Z should be physically realistic.
+    # Before the fix, U_E was ~197x too large and Z was ~496 instead of ~3.5.
+
+    sys = FireSpreadDirection()
+    compiled_sys = mtkcompile(sys)
+
+    # Typical conditions: moderate wind factor, no slope, wind aligned upslope
+    prob = NonlinearProblem(
+        compiled_sys, Dict(
+            compiled_sys.R0 => 0.01,
+            compiled_sys.φw => 5.0,
+            compiled_sys.φs => 0.0,
+            compiled_sys.ω => 0.0,
+            compiled_sys.β_ratio => 0.5,
+            compiled_sys.C_coeff => 7.47,
+            compiled_sys.B_coeff => 0.15566,
+            compiled_sys.E_coeff => 0.715,
+        )
+    )
+    sol = solve(prob)
+
+    U_E_val = ustrip(sol[compiled_sys.U_E])
+    Z_val = ustrip(sol[compiled_sys.Z])
+
+    # U_E should be on the order of a few m/s, not hundreds
+    @test U_E_val < 50.0  # m/s; before fix this was ~885 m/s
+    @test U_E_val > 0.0
+
+    # Z should be a reasonable fire length-to-width ratio (typically 1-10)
+    @test Z_val < 30.0  # before fix this was ~496
+    @test Z_val > 1.0
+
+    # Verify U_E is consistent with the Rothermel model's U_ref = 0.3048/60
+    # U_E = U_ref * (φ_E * β_ratio^E / C)^(1/B)
+    U_ref = 0.3048 / 60  # must match the implementation
+    φ_E_val = ustrip(sol[compiled_sys.φ_E])
+    expected_U_E = U_ref * (φ_E_val * 0.5^0.715 / 7.47)^(1.0 / 0.15566)
+    @test U_E_val ≈ expected_U_E rtol = 1.0e-6
+end
+
 # ==============================================================================
 # EllipticalFireSpread Tests
 # ==============================================================================

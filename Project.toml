@@ -1,6 +1,6 @@
 name = "WildlandFire"
 uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["EarthSciML authors and contributors"]
 
 [deps]
@@ -21,7 +21,7 @@ WildlandFireEarthSciDataExt = "EarthSciData"
 DomainSets = "0.7.16"
 DynamicQuantities = "1"
 EarthSciData = "0.15.7"
-EarthSciMLBase = "0.25.2"
+EarthSciMLBase = "0.25.5"
 MethodOfLines = "0.11.11"
 ModelingToolkit = "11"
 OrdinaryDiffEqDefault = "1"

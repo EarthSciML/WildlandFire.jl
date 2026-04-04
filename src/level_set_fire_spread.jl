@@ -203,7 +203,7 @@ function LevelSetFireSpread(
             ψ_ref, one, grad_eps, U_ref, zero_ms, zero_1, β_ratio_floor,
             transform_params...,
         ]; name = name,
-        metadata = Dict(EarthSciMLBase.CoupleType => LevelSetCoupler)
+        metadata = Dict(EarthSciMLBase.CoupleType => LevelSetCoupler, EarthSciMLBase.SysDomainInfo => domain)
     )
 end
 
@@ -226,8 +226,9 @@ The fuel weight parameter ``w`` relates to ``T_f`` by:
 ``T_f \\approx w / 0.8514``
 
 The effective fuel load is computed as ``w_{0,\\text{eff}} = F \\cdot w_{0,\\text{initial}}``,
-which can be coupled to `RothermelFireSpread` to reduce the fire spread rate as fuel
-is consumed.
+which is used by `FireHeatFlux` to compute sensible and latent heat fluxes released
+to the atmosphere. Per Mandel et al. (2011) Section 3.2, the fire spread rate depends
+on the original fuel model properties, not the remaining fuel fraction.
 
 When coupled to `LevelSetFireSpread`, the `is_burning` parameter is driven by the
 level-set function ψ via a smooth Heaviside approximation:
@@ -247,7 +248,7 @@ doi:10.5194/gmd-4-591-2011
     end
 
     @variables begin
-        F(t), [description = "Fuel fraction remaining (1=full, 0=consumed)", unit = u"1"]
+        F(t) = 1.0, [description = "Fuel fraction remaining (1=full, 0=consumed)", unit = u"1"]
         w0_effective(t), [description = "Effective fuel load after consumption", unit = u"kg/m^2"]
     end
 

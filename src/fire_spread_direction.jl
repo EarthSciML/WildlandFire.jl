@@ -63,7 +63,7 @@ sol = solve(prob)
         # Z = 1 + 0.25*U_E where U_E is in mi/h
         # Since 1 m/s = 2.23694 mi/h: Z = 1 + 0.25 * 2.23694 * U_E = 1 + 0.559 * U_E (U_E in m/s)
         c_Z = 0.559235, [description = "Length-to-width ratio coefficient (SI)", unit = u"s/m"]
-        U_ref = 1.0, [description = "Reference wind speed", unit = u"m/s"]
+        U_ref = 0.3048 / 60, [description = "Reference wind speed (1 ft/min in m/s)", unit = u"m/s"]
         φ_min = 1.0e-10, [description = "Minimum combined factor to avoid division by zero (dimensionless)", unit = u"1"]
     end
 
