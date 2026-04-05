@@ -367,11 +367,12 @@ demonstrate with a 5 m/s wind in the +x direction using Rothermel coefficients
 for fuel model 1 (short grass):
 
 ```@example levelset
-r0 = 10.0       # initial radius (m)
+# Use a coarse 7×7 grid to keep compilation of the discretized PDE manageable.
+r0 = 25.0       # initial radius (m)
 R_0_val = 0.1    # no-wind no-slope spread rate (m/s)
-domain_size = 200.0
+domain_size = 120.0
 center = domain_size / 2.0
-t_end = 10.0
+t_end = 5.0
 
 domain_wind = DomainInfo(
     constIC(0.0, t ∈ Interval(0.0, t_end)),
@@ -398,7 +399,7 @@ for p in sys_wind.ps
     end
 end
 
-dx = 5.0
+dx = 20.0  # 6 cells per side → 7 grid points (minimum for 5th-order WENO)
 disc_wind = MOLFiniteDifference(
     [sys_wind.ivs[2] => dx, sys_wind.ivs[3] => dx], sys_wind.ivs[1];
     advection_scheme = WENOScheme())
