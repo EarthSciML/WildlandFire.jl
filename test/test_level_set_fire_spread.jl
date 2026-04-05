@@ -105,9 +105,12 @@ end
     # Mandel (2011) Eq. 2: S(n) = R_0*(1 + φ_W(U·n) + φ_S(∇z·n))
     # Wind factor: φ_W = C*(max(0, U·n)/U_ref)^B * β_ratio^(-E)
 
-    r0 = 10.0       # initial radius (m)
+    # Use a small grid (6 cells per side, 7 grid points) — the minimum for
+    # 5th-order WENO — to keep symbolic expression size and JIT compilation
+    # of the discretized PDE manageable.
+    r0 = 25.0       # initial radius (m)
     R_0_val = 0.1    # no-wind no-slope rate (m/s)
-    domain_size = 200.0
+    domain_size = 120.0
     center = domain_size / 2.0
     t_end = 5.0
 
@@ -140,7 +143,7 @@ end
         end
     end
 
-    dx = 5.0
+    dx = 20.0  # 6 cells per side → 7 grid points (minimum for 5th-order WENO)
     discretization = MOLFiniteDifference(
         [sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1];
         advection_scheme = WENOScheme()
@@ -166,12 +169,11 @@ end
     x_extent = isempty(burning_x) ? 0.0 : (x_grid[maximum(burning_x)] - x_grid[minimum(burning_x)])
     y_extent = isempty(burning_y) ? 0.0 : (y_grid[maximum(burning_y)] - y_grid[minimum(burning_y)])
 
-    # With Z = 2, the fire should be elongated in x (head fire direction)
-    # The extent in x should be greater than in y
+    # With wind in +x, fire should be elongated in x (head fire direction)
     @test x_extent > y_extent
 
-    # The ratio of extents should approximate Z (within discretization error)
-    @test x_extent / y_extent > 1.2  # Z=2, so expect ratio > 1 (generous tolerance for coarse grid)
+    # Expect ratio > 1 (generous tolerance for coarse 7×7 grid)
+    @test x_extent / y_extent > 1.2
 end
 
 @testitem "LevelSetFireSpread - Custom Boundary Conditions" setup = [LevelSetSetup] tags = [:levelset] begin
