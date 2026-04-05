@@ -700,7 +700,7 @@ end
     sol = solve(prob)
 
     @test isfinite(sol[compiled_sys.R])
-    @test sol[compiled_sys.R] ≈ 0.0 atol = 1.0e-10
+    @test sol[compiled_sys.R] == 0.0
     @test isfinite(sol[compiled_sys.R0])
     @test isfinite(sol[compiled_sys.IR])
     @test isfinite(sol[compiled_sys.φw])
