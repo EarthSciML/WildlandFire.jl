@@ -157,6 +157,7 @@ sol = solve(prob)
         β_floor = 1.0e-10, [description = "Minimum packing ratio to avoid negative-power singularity (dimensionless)", unit = u"1"]
         β_ratio_floor = 1.0e-10, [description = "Minimum relative packing ratio to avoid negative-power singularity (dimensionless)", unit = u"1"]
         ρb_floor = 1.0e-10, [description = "Minimum bulk density to avoid division by zero", unit = u"kg/m^3"]
+        ε_floor = 1.0e-10, [description = "Minimum effective heating number to avoid zero in R0 denominator (dimensionless)", unit = u"1"]
         Mx_floor = 1.0e-10, [description = "Minimum moisture of extinction to avoid division by zero (dimensionless)", unit = u"1"]
     end
 
@@ -241,7 +242,9 @@ sol = solve(prob)
         # Γ_max has units 1/s from c_Gamma_mult
         Γ_max ~ c_Gamma_mult * (σ / σ_ref)^1.5 / (c_Gamma_denom1 + c_Gamma_denom2 * (σ / σ_ref)^1.5),  # Eq. Γmax
         A_coeff ~ c_A * max(σ / σ_ref, σ_floor / σ_ref)^(-0.7913), # Eq. A, Coefficient A (SI)
-        Γ_prime ~ Γ_max * β_ratio^A_coeff * exp(A_coeff * (one - β_ratio)), # Eq. Γ', Optimum reaction velocity
+        # Γ' = Γ_max * β_ratio^A * exp(A*(1-β_ratio)) rewritten as
+        # Γ' = Γ_max * exp(A*(ln(β_ratio) + 1 - β_ratio)) to avoid 0*Inf when A is large.
+        Γ_prime ~ Γ_max * exp(A_coeff * (log(max(β_ratio, β_ratio_floor)) + one - β_ratio)), # Eq. Γ'
 
         # Damping coefficients - Table 3, Andrews (2018)
         rM ~ min(Mf / max(Mx, Mx_floor), one),               # Eq. rM, Moisture ratio (capped at 1.0)
@@ -272,7 +275,7 @@ sol = solve(prob)
         Qig ~ c_Qig_1 + c_Qig_2 * Mf,                      # Eq. Qig, Heat of preignition
 
         # Rate of spread - Eq. 1, Table 3, Andrews (2018)
-        R0 ~ (IR * ξ) / (max(ρb, ρb_floor) * ε * Qig),     # Eq. R (no-wind no-slope)
+        R0 ~ (IR * ξ) / (max(ρb, ρb_floor) * max(ε, ε_floor) * Qig), # Eq. R (no-wind no-slope)
         R ~ R0 * (one + φw + φs),                          # Eq. R (with wind and slope)
 
         # Related models - Table 7, Andrews (2018) (SI coefficients)
