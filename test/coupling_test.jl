@@ -24,19 +24,23 @@ end
 @testitem "TerrainSlope component" setup = [CouplingSetup] tags = [:coupling] begin
     ts = TerrainSlope()
     @test ts isa ModelingToolkit.AbstractSystem
-    @test length(equations(ts)) == 2
+    @test length(equations(ts)) == 4
     eq_names = [Symbolics.tosymbol(eq.lhs, escape = false) for eq in equations(ts)]
     @test :tanϕ ∈ eq_names
     @test :slope_aspect ∈ eq_names
+    @test :dzdx_out ∈ eq_names
+    @test :dzdy_out ∈ eq_names
 end
 
 @testitem "MidflameWind component" setup = [CouplingSetup] tags = [:coupling] begin
     mw = MidflameWind()
     @test mw isa ModelingToolkit.AbstractSystem
-    @test length(equations(mw)) == 2
+    @test length(equations(mw)) == 4
     eq_names = [Symbolics.tosymbol(eq.lhs, escape = false) for eq in equations(mw)]
     @test :U ∈ eq_names
     @test :ω ∈ eq_names
+    @test :u_mf_x ∈ eq_names
+    @test :u_mf_y ∈ eq_names
 end
 
 @testitem "Fuel lookup functions" setup = [CouplingSetup] tags = [:coupling] begin
@@ -188,9 +192,9 @@ end
     sys = convert(System, cs; compile = false)
     @test sys isa ModelingToolkit.AbstractSystem
     # Should have all equations from all components plus connectors
-    # Rothermel(26) + FuelModelLookup(6) + TerrainSlope(2) + MidflameWind(2)
+    # Rothermel(27) + FuelModelLookup(6) + TerrainSlope(4) + MidflameWind(4)
     # + EMC(1) + OneHourFM(1) + FuelConsumption(2) + FireSpreadDirection(6) + connectors
-    @test length(equations(sys)) > 26 + 6 + 2 + 2 + 1 + 1 + 2 + 6
+    @test length(equations(sys)) > 27 + 6 + 4 + 4 + 1 + 1 + 2 + 6
 end
 
 @testitem "LevelSetFireSpread has CoupleType" setup = [CouplingSetup] tags = [:coupling] begin
@@ -248,10 +252,10 @@ end
     @test endswith(lhs_name, "ω")
 end
 
-@testitem "FireSpreadDirection-LevelSet coupling" setup = [CouplingSetup] tags = [:coupling] begin
+@testitem "Rothermel-LevelSet coupling" setup = [CouplingSetup] tags = [:coupling] begin
     using DomainSets
 
-    fsd = FireSpreadDirection()
+    r = RothermelFireSpread()
 
     @parameters x [unit = u"m"]
     @parameters y [unit = u"m"]
@@ -265,32 +269,85 @@ end
     )
 
     cs = EarthSciMLBase.couple2(
-        WildlandFire.FireSpreadDirectionCoupler(fsd),
+        WildlandFire.RothermelCoupler(r),
         WildlandFire.LevelSetCoupler(ls),
     )
 
     @test cs isa EarthSciMLBase.ConnectorSystem
 
-    # Should couple 3 parameters: R_H, Z, α
-    @test length(cs.eqs) == 3
+    # Should couple 6 parameters: R_0, C_wind, B_wind, E_wind, β_ratio, φs_coeff
+    @test length(cs.eqs) == 6
 
     eq_lhs_names = Set(Symbolics.tosymbol(eq.lhs, escape = false) for eq in cs.eqs)
-    for name in [:R_H, :Z, :α]
+    for name in [:R_0, :C_wind, :B_wind, :E_wind, :β_ratio, :φs_coeff]
         @test name ∈ eq_lhs_names
     end
-
-    # The level-set system should no longer have R_H, Z, α as parameters
-    @test !any(p -> Symbol(p) == :R_H, cs.from.ps)
-    @test !any(p -> Symbol(p) == :Z, cs.from.ps)
-    @test !any(p -> Symbol(p) == :α, cs.from.ps)
 end
 
-@testitem "FireSpreadDirection-LevelSet couple and convert" setup = [CouplingSetup] tags = [:coupling] begin
+@testitem "MidflameWind-LevelSet coupling" setup = [CouplingSetup] tags = [:coupling] begin
+    using DomainSets
+
+    mw = MidflameWind()
+
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, 60.0)),
+        constBC(0.0, x ∈ Interval(0.0, 500.0), y ∈ Interval(0.0, 500.0)),
+    )
+    ls = LevelSetFireSpread(
+        domain;
+        initial_condition = (x, y) -> sqrt((x - 250.0)^2 + (y - 250.0)^2) - 10.0,
+    )
+
+    cs = EarthSciMLBase.couple2(
+        WildlandFire.MidflameWindCoupler(mw),
+        WildlandFire.LevelSetCoupler(ls),
+    )
+
+    @test cs isa EarthSciMLBase.ConnectorSystem
+    @test length(cs.eqs) == 2
+
+    eq_lhs_names = Set(Symbolics.tosymbol(eq.lhs, escape = false) for eq in cs.eqs)
+    @test :u_x ∈ eq_lhs_names
+    @test :u_y ∈ eq_lhs_names
+end
+
+@testitem "TerrainSlope-LevelSet coupling" setup = [CouplingSetup] tags = [:coupling] begin
+    using DomainSets
+
+    ts = TerrainSlope()
+
+    @parameters x [unit = u"m"]
+    @parameters y [unit = u"m"]
+    domain = DomainInfo(
+        constIC(0.0, t ∈ Interval(0.0, 60.0)),
+        constBC(0.0, x ∈ Interval(0.0, 500.0), y ∈ Interval(0.0, 500.0)),
+    )
+    ls = LevelSetFireSpread(
+        domain;
+        initial_condition = (x, y) -> sqrt((x - 250.0)^2 + (y - 250.0)^2) - 10.0,
+    )
+
+    cs = EarthSciMLBase.couple2(
+        WildlandFire.TerrainSlopeCoupler(ts),
+        WildlandFire.LevelSetCoupler(ls),
+    )
+
+    @test cs isa EarthSciMLBase.ConnectorSystem
+    @test length(cs.eqs) == 2
+
+    eq_lhs_names = Set(Symbolics.tosymbol(eq.lhs, escape = false) for eq in cs.eqs)
+    @test :dzdx ∈ eq_lhs_names
+    @test :dzdy ∈ eq_lhs_names
+end
+
+@testitem "Rothermel-MidflameWind-TerrainSlope-LevelSet couple and convert" setup = [CouplingSetup] tags = [:coupling] begin
     using DomainSets
 
     r = RothermelFireSpread()
     mw = MidflameWind()
-    fsd = FireSpreadDirection()
+    ts = TerrainSlope()
 
     @parameters x [unit = u"m"]
     @parameters y [unit = u"m"]
@@ -304,7 +361,7 @@ end
     )
 
     # Couple using the EarthSciMLBase.couple function
-    cs = couple(r, mw, fsd, ls, domain)
+    cs = couple(r, mw, ts, ls, domain)
 
     # CoupledSystem should contain both ODE systems and PDE systems
     @test length(cs.systems) >= 1
@@ -321,10 +378,9 @@ end
     # Equation/DV count must match (fixed in EarthSciMLBase #190/#192)
     @test length(equations(pde)) == length(pde.dvs)
 
-    # Verify coupling brought Rothermel/FireSpreadDirection variables into the PDE
+    # Verify coupling brought Rothermel variables into the PDE
     eq_str = join(string.(equations(pde)), "\n")
-    @test occursin("R_H", eq_str)
-    @test occursin("φ_combined", eq_str)
+    @test occursin("R_0", eq_str)
 
     # Full MethodOfLines discretization of the coupled system.
     # Currently blocked by EarthSciMLBase.jl#193: MethodOfLines cannot discretize
@@ -343,8 +399,10 @@ end
         end
         # Filter BCs to ψ only
         filtered_bcs = filter(bc -> occursin("ψ", string(bc.lhs)), pde.bcs)
-        pde2 = PDESystem(unique_eqs, filtered_bcs, pde.domain, pde.ivs, pde.dvs, pde.ps;
-            name = pde.name)
+        pde2 = PDESystem(
+            unique_eqs, filtered_bcs, pde.domain, pde.ivs, pde.dvs, pde.ps;
+            name = pde.name
+        )
         for p in pde2.ps
             if ModelingToolkit.hasdefault(p)
                 pde2.initial_conditions[Symbolics.unwrap(p)] = ModelingToolkit.getdefault(p)
@@ -366,6 +424,8 @@ end
                 pde2.initial_conditions[Symbolics.unwrap(p)] = 2.235
             elseif sym == Symbol("RothermelFireSpread₊tanϕ")
                 pde2.initial_conditions[Symbolics.unwrap(p)] = 0.0
+            elseif sym == Symbol("MidflameWind₊u_wind")
+                pde2.initial_conditions[Symbolics.unwrap(p)] = 5.0
             end
         end
         dx = 25.0

@@ -30,8 +30,8 @@ end
 
     # Verify system structure
     @test sys !== nothing
-    @test length(equations(sys)) == 26
-    @test length(unknowns(sys)) == 26
+    @test length(equations(sys)) == 27
+    @test length(unknowns(sys)) == 27
 
     # Check key output variables exist
     var_names = [string(Symbolics.tosymbol(v, escape = false)) for v in unknowns(sys)]

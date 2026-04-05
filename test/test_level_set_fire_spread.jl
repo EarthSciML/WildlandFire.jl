@@ -30,8 +30,10 @@ end
     @test length(sys.ivs) == 3          # t, x, y
     @test length(sys.dvs) == 1          # ψ(t, x, y)
 
-    # Parameters: R_H, Z, α, ψ_ref, one, grad_eps
-    @test length(sys.ps) == 6
+    # Parameters: R_0, C_wind, B_wind, E_wind, β_ratio, φs_coeff,
+    #             u_x, u_y, dzdx, dzdy,
+    #             ψ_ref, one, grad_eps, U_ref, zero_ms, zero_1, β_ratio_floor
+    @test length(sys.ps) == 17
 end
 
 @testitem "LevelSetFireSpread - Circular Spread (Isotropic)" setup = [LevelSetSetup] tags = [:levelset] begin
@@ -98,17 +100,17 @@ end
     @test abs(r_tend - r_expected) / r_expected < 0.35
 end
 
-@testitem "LevelSetFireSpread - Elliptical Spread (Anisotropic)" setup = [LevelSetSetup] tags = [:levelset] begin
-    # When Z > 1, fire should spread faster in the head fire direction (α)
-    # than in the perpendicular direction. With α = 0 (head fire along +x),
-    # the fire should be elongated in x.
-    # Andrews (2018) Table 26: S(γ) = R_H * (1-e) / (1 - e*cos(γ))
-    # with e = sqrt(Z²-1)/Z
+@testitem "LevelSetFireSpread - Anisotropic Spread (Wind)" setup = [LevelSetSetup] tags = [:levelset] begin
+    # With wind in the +x direction, fire should spread faster in +x than in y.
+    # Mandel (2011) Eq. 2: S(n) = R_0*(1 + φ_W(U·n) + φ_S(∇z·n))
+    # Wind factor: φ_W = C*(max(0, U·n)/U_ref)^B * β_ratio^(-E)
 
-    r0 = 10.0       # initial radius (m)
-    R_H_val = 1.0    # head fire rate of spread (m/s)
-    Z_val = 2.0      # length-to-width ratio (elliptical)
-    domain_size = 100.0
+    # Use a small grid (6 cells per side, 7 grid points) — the minimum for
+    # 5th-order WENO — to keep symbolic expression size and JIT compilation
+    # of the discretized PDE manageable.
+    r0 = 25.0       # initial radius (m)
+    R_0_val = 0.1    # no-wind no-slope rate (m/s)
+    domain_size = 120.0
     center = domain_size / 2.0
     t_end = 5.0
 
@@ -119,24 +121,29 @@ end
         constBC(0.0, x ∈ Interval(0.0, domain_size), y ∈ Interval(0.0, domain_size)),
     )
 
-    # Set initial conditions for ψ_ref, one, grad_eps explicitly in the PDESystem
     sys = LevelSetFireSpread(
         domain;
         initial_condition = (x, y) -> sqrt((x - center)^2 + (y - center)^2) - r0,
-        spread_rate = R_H_val,
+        spread_rate = R_0_val,
     )
 
-    # Override Z and α in the PDESystem's initial_conditions
+    # Set wind in the +x direction and Rothermel wind coefficients
     for p in sys.ps
         sym = Symbolics.tosymbol(p, escape = false)
-        if sym == :Z
-            sys.initial_conditions[Symbolics.unwrap(p)] = Z_val
-        elseif sym == :α
-            sys.initial_conditions[Symbolics.unwrap(p)] = 0.0  # head fire along +x
+        if sym == :u_x
+            sys.initial_conditions[Symbolics.unwrap(p)] = 5.0  # 5 m/s wind in +x
+        elseif sym == :C_wind
+            sys.initial_conditions[Symbolics.unwrap(p)] = 7.47
+        elseif sym == :B_wind
+            sys.initial_conditions[Symbolics.unwrap(p)] = 0.15566
+        elseif sym == :E_wind
+            sys.initial_conditions[Symbolics.unwrap(p)] = 0.715
+        elseif sym == :β_ratio
+            sys.initial_conditions[Symbolics.unwrap(p)] = 0.5
         end
     end
 
-    dx = 5.0
+    dx = 20.0  # 6 cells per side → 7 grid points (minimum for 5th-order WENO)
     discretization = MOLFiniteDifference(
         [sys.ivs[2] => dx, sys.ivs[3] => dx], sys.ivs[1];
         advection_scheme = WENOScheme()
@@ -162,12 +169,11 @@ end
     x_extent = isempty(burning_x) ? 0.0 : (x_grid[maximum(burning_x)] - x_grid[minimum(burning_x)])
     y_extent = isempty(burning_y) ? 0.0 : (y_grid[maximum(burning_y)] - y_grid[minimum(burning_y)])
 
-    # With Z = 2, the fire should be elongated in x (head fire direction)
-    # The extent in x should be greater than in y
+    # With wind in +x, fire should be elongated in x (head fire direction)
     @test x_extent > y_extent
 
-    # The ratio of extents should approximate Z (within discretization error)
-    @test x_extent / y_extent > 1.2  # Z=2, so expect ratio > 1 (generous tolerance for coarse grid)
+    # Expect ratio > 1 (generous tolerance for coarse 7×7 grid)
+    @test x_extent / y_extent > 1.2
 end
 
 @testitem "LevelSetFireSpread - Custom Boundary Conditions" setup = [LevelSetSetup] tags = [:levelset] begin

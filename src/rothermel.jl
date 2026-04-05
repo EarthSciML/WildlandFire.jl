@@ -209,6 +209,7 @@ sol = solve(prob)
         E_coeff(t), [description = "Wind coefficient E (dimensionless)", unit = u"1"]
         φw(t), [description = "Wind factor (dimensionless)", unit = u"1"]
         φs(t), [description = "Slope factor (dimensionless)", unit = u"1"]
+        φs_coeff(t), [description = "Slope factor coefficient 5.275*β^(-0.3) (dimensionless)", unit = u"1"]
     end
 
     # Intermediate variables - heat sink (denominator)
@@ -266,7 +267,8 @@ sol = solve(prob)
         # Wind and slope factors - Table 3, Andrews (2018)
         # Non-dimensionalize U for fractional power B_coeff
         φw ~ C_coeff * (U / U_ref)^B_coeff * max(β_ratio, β_ratio_floor)^(-E_coeff), # Eq. φw, Wind factor
-        φs ~ c_phis * max(β, β_floor)^(-0.3) * tanϕ^2,      # Eq. φs, Slope factor
+        φs_coeff ~ c_phis * max(β, β_floor)^(-0.3),            # Slope factor coefficient for normal-projection
+        φs ~ φs_coeff * tanϕ^2,                               # Eq. φs, Slope factor
 
         # Heat sink - Table 3, Andrews (2018) (SI coefficients)
         ε ~ exp(-c_eps / max(σ, σ_floor)),                   # Eq. ε, Effective heating number

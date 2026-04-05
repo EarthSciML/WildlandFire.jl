@@ -103,7 +103,8 @@ sol = solve(prob)
         R_H ~ R0 * (one + φ_combined),                   # Eq. R_H
 
         # Direction of maximum spread relative to upslope - Table 26, Andrews (2018)
-        α ~ asin(abs(φw * sin(ω)) / max(φ_combined, φ_min)),  # Eq. α
+        # Uses atan(y, x) to preserve full quadrant information from vector addition
+        α ~ atan(φw * sin(ω), φs + φw * cos(ω)),  # Eq. α
 
         # Effective wind factor - Table 26, Andrews (2018)
         φ_E ~ φ_combined,                                # Eq. φ_E = R_H/R0 - 1
