@@ -18,7 +18,7 @@ EarthSciData = "a293c155-435f-439d-9c11-a083b6b47337"
 WildlandFireEarthSciDataExt = "EarthSciData"
 
 [compat]
-DomainSets = "0.7.16"
+DomainSets = "0.7.16, 0.8"
 DynamicQuantities = "1"
 EarthSciData = "0.15.7"
 EarthSciMLBase = "0.25.5"
