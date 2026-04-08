@@ -17,7 +17,7 @@ WildlandFire = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 [compat]
 DataFrames = "1"
 Documenter = "1"
-DomainSets = "0.7"
+DomainSets = "0.7, 0.8"
 DynamicQuantities = "1"
 EarthSciMLBase = "0.25"
 MethodOfLines = "0.11"
