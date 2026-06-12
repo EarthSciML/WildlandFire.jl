@@ -107,7 +107,7 @@ vline!(p, [10, 50], linestyle=:dash, color=:gray, label=&quot;&quot;)
 annotate!(p, [(5, 15, text(&quot;Eq. 1a&quot;, 8)),
               (30, 15, text(&quot;Eq. 1b&quot;, 8)),
               (75, 15, text(&quot;Eq. 1c&quot;, 8))])
-p</code></pre><img src="b7d2fef1.svg" alt="Example block output"/><h3 id="EMC-Temperature-Sensitivity"><a class="docs-heading-anchor" href="#EMC-Temperature-Sensitivity">EMC Temperature Sensitivity</a><a id="EMC-Temperature-Sensitivity-1"></a><a class="docs-heading-anchor-permalink" href="#EMC-Temperature-Sensitivity" title="Permalink"></a></h3><p>EMC decreases with increasing temperature at constant humidity:</p><pre><code class="language-julia hljs">temps_f = 40:10:100
+p</code></pre><img src="eeb0b03a.svg" alt="Example block output"/><h3 id="EMC-Temperature-Sensitivity"><a class="docs-heading-anchor" href="#EMC-Temperature-Sensitivity">EMC Temperature Sensitivity</a><a id="EMC-Temperature-Sensitivity-1"></a><a class="docs-heading-anchor-permalink" href="#EMC-Temperature-Sensitivity" title="Permalink"></a></h3><p>EMC decreases with increasing temperature at constant humidity:</p><pre><code class="language-julia hljs">temps_f = 40:10:100
 rh_values = [30, 50, 70]
 
 p = plot(xlabel = &quot;Temperature (°F)&quot;,
@@ -119,7 +119,7 @@ for rh in rh_values
     emc_vals = [compute_emc(t, rh) for t in temps_f]
     plot!(p, temps_f, emc_vals, label=&quot;RH=$rh%&quot;, linewidth=2)
 end
-p</code></pre><img src="ae4fd0bf.svg" alt="Example block output"/><h3 id="Burning-Index-Validation-(page-12)"><a class="docs-heading-anchor" href="#Burning-Index-Validation-(page-12)">Burning Index Validation (page 12)</a><a id="Burning-Index-Validation-(page-12)-1"></a><a class="docs-heading-anchor-permalink" href="#Burning-Index-Validation-(page-12)" title="Permalink"></a></h3><p>The Burning Index (BI) is calculated from the Spread Component and Energy Release Component:</p><p>BI = 3.01 × (SC × ERC)^0.46</p><p>where SC is in ft/min for the original equation.</p><pre><code class="language-julia hljs">using WildlandFire
+p</code></pre><img src="e4dd145a.svg" alt="Example block output"/><h3 id="Burning-Index-Validation-(page-12)"><a class="docs-heading-anchor" href="#Burning-Index-Validation-(page-12)">Burning Index Validation (page 12)</a><a id="Burning-Index-Validation-(page-12)-1"></a><a class="docs-heading-anchor-permalink" href="#Burning-Index-Validation-(page-12)" title="Permalink"></a></h3><p>The Burning Index (BI) is calculated from the Spread Component and Energy Release Component:</p><p>BI = 3.01 × (SC × ERC)^0.46</p><p>where SC is in ft/min for the original equation.</p><pre><code class="language-julia hljs">using WildlandFire
 using ModelingToolkit
 using OrdinaryDiffEqDefault
 using Plots
@@ -158,7 +158,7 @@ contourf(sc_range, erc_range, bi_matrix,
     ylabel = &quot;Energy Release Component&quot;,
     title = &quot;Burning Index&quot;,
     colorbar_title = &quot;BI&quot;,
-    levels = 10)</code></pre><img src="b6dd2eb9.svg" alt="Example block output"/><h3 id="Fire-Load-Index-Validation-(page-14)"><a class="docs-heading-anchor" href="#Fire-Load-Index-Validation-(page-14)">Fire Load Index Validation (page 14)</a><a id="Fire-Load-Index-Validation-(page-14)-1"></a><a class="docs-heading-anchor-permalink" href="#Fire-Load-Index-Validation-(page-14)" title="Permalink"></a></h3><p>The Fire Load Index combines the Burning Index with fire occurrence indices:</p><p>FLI = 0.71 × √(BI² + (LOI + MCOI)²)</p><pre><code class="language-julia hljs">using WildlandFire
+    levels = 10)</code></pre><img src="2b8168fb.svg" alt="Example block output"/><h3 id="Fire-Load-Index-Validation-(page-14)"><a class="docs-heading-anchor" href="#Fire-Load-Index-Validation-(page-14)">Fire Load Index Validation (page 14)</a><a id="Fire-Load-Index-Validation-(page-14)-1"></a><a class="docs-heading-anchor-permalink" href="#Fire-Load-Index-Validation-(page-14)" title="Permalink"></a></h3><p>The Fire Load Index combines the Burning Index with fire occurrence indices:</p><p>FLI = 0.71 × √(BI² + (LOI + MCOI)²)</p><pre><code class="language-julia hljs">using WildlandFire
 using ModelingToolkit
 using OrdinaryDiffEqDefault
 
@@ -191,7 +191,7 @@ p = bar([string(m.name) for m in models], [m.DEPTH for m in models],
     title = &quot;NFDRS Fuel Model Bed Depths (Cohen &amp; Deeming 1985, Appendix)&quot;,
     legend = false,
     rotation = 45)
-p</code></pre><img src="dbcbd613.svg" alt="Example block output"/><h3 id="Dead-Fuel-Loading-Comparison"><a class="docs-heading-anchor" href="#Dead-Fuel-Loading-Comparison">Dead Fuel Loading Comparison</a><a id="Dead-Fuel-Loading-Comparison-1"></a><a class="docs-heading-anchor-permalink" href="#Dead-Fuel-Loading-Comparison" title="Permalink"></a></h3><p>Comparison of total dead fuel loadings (1-hr + 10-hr + 100-hr) across different NFDRS fuel models:</p><pre><code class="language-julia hljs">using WildlandFire
+p</code></pre><img src="dcbe1aa4.svg" alt="Example block output"/><h3 id="Dead-Fuel-Loading-Comparison"><a class="docs-heading-anchor" href="#Dead-Fuel-Loading-Comparison">Dead Fuel Loading Comparison</a><a id="Dead-Fuel-Loading-Comparison-1"></a><a class="docs-heading-anchor-permalink" href="#Dead-Fuel-Loading-Comparison" title="Permalink"></a></h3><p>Comparison of total dead fuel loadings (1-hr + 10-hr + 100-hr) across different NFDRS fuel models:</p><pre><code class="language-julia hljs">using WildlandFire
 using Plots
 
 models = collect(values(NFDRS_FUEL_MODELS))
@@ -206,7 +206,7 @@ p = bar([string(m.name) for m in models], dead_loading,
     title = &quot;NFDRS Dead Fuel Loading by Model&quot;,
     legend = false,
     rotation = 45)
-p</code></pre><img src="a2cafda4.svg" alt="Example block output"/><h3 id="Heat-Content-Comparison"><a class="docs-heading-anchor" href="#Heat-Content-Comparison">Heat Content Comparison</a><a id="Heat-Content-Comparison-1"></a><a class="docs-heading-anchor-permalink" href="#Heat-Content-Comparison" title="Permalink"></a></h3><p>Different fuel models have varying heat content values reflecting their chemical composition:</p><pre><code class="language-julia hljs">models = collect(values(NFDRS_FUEL_MODELS))
+p</code></pre><img src="ab8d2209.svg" alt="Example block output"/><h3 id="Heat-Content-Comparison"><a class="docs-heading-anchor" href="#Heat-Content-Comparison">Heat Content Comparison</a><a id="Heat-Content-Comparison-1"></a><a class="docs-heading-anchor-permalink" href="#Heat-Content-Comparison" title="Permalink"></a></h3><p>Different fuel models have varying heat content values reflecting their chemical composition:</p><pre><code class="language-julia hljs">models = collect(values(NFDRS_FUEL_MODELS))
 sort!(models, by=m -&gt; m.HD)
 
 p = bar([string(m.name) for m in models], [m.HD / 1e6 for m in models],
@@ -216,7 +216,7 @@ p = bar([string(m.name) for m in models], [m.HD / 1e6 for m in models],
     legend = false,
     rotation = 45,
     ylims = (17, 23))
-p</code></pre><img src="3f0b8e27.svg" alt="Example block output"/><h3 id="Fuel-Loading-Transfer-2"><a class="docs-heading-anchor" href="#Fuel-Loading-Transfer-2">Fuel Loading Transfer</a><a class="docs-heading-anchor-permalink" href="#Fuel-Loading-Transfer-2" title="Permalink"></a></h3><p>The fuel loading transfer model (Eq. 5-8) calculates the fraction of herbaceous fuel that behaves as dead fuel based on the herbaceous moisture content:</p><pre><code class="language-julia hljs">using WildlandFire
+p</code></pre><img src="21c30e25.svg" alt="Example block output"/><h3 id="Fuel-Loading-Transfer-2"><a class="docs-heading-anchor" href="#Fuel-Loading-Transfer-2">Fuel Loading Transfer</a><a class="docs-heading-anchor-permalink" href="#Fuel-Loading-Transfer-2" title="Permalink"></a></h3><p>The fuel loading transfer model (Eq. 5-8) calculates the fraction of herbaceous fuel that behaves as dead fuel based on the herbaceous moisture content:</p><pre><code class="language-julia hljs">using WildlandFire
 using ModelingToolkit
 using OrdinaryDiffEqDefault
 using Plots
@@ -243,4 +243,4 @@ plot(mcherb_range .* 100, fctcur_values .* 100,
     ylabel = &quot;Fraction Transferred to Dead (%)&quot;,
     title = &quot;Fuel Loading Transfer (Eq. 5)&quot;,
     legend = false,
-    linewidth = 2)</code></pre><img src="73c82485.svg" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../rothermel/">Rothermel Fire Spread Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 5 June 2026 05:32">Friday 5 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+    linewidth = 2)</code></pre><img src="0f327faf.svg" alt="Example block output"/></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../rothermel/">Rothermel Fire Spread Model »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 12 June 2026 05:48">Friday 12 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
